@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DQAP Wiki | Technical Knowledge Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
+  authDomain:"dqap-wiki.firebaseapp.com",
+  projectId:"dqap-wiki",
+  storageBucket:"dqap-wiki.firebasestorage.app",
+  messagingSenderId:"932523956178",
+  appId:"1:932523956178:web:cc83a8e7369eaa80649a0b"
+});
+const db=firebase.firestore(),storage=firebase.storage();
+const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects";
+const CFG={NOTIFY_ON:false,EJS_KEY:"",EJS_SERVICE:"",EJS_TEMPLATE:"",NOTIFY_TO:""};
+const THEMES={
+  blue:{sb1:"#0E52A8",sb2:"#1A6FD4",p:"#1A6FD4",pd:"#0E52A8",pl:"#EAF3FB",bg:"#F4F6FA"},
+  dark:{sb1:"#111827",sb2:"#1F2937",p:"#3B82F6",pd:"#2563EB",pl:"#1E3A5F",bg:"#1F2937"},
+  forest:{sb1:"#14532D",sb2:"#15803D",p:"#16A34A",pd:"#15803D",pl:"#DCFCE7",bg:"#F0FDF4"},
+  slate:{sb1:"#1E293B",sb2:"#334155",p:"#475569",pd:"#334155",pl:"#F1F5F9",bg:"#F8FAFC"},
+  ember:{sb1:"#7F1D1D",sb2:"#991B1B",p:"#DC2626",pd:"#B91C1C",pl:"#FEF2F2",bg:"#FFF8F8"}
+};
+const LIB_CATS=["Manuals & Datasheets","Standards & Norms","Drawings & Schematics","Vendor Documents","Internal Procedures","Safety Documents","General Reference","Other"];
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#1A6FD4;--pd:#0E52A8;--pl:#EAF3FB;--bg:#F4F6FA;--card:#fff;--t1:#111;--t2:#666;--bd:rgba(0,0,0,.11);--bds:rgba(0,0,0,.22);--sb1:#0E52A8;--sb2:#1A6FD4;--sw:210px;--rad:10px}
+body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--t1);font-size:13px}
+.lw{position:fixed;inset:0;background:linear-gradient(135deg,var(--sb1),var(--sb2));display:flex;align-items:center;justify-content:center;z-index:200}
+.lc{background:#fff;border-radius:16px;padding:28px 26px;width:360px;max-width:92vw;box-shadow:0 20px 56px rgba(0,0,0,.28)}
+.sidebar{width:var(--sw);background:linear-gradient(180deg,var(--sb1),var(--sb2));color:#fff;display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100;box-shadow:3px 0 14px rgba(0,0,0,.22)}
+.sb-logo{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;justify-content:center}
+.sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
+.sb-sec{font-size:9px;font-weight:600;opacity:.38;letter-spacing:1.6px;text-transform:uppercase;padding:4px 8px 6px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.78);margin-bottom:1px}
+.ni:hover{background:rgba(255,255,255,.14);color:#fff}
+.ni.active{background:rgba(255,255,255,.22);color:#fff;font-weight:500}
+.ni i{font-size:15px;width:18px;text-align:center}
+.sb-foot{padding:10px 12px;border-top:1px solid rgba(255,255,255,.12)}
+.sync{font-size:10.5px;display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.65);margin-bottom:7px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#9E9E9E;transition:background .3s;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}.pul{animation:pulse 1.4s infinite}
+.tdots{display:flex;gap:6px;margin-bottom:8px}
+.tdot{width:14px;height:14px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.tdot:hover{transform:scale(1.2)}.tdot.active{border-color:rgba(255,255,255,.8)}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--card);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--bd);position:sticky;top:0;z-index:50}
+.pg-t{font-size:15px;font-weight:600}.pg-s{font-size:11px;color:var(--t2);margin-top:1px}
+.tr{display:flex;gap:7px;align-items:center}
+.content{padding:16px 20px;flex:1}
+.btn{padding:6px 13px;border-radius:7px;border:.5px solid var(--bds);background:transparent;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;color:var(--t1)}
+.btn:hover{background:#f0f0f0}
+.btn.pri{background:var(--p);color:#fff;border-color:var(--p)}.btn.pri:hover{background:var(--pd)}
+.btn.grn{background:#1B5E20;color:#fff;border-color:#1B5E20}.btn.grn:hover{background:#2E7D32}
+.btn.sm{padding:4px 10px;font-size:11px}
+.btn.danger{color:#c00}.btn.danger:hover{background:#fff0f0}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.card{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd)}
+.ch{padding:12px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.ct{font-size:13px;font-weight:500;display:flex;align-items:center;gap:7px}.cb{padding:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}
+.sc{background:var(--card);border-radius:var(--rad);padding:12px 14px;border:.5px solid var(--bd);display:flex;align-items:center;gap:10px}
+.si{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sv{font-size:21px;font-weight:600;line-height:1}.sl{font-size:10px;color:var(--t2);margin-top:1px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fl{font-size:10px;font-weight:600;color:var(--t1);text-transform:uppercase;letter-spacing:.5px}
+.fl.r::after{content:' *';color:#c00}
+input.fi,select.fs,textarea.fta{padding:6px 10px;border-radius:7px;border:.5px solid var(--bds);background:#fafafa;font-size:12.5px;color:var(--t1);font-family:inherit;transition:border .15s,box-shadow .15s;outline:none;width:100%}
+input.fi:focus,select.fs:focus,textarea.fta:focus{border-color:var(--p);box-shadow:0 0 0 2.5px rgba(26,111,212,.1)}
+textarea.fta{resize:vertical;min-height:76px;line-height:1.6}
+input[type="file"].fi{padding:5px 8px;cursor:pointer}
+.fsec-t{font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:1px;padding:6px 0 5px;border-bottom:.5px solid var(--pl);margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+.g1{display:grid;gap:11px}
+.badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:600;white-space:nowrap}
+.b-hw{background:#FBE9E7;color:#7C3521}.b-net{background:#E1F5FE;color:#01579B}.b-com{background:#F3E5F5;color:#4A148C}.b-hmi{background:#E8EAF6;color:#1A237E}.b-cab{background:#E0F7FA;color:#004D40}.b-pro{background:#E3F2FD;color:#0D47A1}.b-tro{background:#FCE4EC;color:#880E4F}.b-oth{background:#ECEFF1;color:#37474F}
+.b-cri{background:#FFEBEE;color:#B71C1C}.b-hig{background:#FFF3E0;color:#E65100}.b-med{background:#FFFDE7;color:#F57F17}.b-low{background:#E8F5E9;color:#2E7D32}
+.b-res{background:#E8F5E9;color:#1B5E20}.b-wor{background:#FFF3E0;color:#E65100}.b-ope{background:#E3F2FD;color:#0D47A1}
+.b-adm{background:#E8EAF6;color:#1A237E}.b-eng{background:#ECEFF1;color:#37474F}
+.ecard{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);transition:border .15s,box-shadow .15s;margin-bottom:8px}
+.ecard:hover{border-color:#90CAF9;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.ech{padding:11px 13px;cursor:pointer;display:flex;align-items:flex-start;gap:10px}
+.ecb{display:none;padding:0 13px 12px;border-top:.5px solid var(--bd);margin-top:8px}
+.ecard.exp .ecb{display:block}
+.enum{font-size:9.5px;font-weight:500;color:var(--t2);letter-spacing:.5px}
+.etitle{font-size:13px;font-weight:600;color:var(--t1);margin:2px 0}
+.emeta{display:flex;gap:7px;font-size:11px;color:var(--t2);flex-wrap:wrap;margin-top:2px}
+.ebadges{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px}
+.tag{background:var(--pl);color:var(--p);padding:1px 6px;border-radius:10px;font-size:10px;font-weight:500}
+.dl{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--p);margin-bottom:3px;margin-top:10px}
+.dc{font-size:12px;color:var(--t1);line-height:1.7;background:#fafafa;padding:8px 12px;border-radius:7px;border-left:2px solid var(--p);white-space:pre-wrap}
+.dc.sol{border-color:#388E3C;background:#F1F8E9}.dc.rc{border-color:#F57F17;background:#FFFDE7}.dc.pre{border-color:#7B1FA2;background:#F3E5F5}.dc.ref{border-color:#0277BD;background:#E1F5FE}
+.dg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.di{background:#fafafa;border-radius:7px;padding:7px 10px;border:.5px solid var(--bd)}
+.di .dl{margin-top:0;margin-bottom:2px}.di .dv{font-size:12px;font-weight:500}
+.fbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-size:12px;background:var(--card);color:var(--t1);outline:none;cursor:pointer;font-family:inherit}
+.vtog{display:flex;background:#f0f0f0;border-radius:7px;padding:2px;gap:2px}
+.vb{padding:4px 10px;border-radius:5px;border:none;background:transparent;cursor:pointer;font-size:14px;color:var(--t2);transition:all .15s}
+.vb.active{background:var(--card);color:var(--p)}
+.sbox{position:relative}.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--t2)}
+.sinput{width:100%;padding:10px 16px 10px 38px;border-radius:var(--rad);border:.5px solid var(--bds);font-size:13px;outline:none;background:var(--card);font-family:inherit;color:var(--t1)}
+.sinput:focus{border-color:var(--p);box-shadow:0 0 0 2.5px rgba(26,111,212,.1)}
+.wtable{width:100%;border-collapse:collapse}
+.wtable th{padding:8px 11px;text-align:left;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--t2);background:#fafafa;border-bottom:.5px solid var(--bd)}
+.wtable td{padding:8px 11px;font-size:12px;border-bottom:.5px solid var(--bd);vertical-align:middle}
+.wtable tr:hover td{background:#fafafa}
+.catbar{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.cbl{font-size:11px;width:95px;flex-shrink:0}.cbt{flex:1;background:var(--bg);border-radius:4px;height:6px;overflow:hidden}.cbf{height:100%;border-radius:4px;transition:width .4s}.cbn{font-size:11px;font-weight:600;color:var(--p);width:18px;text-align:right}
+.empty{text-align:center;padding:40px 20px;color:var(--t2)}
+.eico{font-size:40px;opacity:.3;margin-bottom:10px}.etit{font-size:15px;font-weight:500;color:var(--t1);margin-bottom:5px}.edesc{font-size:12px;max-width:320px;margin:0 auto 14px;line-height:1.6}
+.lo{position:fixed;inset:0;background:rgba(255,255,255,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:10px}
+.spinner{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-size:12px;color:var(--t2)}
+.toast{position:fixed;bottom:18px;right:18px;background:#1A237E;color:#fff;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:500;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:320px;animation:tIn .25s ease;pointer-events:none}
+.toast.ok{background:#1B5E20}.toast.err{background:#B71C1C}
+@keyframes tIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pdf-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:600;display:none;flex-direction:column;padding:16px}
+.pdf-inner{background:#fff;border-radius:12px;flex:1;display:flex;flex-direction:column;overflow:hidden;max-height:calc(100vh - 32px)}
+.pdf-bar{padding:10px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+.prog-wrap{background:#f0f0f0;border-radius:4px;height:5px;overflow:hidden;margin-top:6px}
+.prog-bar{height:100%;background:var(--p);border-radius:4px;transition:width .2s}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.lib-card{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);padding:14px;display:flex;flex-direction:column;gap:8px;transition:border .15s,box-shadow .15s}
+.lib-card:hover{border-color:#90CAF9;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.lib-cat{display:inline-flex;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:600;background:var(--pl);color:var(--p)}
+/* PROJECT CARDS */
+.proj-card{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);margin-bottom:12px;overflow:hidden}
+.proj-hd{padding:12px 16px;background:var(--pl);display:flex;align-items:center;justify-content:space-between}
+.proj-hd-t{font-size:13px;font-weight:600;color:var(--p);display:flex;align-items:center;gap:8px}
+.proj-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sub-list{display:flex;flex-direction:column;gap:4px;margin-top:7px;max-height:160px;overflow-y:auto}
+.sub-item{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px}
+.sub-add{display:flex;gap:5px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#fafafa;border:.5px solid var(--bd);border-radius:12px;font-size:11px;color:var(--t2)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}.proj-body{grid-template-columns:1fr}}
+@media(max-width:640px){.sidebar{display:none}.main{margin-left:0}.g3,.g2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.lib-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DQAP Wiki…</div></div>
+
+<!-- LOGIN -->
+<div class="lw" id="lw" style="display:none">
+  <div class="lc">
+    <div style="text-align:center;margin-bottom:20px">
+      <img src="dqap-logo.png" alt="DQAP" style="height:56px;object-fit:contain;display:inline-block;margin-bottom:12px"
+        onerror="this.style.display='none';document.getElementById('logo-fb').style.display='block'">
+      <div id="logo-fb" style="display:none;font-size:24px;font-weight:700;color:var(--p);margin-bottom:12px">dqap</div>
+      <div style="font-size:16px;font-weight:600">DQAP Wiki</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:3px">Technical Knowledge Base</div>
+    </div>
+    <div class="fg" style="margin-bottom:10px">
+      <label class="fl r">Username</label>
+      <input class="fi" id="l-user" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')el('l-pass').focus()">
+    </div>
+    <div class="fg" style="margin-bottom:5px">
+      <label class="fl r">Password</label>
+      <input type="password" class="fi" id="l-pass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <div id="l-err" style="font-size:11px;color:#c00;min-height:18px;margin-bottom:8px"></div>
+    <button class="btn pri" style="width:100%;justify-content:center;padding:9px" onclick="login()"><i class="ti ti-login"></i>Sign in</button>
+  </div>
+</div>
+
+<!-- PDF VIEWER -->
+<div class="pdf-modal" id="pdf-modal">
+  <div class="pdf-inner">
+    <div class="pdf-bar">
+      <div style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="pdf-title">Document</div>
+      <div style="display:flex;gap:7px;flex-shrink:0">
+        <button class="btn grn" id="pdf-dl-btn" onclick="downloadPDF()" style="display:none"><i class="ti ti-download"></i>Download</button>
+        <button class="btn" onclick="closePDF()"><i class="ti ti-x"></i>Close</button>
+      </div>
+    </div>
+    <iframe id="pdf-frame" src="" style="flex:1;border:none;width:100%;height:100%" oncontextmenu="return false"></iframe>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;min-height:100vh">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div style="background:#fff;border-radius:6px;padding:5px 12px;display:flex;align-items:center;justify-content:center;width:100%">
+      <img src="dqap-logo.png" alt="DQAP" style="height:24px;width:calc(var(--sw) - 48px);object-fit:contain;display:block;margin:0 auto"
+        onerror="this.style.display='none';document.getElementById('sb-logo-fb').style.display='block'">
+      <span id="sb-logo-fb" style="display:none;color:var(--p);font-size:13px;font-weight:700">dqap</span>
+    </div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Menu</div>
+    <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
+    <div class="ni" onclick="go('wiki')"            id="ni-wiki"><i class="ti ti-books"></i>Wiki Browser</div>
+    <div class="ni" onclick="go('search')"          id="ni-search"><i class="ti ti-search"></i>Search</div>
+    <div class="ni" onclick="go('library')"         id="ni-library"><i class="ti ti-library"></i>Library</div>
+    <div class="sb-sec" id="admin-sec" style="display:none">Admin</div>
+    <div class="ni" onclick="go('projects')"        id="ni-projects" style="display:none"><i class="ti ti-building"></i>Manage Projects</div>
+    <div class="ni" onclick="go('users')"           id="ni-users"    style="display:none"><i class="ti ti-users"></i>Manage Users</div>
+  </div>
+  <div class="sb-foot">
+    <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connecting…</span></div>
+    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px">
+      <i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span></div>
+    <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase">Colour theme</div>
+    <div class="tdots">
+      <div class="tdot active" onclick="setTheme('blue')"   title="Ocean Blue"  style="background:#1A6FD4" data-t="blue"></div>
+      <div class="tdot"        onclick="setTheme('dark')"   title="Midnight"    style="background:#1F2937" data-t="dark"></div>
+      <div class="tdot"        onclick="setTheme('forest')" title="Forest"      style="background:#16A34A" data-t="forest"></div>
+      <div class="tdot"        onclick="setTheme('slate')"  title="Slate"       style="background:#475569" data-t="slate"></div>
+      <div class="tdot"        onclick="setTheme('ember')"  title="Ember"       style="background:#DC2626" data-t="ember"></div>
+    </div>
+    <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px">
+      <i class="ti ti-logout"></i>Sign out</button>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ══ DASHBOARD ══ -->
+<div id="v-dash" class="view">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DQAP Wiki — System Engineering Knowledge Base</div></div>
+    <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
+  </div>
+  <div class="content">
+    <div class="stats">
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-clipboard-list" style="color:#1565C0;font-size:18px"></i></div><div><div class="sv" id="st-tot">—</div><div class="sl">Total entries</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="st-res">—</div><div class="sl">Resolved</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-alert-triangle" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="st-cri">—</div><div class="sl">High / Critical</div></div></div>
+      <div class="sc"><div class="si" style="background:#F3E5F5"><i class="ti ti-users" style="color:#7B1FA2;font-size:18px"></i></div><div><div class="sv" id="st-eng">—</div><div class="sl">Contributors</div></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:14px">
+      <div class="card"><div class="ch"><div class="ct"><i class="ti ti-clock" style="font-size:14px"></i>Recent entries</div><button class="btn sm" onclick="go('wiki')">View all <i class="ti ti-arrow-right"></i></button></div><div class="cb" id="d-rec"></div></div>
+      <div class="card"><div class="ch"><div class="ct"><i class="ti ti-chart-bar" style="font-size:14px"></i>By category</div></div><div class="cb" id="d-cat"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD ENTRY ══ -->
+<div id="v-add" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t" id="add-t"><i class="ti ti-plus" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Add new entry</div><div class="pg-s">Document a technical problem and solution for the team</div></div>
+    <div class="tr">
+      <button class="btn" onclick="resetForm()"><i class="ti ti-eraser"></i>Reset</button>
+      <button class="btn pri" onclick="saveEntry()" id="save-btn"><i class="ti ti-device-floppy"></i>Save to Database</button>
+    </div>
+  </div>
+  <div class="content"><div class="card"><div class="cb">
+    <div class="fsec-t"><i class="ti ti-info-circle"></i>General information</div>
+    <div class="g3" style="margin-bottom:14px">
+      <div class="fg"><label class="fl r">Engineer name</label>
+        <select class="fs" id="f-eng"><option value="">Select engineer</option></select></div>
+      <div class="fg"><label class="fl r">Date</label><input type="date" class="fi" id="f-date"></div>
+      <div class="fg"><label class="fl r">Project name</label>
+        <select class="fs" id="f-proj" onchange="onProjectChange()"><option value="">Select project</option></select></div>
+      <div class="fg"><label class="fl">Client / customer</label>
+        <select class="fs" id="f-cli" disabled><option value="">Select project first</option></select></div>
+      <div class="fg"><label class="fl">Site / location</label>
+        <select class="fs" id="f-loc" disabled><option value="">Select project first</option></select></div>
+      <div class="fg"><label class="fl">Project phase</label>
+        <select class="fs" id="f-phase"><option value="">Select phase</option><option>Engineering / Design</option><option>Factory Acceptance Test (FAT)</option><option>Installation</option><option>Commissioning</option><option>Site Acceptance Test (SAT)</option><option>Production / Operation</option><option>Maintenance</option></select></div>
+    </div>
+    <div class="fsec-t"><i class="ti ti-cpu"></i>System & equipment</div>
+    <div class="g3" style="margin-bottom:14px">
+      <div class="fg"><label class="fl r">Category / domain</label>
+        <select class="fs" id="f-cat"><option value="">Select category</option><option>Hardware / Electrical</option><option>Networking / Communication</option><option>Commissioning</option><option>SCADA / HMI</option><option>Cabling</option><option>Programming</option><option>Troubleshooting</option><option>Other</option></select></div>
+      <div class="fg"><label class="fl r">Severity</label>
+        <select class="fs" id="f-sev"><option value="">Select severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="fg"><label class="fl r">Status</label>
+        <select class="fs" id="f-sta"><option value="Resolved">Resolved</option><option value="Workaround">Workaround applied</option><option value="Open">Open / pending</option></select></div>
+      <div class="fg"><label class="fl">System type</label><input class="fi" id="f-sys" placeholder="e.g. PLC, DCS, VFD, Network Switch"></div>
+      <div class="fg"><label class="fl">Equipment / hardware</label><input class="fi" id="f-equ" placeholder="e.g. Siemens S7-1500, Cisco IE3400"></div>
+      <div class="fg"><label class="fl">Software / firmware version</label><input class="fi" id="f-sw" placeholder="e.g. TIA Portal V18, WinCC 7.5"></div>
+      <div class="fg"><label class="fl">Protocol / standard</label><input class="fi" id="f-pro" placeholder="e.g. Profinet, Modbus TCP, IEC 61850"></div>
+      <div class="fg"><label class="fl">Error code / alarm</label><input class="fi" id="f-err" placeholder="e.g. Fault 0x8090, AL-224"></div>
+      <div class="fg"><label class="fl">Time to resolve</label><input class="fi" id="f-ttr" placeholder="e.g. 3 hours, 2 days"></div>
+    </div>
+    <div class="fsec-t"><i class="ti ti-alert-circle"></i>Problem details</div>
+    <div class="g1" style="margin-bottom:14px">
+      <div class="fg"><label class="fl r">Problem title</label><input class="fi" id="f-tit" placeholder="Clear, searchable title"></div>
+      <div class="g2">
+        <div class="fg"><label class="fl r">Problem description</label><textarea class="fta" id="f-prob" style="min-height:110px" placeholder="Detailed description…"></textarea></div>
+        <div class="fg"><label class="fl">Symptoms / observations</label><textarea class="fta" id="f-sym" style="min-height:110px" placeholder="Error messages, alarm texts, LED states…"></textarea></div>
+      </div>
+      <div class="fg"><label class="fl">Root cause analysis</label><textarea class="fta" id="f-rca" placeholder="Underlying cause, investigation steps…"></textarea></div>
+    </div>
+    <div class="fsec-t"><i class="ti ti-circle-check"></i>Solution & follow-up</div>
+    <div class="g1">
+      <div class="fg"><label class="fl r">Solution applied (step-by-step)</label><textarea class="fta" id="f-sol" style="min-height:130px" placeholder="Step 1: …&#10;Step 2: …&#10;Step 3: …"></textarea></div>
+      <div class="g2">
+        <div class="fg"><label class="fl">Preventive measures</label><textarea class="fta" id="f-pre" placeholder="How to avoid this in future projects?"></textarea></div>
+        <div class="fg"><label class="fl">References & documentation</label><textarea class="fta" id="f-ref" placeholder="Manual section, drawing numbers, ticket IDs, URLs…"></textarea></div>
+      </div>
+      <div class="fg"><label class="fl">Tags / keywords</label><input class="fi" id="f-tag" placeholder="Comma-separated: Profinet, LLDP, Ring redundancy…"></div>
+    </div>
+    <input type="hidden" id="f-eid">
+  </div></div></div>
+</div>
+
+<!-- ══ WIKI BROWSER ══ -->
+<div id="v-wiki" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-books" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Wiki browser</div><div class="pg-s" id="wc">All entries</div></div>
+    <div class="tr">
+      <div class="vtog">
+        <button class="vb active" id="vb-c" onclick="setMode('card')"><i class="ti ti-layout-cards"></i></button>
+        <button class="vb" id="vb-t" onclick="setMode('table')"><i class="ti ti-table"></i></button>
+      </div>
+      <button class="btn grn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i>Export Excel</button>
+      <button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>Add entry</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="fbar">
+      <select class="fsel" id="ff-c" onchange="applyF()"><option value="">All categories</option><option>Hardware / Electrical</option><option>Networking / Communication</option><option>Commissioning</option><option>SCADA / HMI</option><option>Cabling</option><option>Programming</option><option>Troubleshooting</option><option>Other</option></select>
+      <select class="fsel" id="ff-s" onchange="applyF()"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <select class="fsel" id="ff-t" onchange="applyF()"><option value="">All statuses</option><option value="Resolved">Resolved</option><option value="Workaround">Workaround</option><option value="Open">Open</option></select>
+      <select class="fsel" id="ff-p" onchange="applyF()"><option value="">All projects</option></select>
+      <button class="btn sm" onclick="clearF()"><i class="ti ti-x"></i>Clear</button>
+      <span id="fc" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
+    </div>
+    <div id="wl"></div>
+  </div>
+</div>
+
+<!-- ══ SEARCH ══ -->
+<div id="v-search" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-search" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Search wiki</div><div class="pg-s">Full-text search across all entries</div></div>
+  </div>
+  <div class="content">
+    <div class="card" style="margin-bottom:14px"><div class="cb">
+      <div class="sbox"><i class="ti ti-search sico"></i>
+        <input type="text" class="sinput" id="s-in" oninput="doSearch()" placeholder="Search problems, solutions, equipment, error codes, tags…"></div>
+    </div></div>
+    <div id="s-res"><div class="empty"><i class="ti ti-search eico"></i><div class="etit">Start typing to search</div><div class="edesc">Searches all fields.</div></div></div>
+  </div>
+</div>
+
+<!-- ══ LIBRARY ══ -->
+<div id="v-library" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-library" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Library</div><div class="pg-s">Reference documents — manuals, standards, drawings, datasheets</div></div>
+    <div class="tr" id="lib-upload-btn-wrap">
+      <button class="btn pri" onclick="togLibUpload()" id="lib-upload-toggle"><i class="ti ti-upload"></i>Upload document</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="lib-upload-panel" style="display:none;margin-bottom:16px">
+      <div class="card">
+        <div class="ch"><div class="ct"><i class="ti ti-file-upload" style="font-size:14px"></i>Upload new document</div><button class="btn sm" onclick="togLibUpload()"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div class="g3" style="margin-bottom:11px">
+            <div class="fg" style="grid-column:span 2"><label class="fl r">Document title</label><input class="fi" id="lib-title" placeholder="e.g. Siemens S7-1500 CPU Manual"></div>
+            <div class="fg"><label class="fl r">Category</label><select class="fs" id="lib-cat"><option value="">Select category</option></select></div>
+          </div>
+          <div class="g2" style="margin-bottom:11px">
+            <div class="fg"><label class="fl">Description</label><textarea class="fta" id="lib-desc" style="min-height:70px" placeholder="Brief description…"></textarea></div>
+            <div class="fg">
+              <div class="fg" style="margin-bottom:10px"><label class="fl">Tags / keywords</label><input class="fi" id="lib-tags" placeholder="e.g. Siemens, PROFINET"></div>
+              <div class="fg"><label class="fl r">PDF file (max 5 MB)</label>
+                <input type="file" class="fi" id="lib-file" accept="application/pdf" onchange="validateLibFile(this)">
+                <div id="lib-file-err" style="font-size:11px;color:#c00;min-height:14px;margin-top:2px"></div></div>
+            </div>
+          </div>
+          <div id="lib-prog" style="display:none;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--t2);margin-bottom:3px" id="lib-prog-txt">Uploading…</div>
+            <div class="prog-wrap"><div class="prog-bar" id="lib-prog-bar" style="width:0%"></div></div>
+          </div>
+          <button class="btn pri" onclick="uploadLibDoc()"><i class="ti ti-cloud-upload"></i>Upload to Library</button>
+        </div>
+      </div>
+    </div>
+    <div class="fbar">
+      <div class="sbox" style="flex:1;max-width:320px">
+        <i class="ti ti-search sico"></i>
+        <input type="text" class="sinput" id="lib-search" oninput="renderLibrary()" placeholder="Search documents…" style="padding:7px 14px 7px 36px;font-size:12.5px">
+      </div>
+      <select class="fsel" id="lib-filter-cat" onchange="renderLibrary()"><option value="">All categories</option></select>
+      <span id="lib-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
+    </div>
+    <div id="lib-grid"></div>
+  </div>
+</div>
+
+<!-- ══ MANAGE PROJECTS ══ -->
+<div id="v-projects" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-building" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Manage projects</div><div class="pg-s">Add projects with their clients and sites — controls dropdown options in Add Entry</div></div>
+    <div class="tr"><button class="btn pri" onclick="togNewProj()"><i class="ti ti-plus"></i>Add new project</button></div>
+  </div>
+  <div class="content">
+
+    <!-- New project form -->
+    <div id="new-proj-panel" style="display:none;margin-bottom:18px">
+      <div class="card">
+        <div class="ch"><div class="ct"><i class="ti ti-building-plus" style="font-size:14px"></i>New project</div><button class="btn sm" onclick="togNewProj()"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div style="background:#E3F2FD;border:.5px solid #90CAF9;border-radius:8px;padding:9px 13px;font-size:12px;color:#0D47A1;margin-bottom:14px;display:flex;gap:8px">
+            <i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i>
+            Fill in the project name and add at least one client and one site. You can add more later.
+          </div>
+          <div class="g3" style="margin-bottom:14px">
+            <div class="fg">
+              <label class="fl r">Project number</label>
+              <input class="fi" id="np-num" placeholder="e.g. PRJ-2025-001">
+            </div>
+            <div class="fg" style="grid-column:span 2">
+              <label class="fl r">Project name</label>
+              <input class="fi" id="np-name" placeholder="e.g. Site Alpha Expansion — Phase 2">
+            </div>
+          </div>
+          <div class="g2" style="margin-bottom:14px">
+            <div class="fg">
+              <label class="fl r">Client / customer</label>
+              <div style="display:flex;flex-direction:column;gap:5px" id="np-cli-list"></div>
+              <div style="display:flex;gap:5px;margin-top:6px">
+                <input class="fi" id="np-cli-inp" placeholder="Client name" onkeydown="if(event.key==='Enter')addNpItem('cli')">
+                <button class="btn sm pri" onclick="addNpItem('cli')"><i class="ti ti-plus"></i>Add</button>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl r">Site / location</label>
+              <div style="display:flex;flex-direction:column;gap:5px" id="np-site-list"></div>
+              <div style="display:flex;gap:5px;margin-top:6px">
+                <input class="fi" id="np-site-inp" placeholder="Site or location" onkeydown="if(event.key==='Enter')addNpItem('site')">
+                <button class="btn sm pri" onclick="addNpItem('site')"><i class="ti ti-plus"></i>Add</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn pri" onclick="saveNewProject()"><i class="ti ti-device-floppy"></i>Save project</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project list -->
+    <div id="proj-list"></div>
+  </div>
+</div>
+
+<!-- ══ MANAGE USERS ══ -->
+<div id="v-users" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-users" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Manage users</div><div class="pg-s">Add or remove engineer login accounts</div></div>
+  </div>
+  <div class="content">
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch"><div class="ct"><i class="ti ti-user-plus" style="font-size:14px"></i>Add new user</div></div>
+      <div class="cb">
+        <div class="g3" style="margin-bottom:12px">
+          <div class="fg"><label class="fl r">Full name</label><input class="fi" id="u-fn" placeholder="e.g. Rajesh Kumar"></div>
+          <div class="fg"><label class="fl r">Username</label><input class="fi" id="u-un" placeholder="e.g. rajesh (lowercase)"></div>
+          <div class="fg"><label class="fl r">Password</label><input class="fi" id="u-pw" placeholder="Set initial password"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px">
+            <input type="checkbox" id="u-adm" style="width:auto;accent-color:var(--p)">
+            Grant admin rights</label>
+          <button class="btn pri" onclick="addUser()"><i class="ti ti-user-plus"></i>Add user</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
+      <div style="overflow:hidden">
+        <table class="wtable">
+          <thead><tr><th>Full name</th><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="u-list"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+let CU=null,DB={entries:[]},libData=[],projectsData=[],vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null;
+let npClients=[],npSites=[];
+const MAX_PDF=5*1024*1024;
+
+// ── THEME ──────────────────────────────────────────
+function setTheme(t){
+  const th=THEMES[t];if(!th)return;
+  const r=document.documentElement.style;
+  r.setProperty('--p',th.p);r.setProperty('--pd',th.pd);r.setProperty('--pl',th.pl);
+  r.setProperty('--bg',th.bg);r.setProperty('--sb1',th.sb1);r.setProperty('--sb2',th.sb2);
+  if(t==='dark'){r.setProperty('--card','#1F2937');r.setProperty('--t1','#F9FAFB');r.setProperty('--t2','#9CA3AF');r.setProperty('--bd','rgba(255,255,255,.1)');r.setProperty('--bds','rgba(255,255,255,.2)');}
+  else{r.setProperty('--card','#fff');r.setProperty('--t1','#111');r.setProperty('--t2','#666');r.setProperty('--bd','rgba(0,0,0,.11)');r.setProperty('--bds','rgba(0,0,0,.22)');}
+  document.querySelectorAll('.tdot').forEach(d=>d.classList.toggle('active',d.dataset.t===t));
+  localStorage.setItem('dqap_theme',t);
+}
+
+// ── INIT ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',async()=>{
+  const sv=localStorage.getItem('dqap_theme');if(sv&&THEMES[sv])setTheme(sv);
+  const catOpts=LIB_CATS.map(c=>`<option>${c}</option>`).join('');
+  el('lib-cat').innerHTML='<option value="">Select category</option>'+catOpts;
+  el('lib-filter-cat').innerHTML='<option value="">All categories</option>'+catOpts;
+  showLoad('Loading DQAP Wiki…');
+  await seedAdmin();
+  const s=sessionStorage.getItem('dqap_sess');
+  if(s){try{CU=JSON.parse(s);startApp();}catch{showLogin();}}
+  else{hideLoad();showLogin();}
+});
+
+async function seedAdmin(){
+  try{const sn=await db.collection(USERS).limit(1).get();if(sn.empty)await db.collection(USERS).add({username:'admin',password:'dqap@2024',fullName:'Administrator',isAdmin:true,createdAt:new Date().toISOString()});}catch(e){}
+}
+
+// ── AUTH ──────────────────────────────────────────
+function showLogin(){el('lw').style.display='flex';el('app').style.display='none';}
+function hideLogin(){el('lw').style.display='none';}
+
+async function login(){
+  const u=(el('l-user').value||'').trim().toLowerCase(),p=(el('l-pass').value||'').trim();
+  el('l-err').textContent='';
+  if(!u||!p){el('l-err').textContent='Please enter username and password.';return;}
+  showLoad('Signing in…');
+  try{
+    const sn=await db.collection(USERS).where('username','==',u).where('password','==',p).get();
+    if(sn.empty){hideLoad();el('l-err').textContent='Incorrect username or password.';return;}
+    const d=sn.docs[0].data();
+    CU={username:d.username,fullName:d.fullName,isAdmin:d.isAdmin===true};
+    sessionStorage.setItem('dqap_sess',JSON.stringify(CU));
+    hideLogin();startApp();
+  }catch(e){hideLoad();el('l-err').textContent='Connection error: '+e.message;}
+}
+
+function logout(){
+  if(!confirm('Sign out of DQAP Wiki?'))return;
+  sessionStorage.removeItem('dqap_sess');CU=null;
+  [unsub,libUnsub,projUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=null;DB={entries:[]};libData=[];projectsData=[];
+  el('app').style.display='none';el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
+  showLogin();
+}
+
+function startApp(){
+  el('sb-user').textContent=CU.fullName;
+  el('f-date').value=new Date().toISOString().split('T')[0];
+  if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
+  else{el('lib-upload-btn-wrap').style.display='none';}
+  el('app').style.display='flex';
+  startListen();startLibListen();startProjListen();populateEngineers();
+}
+
+// ── LISTENERS ─────────────────────────────────────
+function startListen(){
+  showLoad('Connecting…');sync('sync');
+  if(unsub)unsub();
+  unsub=db.collection(COL).orderBy('createdAt','desc').onSnapshot(
+    sn=>{DB.entries=sn.docs.map(d=>({id:d.id,...d.data()}));hideLoad();sync('ok');renderDash();applyF();populateProj();},
+    err=>{hideLoad();sync('err');toast('Connection error: '+err.message,'err');}
+  );
+}
+function startLibListen(){
+  if(libUnsub)libUnsub();
+  libUnsub=db.collection(LIB).orderBy('uploadedAt','desc').onSnapshot(
+    sn=>{libData=sn.docs.map(d=>({id:d.id,...d.data()}));renderLibrary();},err=>{}
+  );
+}
+function startProjListen(){
+  if(projUnsub)projUnsub();
+  projUnsub=db.collection(PROJ).orderBy('name','asc').onSnapshot(
+    sn=>{
+      projectsData=sn.docs.map(d=>({id:d.id,...d.data()}));
+      populateProjDropdown();
+      if(el('v-projects').style.display!=='none')renderProjectsPage();
+    },err=>{}
+  );
+}
+
+// ── ENGINEERS DROPDOWN ────────────────────────────
+async function populateEngineers(){
+  try{
+    const sn=await db.collection(USERS).orderBy('fullName','asc').get();
+    const names=sn.docs.map(d=>d.data().fullName).filter(Boolean);
+    const s=el('f-eng');if(!s)return;
+    s.innerHTML='<option value="">Select engineer</option>'+names.map(n=>`<option>${esc(n)}</option>`).join('');
+    for(let i=0;i<s.options.length;i++){if(s.options[i].text===CU?.fullName){s.selectedIndex=i;break;}}
+  }catch(e){}
+}
+
+// ── PROJECT DROPDOWNS ─────────────────────────────
+function populateProjDropdown(selectedProj){
+  const s=el('f-proj');if(!s)return;
+  const cur=selectedProj||s.value;
+  s.innerHTML='<option value="">Select project</option>'+
+    projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');
+  // also refresh wiki browser project filter
+  populateProj();
+}
+
+function onProjectChange(){
+  const projName=el('f-proj').value;
+  const cliSel=el('f-cli'),locSel=el('f-loc');
+  if(!projName){
+    cliSel.innerHTML='<option value="">Select project first</option>';cliSel.disabled=true;
+    locSel.innerHTML='<option value="">Select project first</option>';locSel.disabled=true;
+    return;
+  }
+  const proj=projectsData.find(p=>p.name===projName);
+  if(!proj){cliSel.disabled=true;locSel.disabled=true;return;}
+  const clients=(proj.clients||[]).slice().sort();
+  const sites=(proj.sites||[]).slice().sort();
+  cliSel.innerHTML='<option value="">Select client</option>'+clients.map(c=>`<option>${esc(c)}</option>`).join('');
+  cliSel.disabled=clients.length===0;
+  locSel.innerHTML='<option value="">Select site</option>'+sites.map(s=>`<option>${esc(s)}</option>`).join('');
+  locSel.disabled=sites.length===0;
+  // auto-select if only one option
+  if(clients.length===1)cliSel.selectedIndex=1;
+  if(sites.length===1)locSel.selectedIndex=1;
+}
+
+// ── NEW PROJECT FORM ──────────────────────────────
+function togNewProj(){
+  const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
+}
+
+function addNpItem(type){
+  const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();
+  if(!val)return;
+  if(type==='cli'){if(!npClients.includes(val)){npClients.push(val);}}
+  else{if(!npSites.includes(val)){npSites.push(val);}}
+  inp.value='';renderNpItems();inp.focus();
+}
+
+function removeNpItem(type,val){
+  if(type==='cli')npClients=npClients.filter(v=>v!==val);
+  else npSites=npSites.filter(v=>v!==val);
+  renderNpItems();
+}
+
+function renderNpItems(){
+  ['cli','site'].forEach(type=>{
+    const arr=type==='cli'?npClients:npSites;
+    el(`np-${type}-list`).innerHTML=arr.map(v=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px">
+        <span>${esc(v)}</span>
+        <button class="btn sm danger" onclick="removeNpItem('${type}','${v.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button>
+      </div>`).join('');
+  });
+}
+
+async function saveNewProject(){
+  const num=(el('np-num').value||'').trim();
+  const name=(el('np-name').value||'').trim();
+  if(!num){toast('Project number is required','err');return;}
+  if(!name){toast('Project name is required','err');return;}
+  if(!npClients.length){toast('Add at least one client','err');return;}
+  if(!npSites.length){toast('Add at least one site','err');return;}
+  const exists=projectsData.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(exists){toast('Project "'+name+'" already exists','err');return;}
+  showLoad('Saving project…');
+  try{
+    await db.collection(PROJ).add({number:num,name,clients:npClients,sites:npSites,createdAt:new Date().toISOString()});
+    toast('Project "'+name+'" added ✓','ok');togNewProj();
+  }catch(e){toast('Failed: '+e.message,'err');}
+  finally{hideLoad();}
+}
+
+async function addSubItem(projId,type,inputId){
+  const val=(el(inputId)?.value||'').trim();if(!val)return;
+  const proj=projectsData.find(p=>p.id===projId);if(!proj)return;
+  const arr=type==='clients'?(proj.clients||[]):(proj.sites||[]);
+  if(arr.includes(val)){toast('"'+val+'" already exists','err');return;}
+  try{
+    await db.collection(PROJ).doc(projId).update({[type]:[...arr,val]});
+    if(el(inputId))el(inputId).value='';toast('"'+val+'" added ✓','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}
+}
+
+async function removeSubItem(projId,type,val){
+  if(!confirm('Remove "'+val+'"?'))return;
+  const proj=projectsData.find(p=>p.id===projId);if(!proj)return;
+  const arr=((type==='clients'?proj.clients:proj.sites)||[]).filter(v=>v!==val);
+  try{await db.collection(PROJ).doc(projId).update({[type]:arr});toast('Removed ✓','ok');}
+  catch(e){toast('Failed: '+e.message,'err');}
+}
+
+async function deleteProject(projId,name){
+  if(!confirm('Delete project "'+name+'"?\nThis will not delete existing wiki entries.'))return;
+  showLoad('Deleting…');
+  try{await db.collection(PROJ).doc(projId).delete();toast('Project deleted ✓','ok');}
+  catch(e){toast('Failed: '+e.message,'err');}
+  finally{hideLoad();}
+}
+
+function renderProjectsPage(){
+  const list=el('proj-list');
+  if(!projectsData.length){
+    list.innerHTML=`<div class="empty"><i class="ti ti-building eico"></i><div class="etit">No projects yet</div><div class="edesc">Add your first project using the button above.</div></div>`;
+    return;
+  }
+  list.innerHTML=projectsData.map(p=>`
+    <div class="proj-card">
+      <div class="proj-hd">
+        <div class="proj-hd-t"><i class="ti ti-building" style="font-size:14px"></i>${p.number?`<span style="font-size:10px;background:rgba(26,111,212,.12);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600;letter-spacing:.4px">${esc(p.number)}</span> `:''}${esc(p.name)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="chip"><i class="ti ti-briefcase" style="font-size:11px"></i>${(p.clients||[]).length} client${(p.clients||[]).length!==1?'s':''}</span>
+          <span class="chip"><i class="ti ti-map-pin" style="font-size:11px"></i>${(p.sites||[]).length} site${(p.sites||[]).length!==1?'s':''}</span>
+          <button class="btn sm danger" onclick="deleteProject('${p.id}','${esc(p.name)}')"><i class="ti ti-trash"></i>Delete project</button>
+        </div>
+      </div>
+      <div class="proj-body">
+
+        <!-- CLIENTS -->
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-briefcase" style="font-size:12px"></i> Clients / Customers</div>
+          <div class="sub-list">
+            ${(p.clients||[]).length
+              ? (p.clients||[]).slice().sort().map(c=>`
+                  <div class="sub-item">
+                    <span>${esc(c)}</span>
+                    <button class="btn sm danger" onclick="removeSubItem('${p.id}','clients','${c.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>
+                  </div>`).join('')
+              : '<div style="font-size:12px;color:var(--t2);padding:6px 0">No clients yet</div>'
+            }
+          </div>
+          <div class="sub-add">
+            <input class="fi" id="add-cli-${p.id}" placeholder="Add client…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','clients','add-cli-${p.id}')">
+            <button class="btn sm pri" onclick="addSubItem('${p.id}','clients','add-cli-${p.id}')"><i class="ti ti-plus"></i>Add</button>
+          </div>
+        </div>
+
+        <!-- SITES -->
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-map-pin" style="font-size:12px"></i> Sites / Locations</div>
+          <div class="sub-list">
+            ${(p.sites||[]).length
+              ? (p.sites||[]).slice().sort().map(s=>`
+                  <div class="sub-item">
+                    <span>${esc(s)}</span>
+                    <button class="btn sm danger" onclick="removeSubItem('${p.id}','sites','${s.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>
+                  </div>`).join('')
+              : '<div style="font-size:12px;color:var(--t2);padding:6px 0">No sites yet</div>'
+            }
+          </div>
+          <div class="sub-add">
+            <input class="fi" id="add-site-${p.id}" placeholder="Add site…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','sites','add-site-${p.id}')">
+            <button class="btn sm pri" onclick="addSubItem('${p.id}','sites','add-site-${p.id}')"><i class="ti ti-plus"></i>Add</button>
+          </div>
+        </div>
+
+      </div>
+    </div>`).join('');
+}
+
+// ── ENTRY NUM ─────────────────────────────────────
+async function getNextNum(){
+  const ref=db.collection(META).doc('counter');let n=1;
+  await db.runTransaction(async t=>{const d=await t.get(ref);n=d.exists?(d.data().count||0)+1:1;t.set(ref,{count:n});});
+  return'DQAP-'+new Date().getFullYear()+'-'+String(n).padStart(4,'0');
+}
+
+// ── FORM ──────────────────────────────────────────
+function getForm(){
+  return{engineer:g('f-eng'),date:g('f-date'),project:g('f-proj'),client:g('f-cli'),location:g('f-loc'),phase:g('f-phase'),category:g('f-cat'),severity:g('f-sev'),status:g('f-sta'),systemType:g('f-sys'),equipment:g('f-equ'),software:g('f-sw'),protocol:g('f-pro'),errorCode:g('f-err'),timeToResolve:g('f-ttr'),title:g('f-tit'),problem:g('f-prob'),symptoms:g('f-sym'),rootCause:g('f-rca'),solution:g('f-sol'),preventive:g('f-pre'),references:g('f-ref'),tags:g('f-tag').split(',').map(t=>t.trim()).filter(Boolean)};
+}
+
+async function saveEntry(){
+  const e=getForm(),miss=[];
+  if(!e.engineer)miss.push('Engineer name');if(!e.date)miss.push('Date');if(!e.project)miss.push('Project name');
+  if(!e.category)miss.push('Category');if(!e.severity)miss.push('Severity');if(!e.title)miss.push('Problem title');
+  if(!e.problem)miss.push('Problem description');if(!e.solution)miss.push('Solution applied');
+  if(miss.length){toast('Required: '+miss.join(', '),'err');return;}
+  showLoad('Saving…');
+  try{
+    const now=new Date().toISOString(),eid=g('f-eid');
+    if(eid){await db.collection(COL).doc(eid).update({...e,updatedAt:now});toast('Entry updated ✓','ok');}
+    else{e.entryNumber=await getNextNum();e.createdAt=now;e.updatedAt=now;await db.collection(COL).add(e);toast('Entry saved ✓','ok');sendNotification(e);}
+    resetForm();go('wiki');
+  }catch(err){toast('Save failed: '+err.message,'err');}
+  finally{hideLoad();}
+}
+
+function editEntry(id){
+  const e=DB.entries.find(x=>x.id===id);if(!e)return;
+  const txtMap={'f-date':e.date,'f-sys':e.systemType,'f-equ':e.equipment,'f-sw':e.software,'f-pro':e.protocol,'f-err':e.errorCode,'f-ttr':e.timeToResolve,'f-tit':e.title,'f-prob':e.problem,'f-sym':e.symptoms,'f-rca':e.rootCause,'f-sol':e.solution,'f-pre':e.preventive,'f-ref':e.references,'f-eid':e.id,'f-tag':(e.tags||[]).join(', ')};
+  Object.entries(txtMap).forEach(([k,v])=>{const x=el(k);if(x)x.value=v||'';});
+  // set selects with fallback
+  const setVal=(sid,val)=>{const s=el(sid);if(!s||!val)return;let found=false;for(let i=0;i<s.options.length;i++){if(s.options[i].value===val||s.options[i].text===val){s.selectedIndex=i;found=true;break;}}if(!found){const o=document.createElement('option');o.value=val;o.text=val;s.appendChild(o);s.value=val;}};
+  setVal('f-eng',e.engineer);setVal('f-phase',e.phase);setVal('f-cat',e.category);setVal('f-sev',e.severity);setVal('f-sta',e.status);
+  // set project then trigger cascade
+  setVal('f-proj',e.project);
+  onProjectChange();
+  // now set client and site after cascade
+  setTimeout(()=>{setVal('f-cli',e.client);setVal('f-loc',e.location);},50);
+  el('add-t').innerHTML='<i class="ti ti-edit" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Edit entry';
+  el('save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update entry';
+  go('add');
+}
+
+async function delEntry(id){
+  if(!confirm('Permanently delete this entry?'))return;showLoad('Deleting…');
+  try{await db.collection(COL).doc(id).delete();toast('Entry deleted','ok');}
+  catch(e){toast('Delete failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+function resetForm(){
+  ['f-sys','f-equ','f-sw','f-pro','f-err','f-ttr','f-tit','f-prob','f-sym','f-rca','f-sol','f-pre','f-ref','f-tag','f-eid'].forEach(id=>{const x=el(id);if(x)x.value='';});
+  el('f-date').value=new Date().toISOString().split('T')[0];
+  ['f-phase','f-cat','f-sev'].forEach(id=>el(id).value='');
+  el('f-sta').value='Resolved';
+  el('f-proj').value='';
+  el('f-cli').innerHTML='<option value="">Select project first</option>';el('f-cli').disabled=true;
+  el('f-loc').innerHTML='<option value="">Select project first</option>';el('f-loc').disabled=true;
+  // auto-select engineer
+  const s=el('f-eng');for(let i=0;i<s.options.length;i++){if(s.options[i].text===CU?.fullName){s.selectedIndex=i;break;}}
+  el('add-t').innerHTML='<i class="ti ti-plus" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Add new entry';
+  el('save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save to Database';
+}
+
+// ── PDF ───────────────────────────────────────────
+function viewPDF(url,name){el('pdf-title').textContent=name;el('pdf-frame').src=url;el('pdf-modal').style.display='flex';const d=el('pdf-dl-btn');d.style.display=CU?.isAdmin?'inline-flex':'none';d.dataset.url=url;d.dataset.name=name;}
+function closePDF(){el('pdf-modal').style.display='none';el('pdf-frame').src='';}
+function downloadPDF(){if(!CU?.isAdmin)return;const a=document.createElement('a');a.href=el('pdf-dl-btn').dataset.url;a.download=el('pdf-dl-btn').dataset.name;a.target='_blank';a.click();}
+
+// ── LIBRARY ───────────────────────────────────────
+function togLibUpload(){const p=el('lib-upload-panel');p.style.display=p.style.display==='none'?'block':'none';el('lib-upload-toggle').innerHTML=p.style.display==='none'?'<i class="ti ti-upload"></i>Upload document':'<i class="ti ti-x"></i>Cancel';}
+function validateLibFile(input){const f=input.files[0];if(!f)return;if(f.type!=='application/pdf'){el('lib-file-err').textContent='PDF only.';input.value='';return;}if(f.size>MAX_PDF){el('lib-file-err').textContent='Exceeds 5MB.';input.value='';return;}el('lib-file-err').textContent='';}
+async function uploadLibDoc(){
+  const title=g('lib-title'),cat=g('lib-cat'),desc=g('lib-desc'),tags=g('lib-tags'),fileInput=el('lib-file');
+  if(!title||!cat){toast('Title and category are required','err');return;}
+  const file=fileInput.files[0];if(!file){toast('Select a PDF file','err');return;}
+  if(el('lib-file-err').textContent)return;
+  showLoad('Uploading…');el('lib-prog').style.display='block';el('lib-prog-bar').style.width='0%';
+  try{
+    const path=`dqap-library/${Date.now()}_${file.name}`;const ref=storage.ref(path);const task=ref.put(file);
+    task.on('state_changed',snap=>{el('lib-prog-bar').style.width=Math.round(snap.bytesTransferred/snap.totalBytes*100)+'%';});
+    await task;const url=await ref.getDownloadURL();
+    await db.collection(LIB).add({title,category:cat,description:desc,tags:tags.split(',').map(t=>t.trim()).filter(Boolean),fileName:file.name,url,path,size:file.size,uploadedBy:CU.fullName,uploadedAt:new Date().toISOString()});
+    ['lib-title','lib-desc','lib-tags'].forEach(id=>el(id).value='');el('lib-cat').value='';el('lib-file').value='';el('lib-file-err').textContent='';el('lib-prog').style.display='none';
+    togLibUpload();toast('Uploaded ✓','ok');
+  }catch(e){toast('Upload failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function deleteLibDoc(id,path,title){
+  if(!CU?.isAdmin||!confirm('Delete "'+title+'"?'))return;showLoad('Deleting…');
+  try{try{await storage.ref(path).delete();}catch(e){}await db.collection(LIB).doc(id).delete();toast('Deleted ✓','ok');}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+function downloadPDFDirect(url,name){if(!CU?.isAdmin)return;const a=document.createElement('a');a.href=url;a.download=name;a.target='_blank';a.click();}
+function renderLibrary(){
+  const q=(el('lib-search')?.value||'').toLowerCase().trim(),cat=el('lib-filter-cat')?.value||'';
+  let docs=libData.filter(d=>{if(cat&&d.category!==cat)return false;if(q){const h=[d.title,d.description,d.category,d.fileName,...(d.tags||[])].join(' ').toLowerCase();return h.includes(q);}return true;});
+  el('lib-count').textContent=`${docs.length} of ${libData.length} document${libData.length!==1?'s':''}`;
+  const grid=el('lib-grid');
+  if(!docs.length){grid.innerHTML=`<div class="empty"><i class="ti ti-library eico"></i><div class="etit">${libData.length?'No documents match':'Library is empty'}</div></div>`;return;}
+  grid.innerHTML=`<div class="lib-grid">${docs.map(d=>`<div class="lib-card"><div style="display:flex;align-items:flex-start;gap:10px"><div style="width:40px;height:40px;background:#FEF2F2;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-type-pdf" style="color:#c00;font-size:20px"></i></div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;line-height:1.4;margin-bottom:4px">${esc(d.title)}</div><span class="lib-cat">${esc(d.category)}</span></div></div>${d.description?`<div style="font-size:11.5px;color:var(--t2);line-height:1.55">${esc(d.description)}</div>`:''} ${(d.tags||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px">${d.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}<div style="font-size:10.5px;color:var(--t2);display:flex;gap:12px;flex-wrap:wrap;margin-top:2px"><span><i class="ti ti-file" style="font-size:11px"></i> ${(d.size/1024).toFixed(0)} KB</span><span><i class="ti ti-user" style="font-size:11px"></i> ${esc(d.uploadedBy)}</span><span><i class="ti ti-calendar" style="font-size:11px"></i> ${(d.uploadedAt||'').split('T')[0]}</span></div><div style="display:flex;gap:6px;margin-top:4px;border-top:.5px solid var(--bd);padding-top:10px"><button class="btn pri" style="flex:1;justify-content:center" onclick="viewPDF('${d.url}','${esc(d.title)}')"><i class="ti ti-eye"></i>View</button>${CU?.isAdmin?`<button class="btn grn" onclick="downloadPDFDirect('${d.url}','${esc(d.fileName)}')"><i class="ti ti-download"></i></button><button class="btn danger" onclick="deleteLibDoc('${d.id}','${d.path}','${esc(d.title)}')"><i class="ti ti-trash"></i></button>`:''}</div></div>`).join('')}</div>`;
+}
+
+// ── EXCEL ──────────────────────────────────────────
+function exportExcel(){
+  const data=filtered.length?filtered:DB.entries;
+  if(!data.length){toast('No entries to export','err');return;}
+  const rows=data.map(e=>({'Entry #':e.entryNumber||'','Date':e.date||'','Engineer':e.engineer||'','Project':e.project||'','Client':e.client||'','Site':e.location||'','Phase':e.phase||'','Category':e.category||'','Severity':e.severity||'','Status':e.status||'','System Type':e.systemType||'','Equipment':e.equipment||'','Software':e.software||'','Protocol':e.protocol||'','Error Code':e.errorCode||'','Time to Resolve':e.timeToResolve||'','Problem Title':e.title||'','Problem':e.problem||'','Symptoms':e.symptoms||'','Root Cause':e.rootCause||'','Solution':e.solution||'','Preventive':e.preventive||'','References':e.references||'','Tags':(e.tags||[]).join(', '),'Created':(e.createdAt||'').split('T')[0],'Updated':(e.updatedAt||'').split('T')[0]}));
+  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DQAP Wiki');
+  XLSX.writeFile(wb,'DQAP_Wiki_'+new Date().toISOString().split('T')[0]+'.xlsx');toast('Excel downloaded ✓','ok');
+}
+
+// ── EMAIL ─────────────────────────────────────────
+function sendNotification(e){
+  if(!CFG.NOTIFY_ON||!CFG.EJS_KEY)return;
+  try{emailjs.init(CFG.EJS_KEY);emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{to_email:CFG.NOTIFY_TO,engineer:e.engineer,title:e.title,project:e.project,category:e.category,severity:e.severity,entry_number:e.entryNumber,problem:e.problem,solution:e.solution});}catch(e){}
+}
+
+// ── USERS ─────────────────────────────────────────
+async function loadUsers(){
+  showLoad('Loading users…');
+  try{
+    const sn=await db.collection(USERS).orderBy('createdAt','asc').get();
+    const users=sn.docs.map(d=>({id:d.id,...d.data()}));
+    el('u-list').innerHTML=users.length?users.map(u=>`<tr><td style="font-weight:500">${esc(u.fullName)}</td><td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td><td>${u.isAdmin?'<span class="badge b-adm">Admin</span>':'<span class="badge b-eng">Engineer</span>'}</td><td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td><td><div style="display:flex;gap:5px"><button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset pwd</button><button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button></div></td></tr>`).join('')
+    :'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">No users found</td></tr>';
+  }catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+async function addUser(){
+  const fn=g('u-fn'),un=(g('u-un')||'').toLowerCase().replace(/\s+/g,''),pw=g('u-pw'),adm=el('u-adm').checked;
+  if(!fn||!un||!pw){toast('All fields required','err');return;}if(un.length<3){toast('Username min 3 characters','err');return;}
+  showLoad('Adding…');
+  try{
+    const chk=await db.collection(USERS).where('username','==',un).get();
+    if(!chk.empty){hideLoad();toast('Username taken','err');return;}
+    await db.collection(USERS).add({fullName:fn,username:un,password:pw,isAdmin:adm,createdAt:new Date().toISOString()});
+    ['u-fn','u-un','u-pw'].forEach(id=>el(id).value='');el('u-adm').checked=false;
+    toast('User "'+un+'" added ✓','ok');await loadUsers();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function delUser(id,username){
+  if(!confirm('Delete "'+username+'"?'))return;showLoad('Deleting…');
+  try{await db.collection(USERS).doc(id).delete();toast('Deleted','ok');await loadUsers();}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+async function resetPwd(id,name){
+  const np=prompt('New password for '+name+':');if(np===null)return;if(!np.trim()||np.trim().length<4){alert('Min 4 characters');return;}
+  showLoad('Updating…');try{await db.collection(USERS).doc(id).update({password:np.trim()});toast('Updated ✓','ok');}catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+
+// ── DASHBOARD ─────────────────────────────────────
+function renderDash(){
+  const es=DB.entries;
+  el('st-tot').textContent=es.length;el('st-res').textContent=es.filter(e=>e.status==='Resolved').length;
+  el('st-cri').textContent=es.filter(e=>e.severity==='Critical'||e.severity==='High').length;
+  el('st-eng').textContent=[...new Set(es.map(e=>e.engineer))].filter(Boolean).length;
+  const rec=el('d-rec'),recent=es.slice(0,6);
+  if(!recent.length){rec.innerHTML=`<div class="empty"><i class="ti ti-inbox eico"></i><div class="etit">No entries yet</div><button class="btn pri" style="margin:0 auto" onclick="go('add')"><i class="ti ti-plus"></i>Add first entry</button></div>`;return;}
+  rec.innerHTML=recent.map(e=>`<div style="padding:8px 0;border-bottom:.5px solid var(--bd)"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-size:9.5px;font-weight:500;color:var(--t2)">${e.entryNumber||''} · ${e.date}</div><div style="font-weight:600;font-size:12.5px;margin:2px 0">${esc(e.title)}</div><div style="font-size:11px;color:var(--t2)">${esc(e.project)}${e.engineer?' · '+esc(e.engineer):''}</div></div><div style="display:flex;gap:3px;flex-wrap:wrap;flex-shrink:0;max-width:140px">${bcat(e.category)}${bsev(e.severity)}${bsta(e.status)}</div></div></div>`).join('');
+  const cats=['Hardware / Electrical','Networking / Communication','Commissioning','SCADA / HMI','Cabling','Programming','Troubleshooting','Other'];
+  const cc=cats.map(c=>({n:c,k:es.filter(e=>e.category===c).length})).filter(c=>c.k>0);const catEl=el('d-cat');
+  if(!cc.length){catEl.innerHTML=`<div style="text-align:center;color:var(--t2);padding:16px;font-size:12px">No entries yet</div>`;return;}
+  const mx=Math.max(...cc.map(c=>c.k));
+  const clr={'Hardware / Electrical':'#E64A19','Networking / Communication':'#0277BD','Commissioning':'#7B1FA2','SCADA / HMI':'#283593','Cabling':'#006064','Programming':'#1565C0','Troubleshooting':'#AD1457','Other':'#546E7A'};
+  catEl.innerHTML=cc.map(c=>`<div class="catbar"><div class="cbl">${c.n.split(' /')[0]}</div><div class="cbt"><div class="cbf" style="width:${Math.round(c.k/mx*100)}%;background:${clr[c.n]||'#1565C0'}"></div></div><div class="cbn">${c.k}</div></div>`).join('');
+}
+
+// ── WIKI BROWSER ──────────────────────────────────
+function populateProj(){
+  const pp=[...new Set(DB.entries.map(e=>e.project))].filter(Boolean).sort();
+  const s=el('ff-p'),cur=s.value;
+  s.innerHTML='<option value="">All projects</option>'+pp.map(p=>`<option${p===cur?' selected':''}>${esc(p)}</option>`).join('');
+}
+function applyF(){
+  const c=el('ff-c').value,s=el('ff-s').value,t=el('ff-t').value,p=el('ff-p').value;
+  filtered=DB.entries.filter(e=>{if(c&&e.category!==c)return false;if(s&&e.severity!==s)return false;if(t&&e.status!==t)return false;if(p&&e.project!==p)return false;return true;});
+  el('fc').textContent=`${filtered.length} of ${DB.entries.length} entries`;
+  el('wc').textContent=`${filtered.length} entries`;renderEntries(filtered,'wl');
+}
+function clearF(){['ff-c','ff-s','ff-t','ff-p'].forEach(id=>el(id).value='');applyF();}
+function setMode(m){vmode=m;el('vb-c').classList.toggle('active',m==='card');el('vb-t').classList.toggle('active',m==='table');applyF();}
+
+function renderEntries(entries,cid){
+  const c=el(cid);
+  if(!entries.length){c.innerHTML=`<div class="empty"><i class="ti ti-search eico"></i><div class="etit">No entries found</div></div>`;return;}
+  if(vmode==='table'){
+    c.innerHTML=`<div class="card" style="overflow:hidden"><table class="wtable"><thead><tr><th>Entry #</th><th>Date</th><th>Project</th><th>Client</th><th>Title</th><th>Category</th><th>Severity</th><th>Status</th><th>Engineer</th><th>Actions</th></tr></thead><tbody>${entries.map(e=>`<tr><td><span style="font-size:9.5px;font-weight:600">${e.entryNumber||''}</span></td><td style="white-space:nowrap;font-size:11.5px">${e.date}</td><td>${esc(e.project)}</td><td style="font-size:11.5px;color:var(--t2)">${esc(e.client||'')}</td><td style="max-width:180px"><div style="font-weight:600;font-size:12px">${esc(e.title)}</div>${e.equipment?`<div style="font-size:10.5px;color:var(--t2);margin-top:1px">${esc(e.equipment)}</div>`:''}</td><td>${bcat(e.category)}</td><td>${bsev(e.severity)}</td><td>${bsta(e.status)}</td><td style="font-size:11.5px">${esc(e.engineer)}</td><td><div style="display:flex;gap:3px"><button class="btn sm" onclick="editEntry('${e.id}')"><i class="ti ti-edit"></i></button><button class="btn sm danger" onclick="delEntry('${e.id}')"><i class="ti ti-trash"></i></button></div></td></tr>`).join('')}</tbody></table></div>`;
+    return;
+  }
+  c.innerHTML=entries.map(renderCard).join('');
+}
+
+function renderCard(e){
+  const tg=(e.tags||[]).slice(0,4).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+  const dg=[e.systemType?`<div class="di"><div class="dl">System type</div><div class="dv">${esc(e.systemType)}</div></div>`:'',e.software?`<div class="di"><div class="dl">Software / version</div><div class="dv">${esc(e.software)}</div></div>`:'',e.protocol?`<div class="di"><div class="dl">Protocol</div><div class="dv">${esc(e.protocol)}</div></div>`:'',e.errorCode?`<div class="di"><div class="dl">Error code</div><div class="dv" style="font-family:monospace;font-size:11px;color:#c00">${esc(e.errorCode)}</div></div>`:'',e.phase?`<div class="di"><div class="dl">Phase</div><div class="dv">${esc(e.phase)}</div></div>`:'',e.timeToResolve?`<div class="di"><div class="dl">Time to resolve</div><div class="dv">${esc(e.timeToResolve)}</div></div>`:''].filter(Boolean).join('');
+  return`<div class="ecard" id="ec-${e.id}"><div class="ech" onclick="togCard('${e.id}')"><div style="flex:1;min-width:0"><div class="enum">${e.entryNumber||''} · ${e.date}${e.project?' · '+esc(e.project):''}${e.client?' · '+esc(e.client):''}</div><div class="etitle">${esc(e.title)}</div><div class="emeta"><span><i class="ti ti-user" style="font-size:11px"></i> ${esc(e.engineer)}</span>${e.equipment?`<span><i class="ti ti-cpu" style="font-size:11px"></i> ${esc(e.equipment)}</span>`:''} ${e.location?`<span><i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(e.location)}</span>`:''}</div><div class="ebadges">${bcat(e.category)}${bsev(e.severity)}${bsta(e.status)}${tg}</div></div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0;margin-left:8px"><div style="display:flex;gap:4px"><button class="btn sm" onclick="event.stopPropagation();editEntry('${e.id}')"><i class="ti ti-edit"></i>Edit</button><button class="btn sm danger" onclick="event.stopPropagation();delEntry('${e.id}')"><i class="ti ti-trash"></i></button></div><i class="ti ti-chevron-down" id="arr-${e.id}" style="font-size:14px;color:var(--t2)"></i></div></div><div class="ecb" id="eb-${e.id}">${dg?`<div class="dg">${dg}</div>`:''} ${e.problem?`<div class="dl"><i class="ti ti-alert-circle" style="font-size:11px"></i> Problem description</div><div class="dc">${esc(e.problem)}</div>`:''} ${e.symptoms?`<div class="dl"><i class="ti ti-bell" style="font-size:11px"></i> Symptoms</div><div class="dc">${esc(e.symptoms)}</div>`:''} ${e.rootCause?`<div class="dl"><i class="ti ti-microscope" style="font-size:11px"></i> Root cause</div><div class="dc rc">${esc(e.rootCause)}</div>`:''} ${e.solution?`<div class="dl"><i class="ti ti-circle-check" style="font-size:11px"></i> Solution applied</div><div class="dc sol">${esc(e.solution)}</div>`:''} ${e.preventive?`<div class="dl"><i class="ti ti-shield-check" style="font-size:11px"></i> Preventive measures</div><div class="dc pre">${esc(e.preventive)}</div>`:''} ${e.references?`<div class="dl"><i class="ti ti-book" style="font-size:11px"></i> References</div><div class="dc ref">${esc(e.references)}</div>`:''} ${(e.tags||[]).length?`<div class="dl"><i class="ti ti-tags" style="font-size:11px"></i> Tags</div><div style="display:flex;flex-wrap:wrap;gap:4px">${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}<div style="font-size:10px;color:var(--t2);margin-top:8px">Created: ${(e.createdAt||'').split('T')[0]} · Updated: ${(e.updatedAt||'').split('T')[0]}</div></div></div>`;
+}
+
+function togCard(id){
+  const c=el('ec-'+id),b=el('eb-'+id),a=el('arr-'+id);if(!c)return;
+  const x=c.classList.toggle('exp');
+  if(b)b.style.display=x?'block':'none';
+  if(a){a.classList.toggle('ti-chevron-down',!x);a.classList.toggle('ti-chevron-up',x);}
+}
+
+// ── SEARCH ────────────────────────────────────────
+function doSearch(){
+  const q=(el('s-in').value||'').toLowerCase().trim(),res=el('s-res');
+  if(!q){res.innerHTML=`<div class="empty"><i class="ti ti-search eico"></i><div class="etit">Start typing to search</div><div class="edesc">Searches all fields.</div></div>`;return;}
+  const hits=DB.entries.filter(e=>{const h=[e.title,e.problem,e.solution,e.rootCause,e.symptoms,e.equipment,e.systemType,e.software,e.protocol,e.errorCode,e.project,e.engineer,e.client,...(e.tags||[])].join(' ').toLowerCase();return h.includes(q);});
+  if(!hits.length){res.innerHTML=`<div class="empty"><i class="ti ti-mood-sad eico"></i><div class="etit">No results for "${esc(q)}"</div></div>`;return;}
+  res.innerHTML=`<div style="margin-bottom:10px;font-size:11.5px;color:var(--t2)">Found <b>${hits.length}</b> result(s) for "<b>${esc(q)}</b>"</div>${hits.map(renderCard).join('')}`;
+}
+
+// ── NAV ───────────────────────────────────────────
+function go(n){
+  document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  el('v-'+n).style.display='block';el('ni-'+n)?.classList.add('active');
+  if(n==='wiki'){applyF();populateProj();}
+  if(n==='dash')renderDash();
+  if(n==='add'&&!g('f-eid'))resetForm();
+  if(n==='users')loadUsers();
+  if(n==='library')renderLibrary();
+  if(n==='projects')renderProjectsPage();
+}
+
+// ── HELPERS ───────────────────────────────────────
+function showLoad(m){el('lo').style.display='flex';el('lt').textContent=m;}
+function hideLoad(){el('lo').style.display='none';}
+function sync(s){
+  const dot=el('sdot'),txt=el('stxt');
+  dot.style.background={ok:'#4CAF50',sync:'#FF9800',err:'#F44336'}[s]||'#9E9E9E';
+  txt.textContent={ok:'Live · central database',sync:'Connecting…',err:'Connection error'}[s]||'Offline';
+  dot.classList.toggle('pul',s==='sync');
+}
+function toast(m,type=''){const t=document.createElement('div');t.className='toast '+(type==='ok'?'ok':type==='err'?'err':'');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),4000);}
+function el(id){return document.getElementById(id);}
+function g(id){return(el(id)?.value||'').trim();}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function bcat(v){if(!v)return'';const m={'Hardware / Electrical':'hw','Networking / Communication':'net','Commissioning':'com','SCADA / HMI':'hmi','Cabling':'cab','Programming':'pro','Troubleshooting':'tro','Other':'oth'};return`<span class="badge b-${m[v]||'oth'}">${v.split(' / ')[0]}</span>`;}
+function bsev(v){if(!v)return'';const m={Critical:'cri',High:'hig',Medium:'med',Low:'low'};return`<span class="badge b-${m[v]||'oth'}">${v}</span>`;}
+function bsta(v){if(!v)return'';const m={Resolved:'res',Workaround:'wor',Open:'ope'};return`<span class="badge b-${m[v]||'oth'}">${v}</span>`;}
+</script>
+</body>
+</html>
