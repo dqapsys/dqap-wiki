@@ -942,15 +942,74 @@ async function uploadLibDoc(){
   if(!title||!cat){toast('Title and category are required','err');return;}
   const file=fileInput.files[0];if(!file){toast('Select a PDF file','err');return;}
   if(el('lib-file-err').textContent)return;
-  showLoad('Uploading…');el('lib-prog').style.display='block';el('lib-prog-bar').style.width='0%';
+  el('lib-prog').style.display='block';el('lib-prog-bar').style.width='0%';
+  el('lib-prog-txt').textContent='Uploading '+file.name+'…';
+  showLoad('Uploading to Library…');
   try{
-    const path=`dqap-library/${Date.now()}_${file.name}`;const ref=storage.ref(path);const task=ref.put(file);
-    task.on('state_changed',snap=>{el('lib-prog-bar').style.width=Math.round(snap.bytesTransferred/snap.totalBytes*100)+'%';});
-    await task;const url=await ref.getDownloadURL();
-    await db.collection(LIB).add({title,category:cat,description:desc,tags:tags.split(',').map(t=>t.trim()).filter(Boolean),fileName:file.name,url,path,size:file.size,uploadedBy:CU.fullName,uploadedAt:new Date().toISOString()});
-    ['lib-title','lib-desc','lib-tags'].forEach(id=>el(id).value='');el('lib-cat').value='';el('lib-file').value='';el('lib-file-err').textContent='';el('lib-prog').style.display='none';
-    togLibUpload();toast('Uploaded ✓','ok');
-  }catch(e){toast('Upload failed: '+e.message,'err');}finally{hideLoad();}
+    const path=`dqap-library/${Date.now()}_${file.name}`;
+    const ref=storage.ref(path);
+    // upload with timeout — if no progress in 15s, abort
+    await new Promise((resolve,reject)=>{
+      const task=ref.put(file);
+      let lastProgress=Date.now();
+      const watchdog=setInterval(()=>{
+        if(Date.now()-lastProgress>15000){
+          clearInterval(watchdog);task.cancel();
+          reject(new Error('Upload timed out. Check Firebase Storage rules — see instructions below.'));
+        }
+      },2000);
+      task.on('state_changed',
+        snap=>{
+          lastProgress=Date.now();
+          const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+          el('lib-prog-bar').style.width=pct+'%';
+          el('lib-prog-txt').textContent='Uploading… '+pct+'%';
+        },
+        err=>{clearInterval(watchdog);reject(err);},
+        async()=>{
+          clearInterval(watchdog);
+          try{
+            const url=await ref.getDownloadURL();
+            await db.collection(LIB).add({
+              title,category:cat,description:desc,
+              tags:tags.split(',').map(t=>t.trim()).filter(Boolean),
+              fileName:file.name,url,path,
+              size:file.size,uploadedBy:CU.fullName,
+              uploadedAt:new Date().toISOString()
+            });
+            resolve();
+          }catch(e){reject(e);}
+        }
+      );
+    });
+    ['lib-title','lib-desc','lib-tags'].forEach(id=>el(id).value='');
+    el('lib-cat').value='';el('lib-file').value='';
+    el('lib-file-err').textContent='';el('lib-prog').style.display='none';
+    togLibUpload();toast('Document uploaded ✓','ok');
+  }catch(e){
+    el('lib-prog').style.display='none';
+    // Show specific guidance for rules error
+    if(e.message.includes('timed out')||e.code==='storage/unauthorized'||e.code==='storage/unknown'){
+      toast('Upload blocked — Firebase Storage rules need updating. See steps below.','err');
+      el('lib-file-err').innerHTML=`<span style="color:#c00;font-size:11px">
+        ⚠️ Fix Firebase Storage rules:<br>
+        1. Go to console.firebase.google.com → dqap-wiki → Storage → Rules<br>
+        2. Replace all content with:<br>
+        <code style="background:#f5f5f5;padding:2px 5px;border-radius:4px;display:inline-block;margin-top:3px">
+        rules_version = '2';<br>
+        service firebase.storage {<br>
+        &nbsp;match /b/{bucket}/o {<br>
+        &nbsp;&nbsp;match /{allPaths=**} {<br>
+        &nbsp;&nbsp;&nbsp;allow read, write: if true;<br>
+        &nbsp;&nbsp;}<br>
+        &nbsp;}<br>
+        }</code><br>
+        3. Click Publish — then try uploading again.
+      </span>`;
+    }else{
+      toast('Upload failed: '+e.message,'err');
+    }
+  }finally{hideLoad();}
 }
 async function deleteLibDoc(id,path,title){
   if(!CU?.isAdmin||!confirm('Delete "'+title+'"?'))return;showLoad('Deleting…');
