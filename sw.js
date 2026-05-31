@@ -1,14 +1,14 @@
 // DQAP Wiki — Service Worker
 // Update CACHE_VERSION whenever you deploy a new version of the app
-const CACHE_VERSION = 'dqap-wiki-v1';
+const CACHE_VERSION = 'dqap-wiki-v2';
 
 const STATIC_ASSETS = [
-  '/wiki/',
-  '/wiki/index.html',
-  '/wiki/dqap-logo.png',
-  '/wiki/icon-192.png',
-  '/wiki/icon-512.png',
-  '/wiki/manifest.json',
+  './',
+  './index.html',
+  './dqap-logo.png',
+  './icon-192.png',
+  './icon-512.png',
+  './manifest.json',
   'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap',
   'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css',
   'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',
@@ -40,18 +40,19 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── FETCH: cache-first for static, network-first for Firebase ──
+// ── FETCH strategy ────────────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always go network for Firebase (Firestore, Storage, Auth)
+  // Always go network for Firebase — never cache these
   if (url.hostname.includes('firebase') ||
       url.hostname.includes('firestore') ||
-      url.hostname.includes('googleapis') && url.pathname.includes('firestore')) {
-    return; // let browser handle it normally
+      url.hostname.includes('firebasestorage') ||
+      (url.hostname.includes('googleapis') && url.pathname.includes('firestore'))) {
+    return;
   }
 
-  // For Google Fonts — cache first
+  // Cache-first for Google Fonts
   if (url.hostname === 'fonts.gstatic.com' || url.hostname === 'fonts.googleapis.com') {
     event.respondWith(
       caches.match(event.request).then(cached =>
@@ -65,7 +66,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first for everything else (CDN scripts, icons, html)
+  // Cache-first for CDN scripts and local files
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
@@ -77,9 +78,9 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
         return response;
       }).catch(() => {
-        // Offline fallback — return cached index.html for navigation requests
+        // Offline fallback for page navigation
         if (event.request.mode === 'navigate') {
-          return caches.match('/wiki/index.html');
+          return caches.match('./index.html');
         }
       });
     })
