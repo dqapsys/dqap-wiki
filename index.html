@@ -468,6 +468,24 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         </div>
       </div>
     </div>
+    <!-- Storage indicator -->
+    <div id="lib-storage-bar" style="margin-bottom:14px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);padding:12px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;flex-wrap:wrap;gap:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:6px">
+          <i class="ti ti-database" style="font-size:14px;color:var(--p)"></i>
+          Library storage usage
+        </div>
+        <div style="font-size:11px;color:var(--t2)" id="lib-storage-txt">Calculating…</div>
+      </div>
+      <div style="background:#f0f0f0;border-radius:4px;height:8px;overflow:hidden;position:relative">
+        <div id="lib-storage-fill" style="height:100%;border-radius:4px;transition:width .5s,background .3s;width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px">
+        <span style="font-size:10px;color:var(--t2)" id="lib-storage-used">0 MB used</span>
+        <span style="font-size:10px;color:var(--t2)">1,024 MB free limit</span>
+      </div>
+    </div>
+
     <div class="fbar">
       <div class="sbox" style="flex:1;max-width:320px">
         <i class="ti ti-search sico"></i>
@@ -655,7 +673,7 @@ function startListen(){
 function startLibListen(){
   if(libUnsub)libUnsub();
   libUnsub=db.collection(LIB).orderBy('uploadedAt','desc').onSnapshot(
-    sn=>{libData=sn.docs.map(d=>({id:d.id,...d.data()}));renderLibrary();},err=>{}
+    sn=>{libData=sn.docs.map(d=>({id:d.id,...d.data()}));renderLibrary();updateStorageBar();},err=>{}
   );
 }
 function startProjListen(){
@@ -940,6 +958,26 @@ async function deleteLibDoc(id,path,title){
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 function downloadPDFDirect(url,name){if(!CU?.isAdmin)return;const a=document.createElement('a');a.href=url;a.download=name;a.target='_blank';a.click();}
+
+function updateStorageBar(){
+  const LIMIT_MB=1024;
+  const totalBytes=libData.reduce((s,d)=>s+(d.size||0),0);
+  const usedMB=totalBytes/1024/1024;
+  const pct=Math.min(100,usedMB/LIMIT_MB*100);
+  const fill=el('lib-storage-fill');
+  const txt=el('lib-storage-txt');
+  const used=el('lib-storage-used');
+  if(!fill)return;
+  fill.style.width=pct.toFixed(1)+'%';
+  // colour: green < 60%, amber 60-85%, red > 85%
+  fill.style.background=pct>85?'#c00':pct>60?'#E65100':'#1B5E20';
+  const usedDisp=usedMB<1?usedMB*1024+' KB':usedMB.toFixed(2)+' MB';
+  const remMB=(LIMIT_MB-usedMB).toFixed(0);
+  used.textContent=usedMB.toFixed(2)+' MB used · '+libData.length+' file'+(libData.length!==1?'s':'');
+  txt.textContent=pct.toFixed(1)+'% of 1 GB used · '+remMB+' MB remaining';
+  txt.style.color=pct>85?'#c00':pct>60?'#E65100':'var(--t2)';
+}
+
 function renderLibrary(){
   const q=(el('lib-search')?.value||'').toLowerCase().trim(),cat=el('lib-filter-cat')?.value||'';
   let docs=libData.filter(d=>{if(cat&&d.category!==cat)return false;if(q){const h=[d.title,d.description,d.category,d.fileName,...(d.tags||[])].join(' ').toLowerCase();return h.includes(q);}return true;});
@@ -1082,7 +1120,7 @@ function go(n){
   if(n==='dash')renderDash();
   if(n==='add'&&!g('f-eid'))resetForm();
   if(n==='users')loadUsers();
-  if(n==='library')renderLibrary();
+  if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
 }
 
