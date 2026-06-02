@@ -287,7 +287,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('search')"          id="ni-search"><i class="ti ti-search"></i>Search</div>
     <div class="ni" onclick="go('library')"         id="ni-library"><i class="ti ti-library"></i>Library</div>
     <div class="sb-sec">Operations</div>
-    <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-chart-gantt"></i>PMO</div>
+    <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="sb-sec" id="admin-sec" style="display:none">Admin</div>
@@ -349,7 +349,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <div class="fsec-t"><i class="ti ti-cpu"></i>System & equipment</div>
     <div class="g3" style="margin-bottom:14px">
-      <div class="fg"><label class="fl r">Category / domain</label><select class="fs" id="f-cat"><option value="">Select category</option><option>Hardware / Electrical</option><option>Networking / Communication</option><option>Commissioning</option><option>SCADA / HMI</option><option>Cabling</option><option>Programming</option><option>Troubleshooting</option><option>Other</option></select></div>
+      <div class="fg"><label class="fl r">Category / domain</label><select class="fs" id="f-cat"><option value="">Select category</option><option>Hardware / Electrical</option><option>Networking / Communication</option><option>Commissioning</option><option>SCADA / HMI</option><option>PAS</option><option>Cabling</option><option>Programming</option><option>Troubleshooting</option><option>Other</option></select></div>
       <div class="fg"><label class="fl r">Severity</label><select class="fs" id="f-sev"><option value="">Select severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
       <div class="fg"><label class="fl r">Status</label><select class="fs" id="f-sta"><option value="Resolved">Resolved</option><option value="Workaround">Workaround applied</option><option value="Open">Open / pending</option></select></div>
       <div class="fg"><label class="fl">System type</label><input class="fi" id="f-sys" placeholder="e.g. PLC, DCS, VFD"></div>
@@ -393,7 +393,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="content">
     <div class="fbar">
-      <select class="fsel" id="ff-c" onchange="applyF()"><option value="">All categories</option><option>Hardware / Electrical</option><option>Networking / Communication</option><option>Commissioning</option><option>SCADA / HMI</option><option>Cabling</option><option>Programming</option><option>Troubleshooting</option><option>Other</option></select>
+      <select class="fsel" id="ff-c" onchange="applyF()"><option value="">All categories</option><option>Hardware / Electrical</option><option>Networking / Communication</option><option>Commissioning</option><option>SCADA / HMI</option><option>PAS</option><option>Cabling</option><option>Programming</option><option>Troubleshooting</option><option>Other</option></select>
       <select class="fsel" id="ff-s" onchange="applyF()"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
       <select class="fsel" id="ff-t" onchange="applyF()"><option value="">All statuses</option><option value="Resolved">Resolved</option><option value="Workaround">Workaround</option><option value="Open">Open</option></select>
       <select class="fsel" id="ff-p" onchange="applyF()"><option value="">All projects</option></select>
@@ -1396,7 +1396,7 @@ function el(id){return document.getElementById(id);}
 function g(id){return(el(id)?.value||'').trim();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtAmt(n){if(!n)return'0';if(n>=10000000)return(n/10000000).toFixed(2)+' Cr';if(n>=100000)return(n/100000).toFixed(2)+' L';return n.toLocaleString('en-IN');}
-function bcat(v){if(!v)return'';const m={'Hardware / Electrical':'hw','Networking / Communication':'net','Commissioning':'com','SCADA / HMI':'hmi','Cabling':'cab','Programming':'pro','Troubleshooting':'tro','Other':'oth'};return`<span class="badge b-${m[v]||'oth'}">${v.split(' / ')[0]}</span>`;}
+function bcat(v){if(!v)return'';const m={'Hardware / Electrical':'hw','Networking / Communication':'net','Commissioning':'com','SCADA / HMI':'hmi','PAS':'pro','Cabling':'cab','Programming':'pro','Troubleshooting':'tro','Other':'oth'};return`<span class="badge b-${m[v]||'oth'}">${v.split(' / ')[0]}</span>`;}
 function bsev(v){if(!v)return'';const m={Critical:'cri',High:'hig',Medium:'med',Low:'low'};return`<span class="badge b-${m[v]||'oth'}">${v}</span>`;}
 function bsta(v){if(!v)return'';const m={Resolved:'res',Workaround:'wor',Open:'ope'};return`<span class="badge b-${m[v]||'oth'}">${v}</span>`;}
 function bpmoStatus(v){const m={'Not Started':'nst','In Progress':'act','Completed':'cmp','On Hold':'hld','Delayed':'del'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
