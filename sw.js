@@ -1,5 +1,5 @@
 // DQAP Wiki — Service Worker v3
-const CACHE_VERSION = 'dqap-wiki-v3';
+const CACHE_VERSION = 'dqap-wiki-v4';
 
 const STATIC_ASSETS = [
   './',
