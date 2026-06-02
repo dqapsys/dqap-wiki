@@ -847,21 +847,45 @@ function onPMOProjChange(){
   if(!s) return;
   
   const opt = s.options[s.selectedIndex];
-  if(!opt || !opt.value){
-    el('pmo-projname').value = '';
-    el('pmo-client').value = '';
-    el('pmo-site').value = '';
-    return;
-  }
+  const projId = opt ? opt.value : '';
+  
+  // Clear everything
+  el('pmo-projname').value = '';
+  el('pmo-client').innerHTML = '<option value="">— select project first —</option>';
+  el('pmo-site').innerHTML = '<option value="">— select project first —</option>';
 
-  // FIXED: Set Project Number
-  el('pmo-projname').value = opt.dataset.num || '';
-  
-  // Set Client
-  el('pmo-client').value = opt.dataset.client || '';
-  
-  // Reset Site
-  el('pmo-site').value = '';
+  if(!projId) return;
+
+  // Find project data
+  const proj = projectsData.find(p => p.id === projId);
+  if(!proj) return;
+
+  // Set Project Number
+  el('pmo-projname').value = proj.number || '';
+
+  // Populate Client dropdown
+  const clients = (proj.clients || []).sort();
+  const clientSel = el('pmo-client');
+  clientSel.innerHTML = '<option value="">Select client</option>';
+  clients.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = c;
+    clientSel.appendChild(o);
+  });
+  if(clients.length === 1) clientSel.selectedIndex = 1;
+
+  // Populate Site dropdown
+  const sites = (proj.sites || []).sort();
+  const siteSel = el('pmo-site');
+  siteSel.innerHTML = '<option value="">Select site</option>';
+  sites.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s;
+    o.textContent = s;
+    siteSel.appendChild(o);
+  });
+  if(sites.length === 1) siteSel.selectedIndex = 1;
 }
 
 // ── PMO STAGES FORM ────────────────────────────────
