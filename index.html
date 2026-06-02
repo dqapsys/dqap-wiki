@@ -854,13 +854,13 @@ function onPMOProjChange(){
     return;
   }
 
-  // Set Project Number
+  // FIXED: Set Project Number
   el('pmo-projname').value = opt.dataset.num || '';
   
   // Set Client
   el('pmo-client').value = opt.dataset.client || '';
   
-  // Reset Site (you can extend later to populate sites if needed)
+  // Reset Site
   el('pmo-site').value = '';
 }
 
