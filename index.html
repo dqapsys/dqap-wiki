@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_10
+// DQAP_WIKI_VERSION_12
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -31,7 +31,8 @@ firebase.initializeApp({
 });
 const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects";
-const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget";
+const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
+const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Other Expenses"];
 const CFG={NOTIFY_ON:false,EJS_KEY:"",EJS_SERVICE:"",EJS_TEMPLATE:"",NOTIFY_TO:""};
 const THEMES={
   blue:{sb1:"#0E52A8",sb2:"#1A6FD4",p:"#1A6FD4",pd:"#0E52A8",pl:"#EAF3FB",bg:"#F4F6FA"},
@@ -107,8 +108,14 @@ input[type="file"].fi{padding:5px 8px;cursor:pointer}
 .b-pnd{background:#FFF3E0;color:#E65100}.b-prt{background:#E3F2FD;color:#0D47A1}.b-rcv{background:#E8F5E9;color:#1B5E20}
 .b-rai{background:#E3F2FD;color:#0D47A1}.b-apr{background:#FFFDE7;color:#F57F17}.b-rep{background:#E8F5E9;color:#1B5E20}.b-cls{background:#ECEFF1;color:#37474F}
 .b-ovr{background:#FFEBEE;color:#B71C1C}.b-nrl{background:#FFF3E0;color:#E65100}.b-ont{background:#E8F5E9;color:#1B5E20}
-.budget-bar-wrap{height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;margin:4px 0}
-.budget-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.bg-bar-wrap{height:7px;background:#ECEFF1;border-radius:4px;overflow:hidden;margin:4px 0 2px}
+.bg-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.bg-cfg{background:var(--pl);border-radius:var(--rad);padding:12px 14px;margin-bottom:14px;border:.5px solid var(--bd)}
+.bg-head-row{background:var(--pl);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--p)}
+.bg-sub-total{background:#f5f8ff;font-weight:600}
+.pmo-bg-bar{height:5px;background:#ECEFF1;border-radius:3px;overflow:hidden;flex:1;min-width:40px}
+.ld-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.ld-chip i{font-size:11px}
 .ecard{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);transition:border .15s,box-shadow .15s;margin-bottom:8px}
 .ecard:hover{border-color:#90CAF9;box-shadow:0 2px 10px rgba(0,0,0,.07)}
 .ech{padding:11px 13px;cursor:pointer;display:flex;align-items:flex-start;gap:10px}
@@ -479,6 +486,26 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pmo-st-done">—</div><div class="sl">Completed</div></div></div>
       <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="pmo-st-delay">—</div><div class="sl">Delayed / On Hold</div></div></div>
     </div>
+    <!-- Budget health summary -->
+    <div id="pmo-budget-health" style="display:none;margin-bottom:14px">
+      <div class="card">
+        <div class="ch"><div class="ct"><i class="ti ti-wallet" style="font-size:14px"></i>Budget Health</div><button class="btn sm" onclick="go('budget')">Open Budget Tracker <i class="ti ti-arrow-right"></i></button></div>
+        <div class="cb" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pmo-budget-health-cards">
+          <div style="text-align:center;padding:8px;border-radius:8px;background:#E8F5E9">
+            <div style="font-size:22px;font-weight:700;color:#1B5E20" id="pbh-on-track">—</div>
+            <div style="font-size:11px;color:#2E7D32;margin-top:2px"><i class="ti ti-circle-check" style="font-size:11px"></i> Within Budget</div>
+          </div>
+          <div style="text-align:center;padding:8px;border-radius:8px;background:#FFF3E0">
+            <div style="font-size:22px;font-weight:700;color:#E65100" id="pbh-near-limit">—</div>
+            <div style="font-size:11px;color:#E65100;margin-top:2px"><i class="ti ti-alert-circle" style="font-size:11px"></i> Near Limit</div>
+          </div>
+          <div style="text-align:center;padding:8px;border-radius:8px;background:#FFEBEE">
+            <div style="font-size:22px;font-weight:700;color:#B71C1C" id="pbh-over-budget">—</div>
+            <div style="font-size:11px;color:#B71C1C;margin-top:2px"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Over Budget</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="fbar">
       <select class="fsel" id="pmo-ff-status" onchange="renderPMO()"><option value="">All statuses</option><option>Not Started</option><option>In Progress</option><option>Completed</option><option>On Hold</option><option>Delayed</option></select>
       <input class="fi" id="pmo-search" oninput="renderPMO()" placeholder="Search projects…" style="max-width:240px;padding:5px 10px">
@@ -615,55 +642,113 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- ══ BUDGET TRACKER ══ -->
 <div id="v-budget" class="view" style="display:none">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking — budgeted vs actual spend</div></div>
+    <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking — PO value vs budget allocated vs actual spend</div></div>
     <div class="tr">
       <button class="btn grn" onclick="exportBudgetExcel()"><i class="ti ti-file-spreadsheet"></i>Export</button>
-      <button class="btn pri" onclick="togBudgetForm(true)"><i class="ti ti-plus"></i>Add entry</button>
+      <button class="btn pri" onclick="togBudgetForm(true)"><i class="ti ti-plus"></i>Add line item</button>
     </div>
   </div>
   <div class="content">
-    <div id="budget-form-panel" style="display:none;margin-bottom:16px">
-      <div class="card">
-        <div class="ch"><div class="ct" id="budget-form-t"><i class="ti ti-wallet" style="font-size:14px"></i>New budget entry</div><button class="btn sm" onclick="togBudgetForm(false)"><i class="ti ti-x"></i>Cancel</button></div>
-        <div class="cb">
-          <div class="g3" style="margin-bottom:12px">
-            <div class="fg"><label class="fl r">Project</label><select class="fs" id="budget-proj"><option value="">Select project</option></select></div>
-            <div class="fg"><label class="fl r">Category</label><select class="fs" id="budget-cat"><option value="">Select category</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Subcontractor</option><option>Testing &amp; Commissioning</option><option>Overheads</option><option>Other</option></select></div>
-            <div class="fg"><label class="fl r">Description</label><input class="fi" id="budget-desc" placeholder="Brief description of expense"></div>
-            <div class="fg"><label class="fl r">Budgeted amount (&#8377;)</label><input class="fi" id="budget-budgeted" type="number" min="0" placeholder="e.g. 500000"></div>
-            <div class="fg"><label class="fl r">Actual spent (&#8377;)</label><input class="fi" id="budget-actual" type="number" min="0" placeholder="e.g. 480000"></div>
-            <div class="fg"><label class="fl r">Date</label><input type="date" class="fi" id="budget-date"></div>
-            <div class="fg"><label class="fl">Owner</label><select class="fs" id="budget-owner"><option value="">Select owner</option></select></div>
-            <div class="fg" style="grid-column:span 2"><label class="fl">Remarks</label><input class="fi" id="budget-remarks" placeholder="Optional notes or justification"></div>
+
+    <!-- Project selector + config panel -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch">
+        <div class="ct"><i class="ti ti-building" style="font-size:14px"></i>Project</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="fsel" id="budget-sel-proj" onchange="onBudgetProjChange()" style="min-width:220px"><option value="">— Select a project —</option></select>
+          <button class="btn pri sm" id="budget-cfg-btn" onclick="togBudgetCfg()" style="display:none"><i class="ti ti-settings"></i>Budget Config</button>
+        </div>
+      </div>
+      <!-- Config edit panel -->
+      <div id="budget-cfg-panel" style="display:none">
+        <div class="cb" style="border-top:.5px solid var(--bd)">
+          <div class="fsec-t"><i class="ti ti-adjustments"></i>Project Budget Configuration</div>
+          <div class="g4" style="margin-bottom:10px">
+            <div class="fg"><label class="fl r">PO Amount (&#8377;)</label><input class="fi" id="bcfg-po" type="number" min="0" placeholder="Contract value"></div>
+            <div class="fg"><label class="fl r">Budget Allocated (&#8377;)</label><input class="fi" id="bcfg-alloc" type="number" min="0" placeholder="Internal budget"></div>
+            <div class="fg"><label class="fl">Project Manager</label><select class="fs" id="bcfg-pm"><option value="">Select PM</option></select></div>
           </div>
-          <input type="hidden" id="budget-eid">
-          <button class="btn pri" onclick="saveBudget()" id="budget-save-btn"><i class="ti ti-device-floppy"></i>Save entry</button>
+          <div style="display:flex;gap:7px">
+            <button class="btn pri" onclick="saveBudgetConfig()"><i class="ti ti-device-floppy"></i>Save config</button>
+            <button class="btn sm" onclick="togBudgetCfg()"><i class="ti ti-x"></i>Cancel</button>
+          </div>
+        </div>
+      </div>
+      <!-- Dashboard summary (shown when project selected) -->
+      <div id="budget-proj-dash" style="display:none">
+        <div class="cb" style="border-top:.5px solid var(--bd)">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">PO Amount</div><div style="font-size:16px;font-weight:700;color:var(--p)" id="bd-po">&#8377; —</div></div>
+            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Allocated</div><div style="font-size:16px;font-weight:700;color:var(--p)" id="bd-alloc">&#8377; —</div></div>
+            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Consumed</div><div style="font-size:16px;font-weight:700" id="bd-consumed">&#8377; —</div></div>
+            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Balance</div><div style="font-size:16px;font-weight:700" id="bd-balance">&#8377; —</div></div>
+          </div>
+          <div id="bd-ld-wrap" style="display:none;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:10.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px">LD Deadline</span>
+            <span id="bd-ld-chip" class="ld-chip"></span>
+            <span id="bd-ld-date-txt" style="font-size:11px;color:var(--t2)"></span>
+          </div>
+          <div id="bd-bar-wrap">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span id="bd-bar-label" style="color:var(--t2)">Budget utilisation</span><span id="bd-bar-pct" style="font-weight:600"></span></div>
+            <div class="bg-bar-wrap" style="height:10px"><div class="bg-bar-fill" id="bd-bar-fill"></div></div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:10px" id="bd-heads-summary"></div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-report-money" style="color:#1565C0;font-size:18px"></i></div><div><div class="sv" id="bg-st-budgeted">&#8377; &#8212;</div><div class="sl">Total budgeted</div></div></div>
-      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-credit-card" style="color:#880E4F;font-size:18px"></i></div><div><div class="sv" id="bg-st-actual">&#8377; &#8212;</div><div class="sl">Total spent</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-pig-money" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="bg-st-remaining">&#8377; &#8212;</div><div class="sl">Remaining</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="bg-st-overcount">&#8212;</div><div class="sl">Over budget entries</div></div></div>
-    </div>
-    <div id="budget-rollup-wrap" style="margin-bottom:14px;display:none">
+
+    <!-- Add / Edit form -->
+    <div id="budget-form-panel" style="display:none;margin-bottom:14px">
       <div class="card">
-        <div class="ch"><div class="ct"><i class="ti ti-chart-bar" style="font-size:14px"></i>Budget by project</div></div>
-        <div class="cb" id="budget-rollup"></div>
+        <div class="ch"><div class="ct" id="budget-form-t"><i class="ti ti-plus" style="font-size:14px"></i>New line item</div><button class="btn sm" onclick="togBudgetForm(false)"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div class="fsec-t"><i class="ti ti-info-circle"></i>Item details</div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl r">Project</label><select class="fs" id="budget-proj"><option value="">Select project</option></select></div>
+            <div class="fg"><label class="fl r">Budget Head</label><select class="fs" id="budget-head"><option value="">Select head</option><option>OEM Material Purchase</option><option>Cable Purchase</option><option>3rd Party</option><option>I&amp;C</option><option>Other Expenses</option></select></div>
+            <div class="fg"><label class="fl r">Description / Vendor</label><input class="fi" id="budget-desc" placeholder="e.g. Devikaram, JCI Cables"></div>
+            <div class="fg"><label class="fl r">Date</label><input type="date" class="fi" id="budget-date"></div>
+            <div class="fg"><label class="fl">Owner</label><select class="fs" id="budget-owner"><option value="">Select owner</option></select></div>
+          </div>
+          <div class="fsec-t"><i class="ti ti-tools"></i>Services</div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl">Planned Days</label><input class="fi" id="budget-plan-days" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+            <div class="fg"><label class="fl">Actual Days</label><input class="fi" id="budget-act-days" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+            <div class="fg"><label class="fl">Service Amount (&#8377;)</label><input class="fi" id="budget-svc-amt" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+          </div>
+          <div class="fsec-t"><i class="ti ti-package"></i>Materials</div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl">Quantity</label><input class="fi" id="budget-mat-qty" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+            <div class="fg"><label class="fl">Material Amount (&#8377;)</label><input class="fi" id="budget-mat-amt" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+          </div>
+          <div class="fsec-t"><i class="ti ti-receipt"></i>Fixed Costs</div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl">Equipment (&#8377;)</label><input class="fi" id="budget-equip" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+            <div class="fg"><label class="fl">Freight / Insurance (&#8377;)</label><input class="fi" id="budget-freight" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+            <div class="fg"><label class="fl">Misc (&#8377;)</label><input class="fi" id="budget-misc" type="number" min="0" placeholder="0" oninput="calcBudgetTotal()"></div>
+          </div>
+          <div style="background:var(--pl);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:12px;font-weight:600;color:var(--p)">Line item total</span>
+            <span style="font-size:18px;font-weight:700;color:var(--p)" id="budget-total-preview">&#8377; 0</span>
+          </div>
+          <input type="hidden" id="budget-eid">
+          <button class="btn pri" onclick="saveBudget()" id="budget-save-btn"><i class="ti ti-device-floppy"></i>Save line item</button>
+        </div>
       </div>
     </div>
+
+    <!-- Filters -->
     <div class="fbar">
-      <select class="fsel" id="budget-ff-proj" onchange="renderBudget()"><option value="">All projects</option></select>
-      <select class="fsel" id="budget-ff-cat" onchange="renderBudget()"><option value="">All categories</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Subcontractor</option><option>Testing &amp; Commissioning</option><option>Overheads</option><option>Other</option></select>
-      <select class="fsel" id="budget-ff-status" onchange="renderBudget()"><option value="">All statuses</option><option value="Over Budget">Over Budget</option><option value="Near Limit">Near Limit</option><option value="On Track">On Track</option></select>
-      <input class="fi" id="budget-search" oninput="renderBudget()" placeholder="Search project, desc, owner..." style="max-width:220px;padding:5px 10px">
+      <select class="fsel" id="budget-ff-head" onchange="renderBudgetEntries()"><option value="">All heads</option><option>OEM Material Purchase</option><option>Cable Purchase</option><option>3rd Party</option><option>I&amp;C</option><option>Other Expenses</option></select>
+      <input class="fi" id="budget-search" oninput="renderBudgetEntries()" placeholder="Search vendor, description..." style="max-width:220px;padding:5px 10px">
       <span id="budget-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
-    <div class="card"><div class="wtable-wrap"><table class="wtable">
-      <thead><tr><th>#</th><th>Project</th><th>Category</th><th>Description</th><th>Budgeted (&#8377;)</th><th>Actual (&#8377;)</th><th>Variance (&#8377;)</th><th>Utilisation</th><th>Status</th><th>Date</th><th>Owner</th><th>Remarks</th><th>Actions</th></tr></thead>
-      <tbody id="budget-tbody"></tbody>
-    </table></div></div>
+
+    <!-- Entry table -->
+    <div id="budget-table-wrap">
+      <div class="empty" id="budget-no-proj"><i class="ti ti-arrow-up-left eico"></i><div class="etit">Select a project above</div><div class="edesc">Choose a project to view its budget tracker</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -678,9 +763,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="card">
         <div class="ch"><div class="ct"><i class="ti ti-building-plus" style="font-size:14px"></i>New project</div><button class="btn sm" onclick="togNewProj()"><i class="ti ti-x"></i>Cancel</button></div>
         <div class="cb">
-          <div class="g3" style="margin-bottom:14px">
+          <div class="g3" style="margin-bottom:12px">
             <div class="fg"><label class="fl r">Project number</label><input class="fi" id="np-num" placeholder="e.g. PRJ-2025-001"></div>
             <div class="fg" style="grid-column:span 2"><label class="fl r">Project name</label><input class="fi" id="np-name" placeholder="e.g. Site Alpha Expansion"></div>
+          </div>
+          <div class="g3" style="margin-bottom:14px">
+            <div class="fg"><label class="fl">PO Number</label><input class="fi" id="np-po-num" placeholder="e.g. PO/BPCL/2025/001"></div>
+            <div class="fg"><label class="fl">PO Date</label><input type="date" class="fi" id="np-po-date"></div>
+            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages deadline)</span></label><input type="date" class="fi" id="np-ld-date"></div>
           </div>
           <div class="g2" style="margin-bottom:14px">
             <div class="fg">
@@ -733,8 +823,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null;
+let activeBudgetProject='';
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
 
@@ -789,9 +880,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub].forEach(u=>{if(u)u();});
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];activeBudgetProject='';
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -803,7 +894,7 @@ function startApp(){
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
   else{el('lib-upload-btn-wrap').style.display='none';el('pmo-add-btn-wrap').style.display='none';el('pay-add-btn-wrap').style.display='none';}
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();populateEngineers();
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -823,7 +914,7 @@ function startProjListen(){
   if(projUnsub)projUnsub();
   projUnsub=db.collection(PROJ).orderBy('name','asc').onSnapshot(sn=>{
     projectsData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    populateProjDropdown();populatePayCustomers();populateRMAProjects();populatePMOProjects();populateBudgetProjects();
+    populateProjDropdown();populatePayCustomers();populateRMAProjects();populatePMOProjects();populateBudgetProjDropdown();
     if(el('v-projects').style.display!=='none')renderProjectsPage();
   },err=>{});
 }
@@ -852,7 +943,7 @@ async function populateEngineers(){
   try{
     const sn=await db.collection(USERS).orderBy('fullName','asc').get();
     const names=sn.docs.map(d=>d.data().fullName).filter(Boolean);
-    ['f-eng','rma-eng','pay-owner','budget-owner'].forEach(sid=>{
+    ['f-eng','rma-eng','pay-owner','budget-owner','bcfg-pm'].forEach(sid=>{
       const s=el(sid);if(!s)return;
       const cur=s.value;
       s.innerHTML=`<option value="">Select engineer</option>`+names.map(n=>`<option>${esc(n)}</option>`).join('');
@@ -1027,6 +1118,7 @@ function resetPMOForm(){
 }
 
 function renderPMO(){
+  renderPMOBudgetHealth();
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
   let list=pmoData.filter(p=>{
@@ -1044,6 +1136,29 @@ function renderPMO(){
     const overall=p.overall||0;
     const barColor=overall===100?'#1B5E20':overall>=60?'#1A6FD4':'#E65100';
     const stBadge=bpmoStatus(p.status);
+    // LD Date chip from projectsData
+    const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
+    const ldChipHtml=projRef.ldDate?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+      <span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-gavel" style="font-size:11px"></i> LD Date</span>
+      ${renderLdChip(projRef.ldDate)}
+    </div>`:'';
+    // Budget mini-block
+    const {allocated,consumed,pct,status:bgStatus}=getProjBudget(p.projName);
+    const bgCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
+    const budgetMini=allocated?`
+      <div style="border-top:.5px solid var(--bd);padding:8px 16px 10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
+          <span style="font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-wallet" style="font-size:11px"></i> Budget</span>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:10.5px;color:var(--t2)">₹${fmtAmt(consumed)} of ₹${fmtAmt(allocated)}</span>
+            ${bbudgetStatus(bgStatus)}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <div class="pmo-bg-bar"><div style="height:100%;border-radius:3px;background:${bgCol};width:${Math.min(pct,100)}%"></div></div>
+          <span style="font-size:10.5px;font-weight:700;color:${bgCol};white-space:nowrap">${pct}%</span>
+        </div>
+      </div>`:'';
     return`<div class="pmo-card">
       <div class="pmo-hd">
         <div>
@@ -1078,11 +1193,14 @@ function renderPMO(){
               <div style="width:50px;height:4px;background:#f0f0f0;border-radius:3px;overflow:hidden;flex-shrink:0"><div style="height:100%;background:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'#f0f0f0'};width:${s.pct}%;border-radius:3px"></div></div>
             </div>`).join('')}
         </div>
-        ${(p.stages||[]).some(s=>s.remarks)?`<div style="margin-top:10px;font-size:10.5px;color:var(--t2)"><b>Remarks:</b> ${(p.stages||[]).filter(s=>s.remarks).map(s=>`<span style="margin-right:10px"><b>${esc(s.stage)}:</b> ${esc(s.remarks)}</span>`).join('')}</div>`:'' }
+        ${(p.stages||[]).some(s=>s.remarks)?`<div style="margin-top:10px;font-size:10.5px;color:var(--t2)"><b>Remarks:</b> ${(p.stages||[]).filter(s=>s.remarks).map(s=>`<span style="margin-right:10px"><b>${esc(s.stage)}:</b> ${esc(s.remarks)}</span>`).join('')}</div>`:''}
       </div>
+      ${ldChipHtml?`<div style="padding:4px 16px 10px">${ldChipHtml}</div>`:''}
+      ${budgetMini}
     </div>`;
   }).join('');
 }
+
 
 // ── PAYMENT CRUD ───────────────────────────────────
 function togPayForm(show,data){
@@ -1344,7 +1462,7 @@ function sendNotification(e){
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
+  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-po-num').value='';el('np-po-date').value='';el('np-ld-date').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
 }
 function addNpItem(type){const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();if(!val)return;if(type==='cli'){if(!npClients.includes(val))npClients.push(val);}else{if(!npSites.includes(val))npSites.push(val);}inp.value='';renderNpItems();inp.focus();}
 function removeNpItem(type,val){if(type==='cli')npClients=npClients.filter(v=>v!==val);else npSites=npSites.filter(v=>v!==val);renderNpItems();}
@@ -1357,7 +1475,8 @@ async function saveNewProject(){
   if(!npClients.length){toast('Add at least one client','err');return;}if(!npSites.length){toast('Add at least one site','err');return;}
   const exists=projectsData.find(p=>p.name.toLowerCase()===name.toLowerCase());if(exists){toast('Project already exists','err');return;}
   showLoad('Saving…');
-  try{await db.collection(PROJ).add({number:num,name,clients:npClients,sites:npSites,createdAt:new Date().toISOString()});toast('Project added ✓','ok');togNewProj();}
+  const poNumber=(el('np-po-num').value||'').trim(),poDate=(el('np-po-date').value||'').trim(),ldDate=(el('np-ld-date').value||'').trim();
+  try{await db.collection(PROJ).add({number:num,name,clients:npClients,sites:npSites,poNumber,poDate,ldDate,createdAt:new Date().toISOString()});toast('Project added ✓','ok');togNewProj();}
   catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function addSubItem(projId,type,inputId){
@@ -1381,8 +1500,43 @@ async function deleteProject(projId,name){
 function renderProjectsPage(){
   const list=el('proj-list');
   if(!projectsData.length){list.innerHTML=`<div class="empty"><i class="ti ti-building eico"></i><div class="etit">No projects yet</div></div>`;return;}
-  list.innerHTML=projectsData.map(p=>`<div class="proj-card"><div class="proj-hd"><div class="proj-hd-t"><i class="ti ti-building" style="font-size:14px"></i>${p.number?`<span style="font-size:10px;background:rgba(26,111,212,.12);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600">${esc(p.number)}</span> `:''}${esc(p.name)}</div><div style="display:flex;align-items:center;gap:8px"><span class="chip"><i class="ti ti-briefcase" style="font-size:11px"></i>${(p.clients||[]).length} client${(p.clients||[]).length!==1?'s':''}</span><span class="chip"><i class="ti ti-map-pin" style="font-size:11px"></i>${(p.sites||[]).length} site${(p.sites||[]).length!==1?'s':''}</span><button class="btn sm danger" onclick="deleteProject('${p.id}','${esc(p.name)}')"><i class="ti ti-trash"></i>Delete</button></div></div><div class="proj-body"><div><div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-briefcase" style="font-size:12px"></i> Clients</div><div class="sub-list">${(p.clients||[]).length?(p.clients||[]).slice().sort().map(c=>`<div class="sub-item"><span>${esc(c)}</span><button class="btn sm danger" onclick="removeSubItem('${p.id}','clients','${c.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button></div>`).join(''):'<div style="font-size:12px;color:var(--t2)">No clients</div>'}</div><div class="sub-add"><input class="fi" id="add-cli-${p.id}" placeholder="Add client…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','clients','add-cli-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','clients','add-cli-${p.id}')"><i class="ti ti-plus"></i>Add</button></div></div><div><div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-map-pin" style="font-size:12px"></i> Sites</div><div class="sub-list">${(p.sites||[]).length?(p.sites||[]).slice().sort().map(s=>`<div class="sub-item"><span>${esc(s)}</span><button class="btn sm danger" onclick="removeSubItem('${p.id}','sites','${s.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button></div>`).join(''):'<div style="font-size:12px;color:var(--t2)">No sites</div>'}</div><div class="sub-add"><input class="fi" id="add-site-${p.id}" placeholder="Add site…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','sites','add-site-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','sites','add-site-${p.id}')"><i class="ti ti-plus"></i>Add</button></div></div></div></div>`).join('');
+  list.innerHTML=projectsData.map(p=>{
+    const ldChip=p.ldDate?`<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">${renderLdChip(p.ldDate)}</span>`:'';
+    const metaChips=[
+      p.poNumber?`<span class="chip"><i class="ti ti-file-invoice" style="font-size:11px"></i>${esc(p.poNumber)}</span>`:'',
+      p.poDate?`<span class="chip"><i class="ti ti-calendar" style="font-size:11px"></i>PO: ${p.poDate}</span>`:'',
+    ].filter(Boolean).join('');
+    return`<div class="proj-card">
+      <div class="proj-hd">
+        <div class="proj-hd-t" style="flex-wrap:wrap;gap:6px">
+          <i class="ti ti-building" style="font-size:14px"></i>
+          ${p.number?`<span style="font-size:10px;background:rgba(26,111,212,.12);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600">${esc(p.number)}</span>`:''}
+          ${esc(p.name)}
+          ${ldChip}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${metaChips}
+          <span class="chip"><i class="ti ti-briefcase" style="font-size:11px"></i>${(p.clients||[]).length} client${(p.clients||[]).length!==1?'s':''}</span>
+          <span class="chip"><i class="ti ti-map-pin" style="font-size:11px"></i>${(p.sites||[]).length} site${(p.sites||[]).length!==1?'s':''}</span>
+          <button class="btn sm danger" onclick="deleteProject('${p.id}','${esc(p.name)}')"><i class="ti ti-trash"></i>Delete</button>
+        </div>
+      </div>
+      <div class="proj-body">
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-briefcase" style="font-size:12px"></i> Clients</div>
+          <div class="sub-list">${(p.clients||[]).length?(p.clients||[]).slice().sort().map(c=>`<div class="sub-item"><span>${esc(c)}</span><button class="btn sm danger" onclick="removeSubItem('${p.id}','clients','${c.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button></div>`).join(''):'<div style="font-size:12px;color:var(--t2)">No clients</div>'}</div>
+          <div class="sub-add"><input class="fi" id="add-cli-${p.id}" placeholder="Add client…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','clients','add-cli-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','clients','add-cli-${p.id}')"><i class="ti ti-plus"></i>Add</button></div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-map-pin" style="font-size:12px"></i> Sites</div>
+          <div class="sub-list">${(p.sites||[]).length?(p.sites||[]).slice().sort().map(s=>`<div class="sub-item"><span>${esc(s)}</span><button class="btn sm danger" onclick="removeSubItem('${p.id}','sites','${s.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button></div>`).join(''):'<div style="font-size:12px;color:var(--t2)">No sites</div>'}</div>
+          <div class="sub-add"><input class="fi" id="add-site-${p.id}" placeholder="Add site…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','sites','add-site-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','sites','add-site-${p.id}')"><i class="ti ti-plus"></i>Add</button></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
+
 
 // ── USERS ─────────────────────────────────────────
 async function loadUsers(){
@@ -1483,7 +1637,7 @@ function go(n){
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='payments'){renderPayments();populatePayCustomers();populateEngineers();}
   if(n==='rma'){renderRMA();populateRMAProjects();}
-  if(n==='budget'){renderBudget();populateBudgetProjects();}
+  if(n==='budget'){activeBudgetProject='';populateBudgetProjDropdown();renderBudgetEntries();}
 }
 
 // ── MOBILE ────────────────────────────────────────
@@ -1512,190 +1666,368 @@ function bpayStatus(v){const m={Pending:'pnd',Partial:'prt',Received:'rcv'};retu
 function brmaStatus(v){const m={Raised:'rai',Approved:'apr','Replacement Received':'rep',Closed:'cls'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 
 
-// ── BUDGET LISTENER ───────────────────────────────
+
+// ── LD DATE HELPER ────────────────────────────────
+function ldStatus(ldDate){
+  if(!ldDate)return null;
+  const today=new Date();today.setHours(0,0,0,0);
+  const ld=new Date(ldDate);ld.setHours(0,0,0,0);
+  const days=Math.round((ld-today)/(1000*60*60*24));
+  if(days<0)return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-alert-triangle',label:'OVERDUE by '+Math.abs(days)+'d',days};
+  if(days<=30)return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-alarm',label:days+'d left',days};
+  if(days<=60)return{color:'#E65100',bg:'#FFF3E0',icon:'ti-clock-exclamation',label:days+'d left',days};
+  return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-circle-check',label:days+'d left',days};
+}
+function renderLdChip(ldDate){
+  const s=ldStatus(ldDate);
+  if(!s)return'';
+  const d=ldDate?new Date(ldDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
+  return`<span class="ld-chip" style="background:${s.bg};color:${s.color}"><i class="ti ${s.icon}"></i>${s.label}</span>`
+    +`<span style="font-size:10.5px;color:var(--t2);margin-left:4px">${d}</span>`;
+}
+
+// ── BUDGET LISTENERS ──────────────────────────────
 function startBudgetListen(){
   if(budgetUnsub)budgetUnsub();
   budgetUnsub=db.collection(BUDGET_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     budgetData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudget();
-  },err=>{console.log('budget listen err',err);});
+    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetEntries();
+    renderPMO();// refresh PMO budget badges
+  },err=>{});
+}
+function startBudgetCfgListen(){
+  if(budgetCfgUnsub)budgetCfgUnsub();
+  budgetCfgUnsub=db.collection(BUDGET_CFG_COL).onSnapshot(sn=>{
+    budgetCfgData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetDash();
+    renderPMO();
+  },err=>{});
 }
 
-function budgetStatus(bud,act){
-  if(!bud)return 'On Track';
-  const p=(act/bud)*100;
+// ── BUDGET HELPERS ────────────────────────────────
+function budgetStatus(allocated,consumed){
+  if(!allocated)return null;
+  const p=(consumed/allocated)*100;
   if(p>100)return 'Over Budget';
   if(p>=80)return 'Near Limit';
   return 'On Track';
 }
 function bbudgetStatus(v){
+  if(!v)return'';
   const m={'Over Budget':'ovr','Near Limit':'nrl','On Track':'ont'};
-  return '<span class="badge b-'+(m[v]||'ont')+'">'+v+'</span>';
+  return`<span class="badge b-${m[v]||'ont'}">${v}</span>`;
+}
+function getProjBudget(projName){
+  const cfg=budgetCfgData.find(c=>c.projectName===projName)||{};
+  const entries=budgetData.filter(e=>e.project===projName);
+  const consumed=entries.reduce((s,e)=>s+(e.total||0),0);
+  const allocated=cfg.budgetAllocated||0;
+  const poAmount=cfg.poAmount||0;
+  const pct=allocated>0?Math.round((consumed/allocated)*100):0;
+  const status=budgetStatus(allocated,consumed);
+  const gm=poAmount>0?((poAmount-consumed)/poAmount*100).toFixed(1):null;
+  return{cfg,entries,consumed,allocated,poAmount,pct,status,gm};
 }
 
-function populateBudgetProjects(){
-  ['budget-proj','budget-ff-proj'].forEach(function(sid){
-    var s=el(sid);if(!s)return;
-    var cur=s.value;
-    var pre=sid==='budget-ff-proj'?'<option value="">All projects</option>':'<option value="">Select project</option>';
-    s.innerHTML=pre+projectsData.map(function(p){return '<option'+(p.name===cur?' selected':'')+'>'+esc(p.name)+'</option>';}).join('');
+// ── BUDGET PROJECT DROPDOWN ───────────────────────
+function populateBudgetProjDropdown(){
+  ['budget-proj','budget-sel-proj'].forEach(sid=>{
+    const s=el(sid);if(!s)return;
+    const cur=s.value;
+    const pre=sid==='budget-sel-proj'?'<option value="">— Select a project —</option>':'<option value="">Select project</option>';
+    s.innerHTML=pre+projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');
+    if(sid==='budget-sel-proj'&&activeBudgetProject)s.value=activeBudgetProject;
   });
 }
 
+function onBudgetProjChange(){
+  activeBudgetProject=el('budget-sel-proj').value;
+  const btn=el('budget-cfg-btn');
+  if(btn)btn.style.display=activeBudgetProject?'inline-flex':'none';
+  // Hide config panel on project switch
+  const cfgPanel=el('budget-cfg-panel');if(cfgPanel)cfgPanel.style.display='none';
+  renderBudgetDash();
+  renderBudgetEntries();
+}
+
+// ── BUDGET DASHBOARD ──────────────────────────────
+function renderBudgetDash(){
+  const proj=activeBudgetProject;
+  const dash=el('budget-proj-dash');
+  const noProj=el('budget-no-proj');
+  if(!proj){
+    if(dash)dash.style.display='none';
+    if(noProj)noProj.style.display='flex';
+    return;
+  }
+  if(noProj)noProj.style.display='none';
+  if(dash)dash.style.display='block';
+  const {consumed,allocated,poAmount,pct,status,gm}=getProjBudget(proj);
+  const balance=allocated-consumed;
+  el('bd-po').textContent='₹ '+(poAmount?fmtAmt(poAmount):'—');
+  el('bd-alloc').textContent='₹ '+(allocated?fmtAmt(allocated):'—');
+  const cEl=el('bd-consumed');cEl.textContent='₹ '+fmtAmt(consumed);
+  cEl.style.color=status==='Over Budget'?'#B71C1C':status==='Near Limit'?'#E65100':'#1B5E20';
+  const bEl=el('bd-balance');
+  bEl.textContent=(balance<0?'▲ Over ':'▼ Under ')+'₹ '+fmtAmt(Math.abs(balance));
+  bEl.style.color=balance<0?'#B71C1C':'#1B5E20';
+  // Bar
+  const barCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
+  const fill=el('bd-bar-fill');if(fill){fill.style.width=Math.min(pct,100)+'%';fill.style.background=barCol;}
+  const pctEl=el('bd-bar-pct');if(pctEl){pctEl.textContent=pct+'% used'+(gm?' · GM: '+gm+'%':'');pctEl.style.color=barCol;}
+  // LD Date
+  const proj_ld=projectsData.find(p=>p.name===proj);
+  const ldWrap=el('bd-ld-wrap');
+  if(ldWrap){
+    if(proj_ld&&proj_ld.ldDate){
+      ldWrap.style.display='flex';
+      const ldS=ldStatus(proj_ld.ldDate);
+      const chip=el('bd-ld-chip');const dtxt=el('bd-ld-date-txt');
+      if(chip&&ldS)chip.innerHTML=`<i class="ti ${ldS.icon}"></i>${ldS.label}`;
+      if(chip&&ldS){chip.style.background=ldS.bg;chip.style.color=ldS.color;}
+      if(dtxt)dtxt.textContent=proj_ld.ldDate?new Date(proj_ld.ldDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
+      // PO details
+      const poEl=el('bd-po');
+      if(poEl&&proj_ld.poNumber)poEl.title='PO: '+proj_ld.poNumber;
+    }else{
+      ldWrap.style.display='none';
+    }
+  }
+  // Per-head summary
+  const headsEl=el('bd-heads-summary');if(headsEl){
+    const entries=budgetData.filter(e=>e.project===proj);
+    headsEl.innerHTML=BUDGET_HEADS.map(h=>{
+      const tot=entries.filter(e=>e.budgetHead===h).reduce((s,e)=>s+(e.total||0),0);
+      return`<div style="background:#fafafa;border-radius:7px;padding:8px 10px;border:.5px solid var(--bd)">
+        <div style="font-size:9.5px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${esc(h)}</div>
+        <div style="font-size:13px;font-weight:700">₹ ${fmtAmt(tot)}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── BUDGET CONFIG ─────────────────────────────────
+function togBudgetCfg(){
+  const panel=el('budget-cfg-panel');if(!panel)return;
+  const show=panel.style.display==='none';
+  panel.style.display=show?'block':'none';
+  if(show){
+    const cfg=budgetCfgData.find(c=>c.projectName===activeBudgetProject)||{};
+    el('bcfg-po').value=cfg.poAmount||'';
+    el('bcfg-alloc').value=cfg.budgetAllocated||'';
+    el('bcfg-date').value=cfg.poDate||'';
+    // set PM
+    const pm=el('bcfg-pm');if(pm)pm.value=cfg.projectManager||'';
+  }
+}
+
+async function saveBudgetConfig(){
+  const proj=activeBudgetProject;if(!proj){toast('Select a project first','err');return;}
+  const poAmount=parseFloat(el('bcfg-po').value)||0;
+  const budgetAllocated=parseFloat(el('bcfg-alloc').value)||0;
+  const poDate=el('bcfg-date').value||'';
+  const projectManager=el('bcfg-pm').value||'';
+  if(!poAmount&&!budgetAllocated){toast('Enter at least PO Amount or Budget Allocated','err');return;}
+  showLoad('Saving config…');
+  try{
+    const existing=budgetCfgData.find(c=>c.projectName===proj);
+    const d={projectName:proj,poAmount,budgetAllocated,projectManager,updatedAt:new Date().toISOString()};
+    if(existing){await db.collection(BUDGET_CFG_COL).doc(existing.id).update(d);}
+    else{d.createdAt=new Date().toISOString();await db.collection(BUDGET_CFG_COL).add(d);}
+    toast('Config saved ✓','ok');
+    el('budget-cfg-panel').style.display='none';
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ── BUDGET FORM ───────────────────────────────────
 function togBudgetForm(show,data){
   el('budget-form-panel').style.display=show?'block':'none';
   if(!show){
     el('budget-eid').value='';
-    ['budget-proj','budget-cat','budget-owner'].forEach(function(id){var e=el(id);if(e)e.value='';});
-    ['budget-desc','budget-budgeted','budget-actual','budget-remarks'].forEach(function(id){var e=el(id);if(e)e.value='';});
+    ['budget-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    ['budget-plan-days','budget-act-days','budget-svc-amt','budget-mat-qty','budget-mat-amt','budget-equip','budget-freight','budget-misc'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    el('budget-head').value='';el('budget-owner').value='';
     el('budget-date').value=new Date().toISOString().split('T')[0];
-    el('budget-form-t').innerHTML='<i class="ti ti-wallet" style="font-size:14px"></i>New budget entry';
-    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save entry';
+    el('budget-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>New line item';
+    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save line item';
+    el('budget-total-preview').textContent='₹ 0';
     return;
   }
   if(data){
     el('budget-proj').value=data.project||'';
-    el('budget-cat').value=data.category||'';
+    el('budget-head').value=data.budgetHead||'';
     el('budget-desc').value=data.description||'';
-    el('budget-budgeted').value=data.budgeted||'';
-    el('budget-actual').value=data.actual||'';
     el('budget-date').value=data.date||'';
+    el('budget-plan-days').value=data.plannedDays||'';
+    el('budget-act-days').value=data.actualDays||'';
+    el('budget-svc-amt').value=data.serviceAmt||'';
+    el('budget-mat-qty').value=data.materialQty||'';
+    el('budget-mat-amt').value=data.materialAmt||'';
+    el('budget-equip').value=data.equipment||'';
+    el('budget-freight').value=data.freight||'';
+    el('budget-misc').value=data.misc||'';
     el('budget-owner').value=data.owner||'';
-    el('budget-remarks').value=data.remarks||'';
     el('budget-eid').value=data.id;
-    el('budget-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit budget entry';
-    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update entry';
+    calcBudgetTotal();
+    el('budget-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit line item';
+    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update';
   } else {
+    // pre-select active project
+    if(activeBudgetProject)el('budget-proj').value=activeBudgetProject;
     el('budget-date').value=new Date().toISOString().split('T')[0];
   }
-  populateBudgetProjects();
+  populateBudgetProjDropdown();
+}
+
+function calcBudgetTotal(){
+  const v=id=>parseFloat(el(id)?.value)||0;
+  const tot=v('budget-svc-amt')+v('budget-mat-amt')+v('budget-equip')+v('budget-freight')+v('budget-misc');
+  el('budget-total-preview').textContent='₹ '+fmtAmt(tot);
+  return tot;
 }
 
 async function saveBudget(){
-  var project=g('budget-proj'),category=g('budget-cat'),description=g('budget-desc');
-  var budgeted=parseFloat(el('budget-budgeted').value)||0;
-  var actual=parseFloat(el('budget-actual').value)||0;
-  var date=g('budget-date'),owner=g('budget-owner'),remarks=g('budget-remarks');
+  const project=g('budget-proj'),budgetHead=g('budget-head'),description=g('budget-desc'),date=g('budget-date');
   if(!project){toast('Select a project','err');return;}
-  if(!category){toast('Select a category','err');return;}
-  if(!description){toast('Enter a description','err');return;}
-  if(!budgeted){toast('Enter budgeted amount','err');return;}
+  if(!budgetHead){toast('Select a budget head','err');return;}
+  if(!description){toast('Enter a description/vendor','err');return;}
   if(!date){toast('Select a date','err');return;}
-  showLoad('Saving...');
+  const v=id=>parseFloat(el(id)?.value)||0;
+  const serviceAmt=v('budget-svc-amt'),materialAmt=v('budget-mat-amt');
+  const equipment=v('budget-equip'),freight=v('budget-freight'),misc=v('budget-misc');
+  const total=serviceAmt+materialAmt+equipment+freight+misc;
+  const d={project,budgetHead,description,date,
+    plannedDays:v('budget-plan-days'),actualDays:v('budget-act-days'),
+    serviceAmt,materialQty:v('budget-mat-qty'),materialAmt,equipment,freight,misc,total,
+    owner:g('budget-owner'),updatedAt:new Date().toISOString()};
+  showLoad('Saving…');
   try{
-    var now=new Date().toISOString(),eid=g('budget-eid');
-    var d={project:project,category:category,description:description,budgeted:budgeted,actual:actual,date:date,owner:owner,remarks:remarks,updatedAt:now};
-    if(eid){await db.collection(BUDGET_COL).doc(eid).update(d);toast('Entry updated','ok');}
-    else{d.createdAt=now;await db.collection(BUDGET_COL).add(d);toast('Entry added','ok');}
+    const eid=g('budget-eid');
+    if(eid){await db.collection(BUDGET_COL).doc(eid).update(d);toast('Updated ✓','ok');}
+    else{d.createdAt=new Date().toISOString();await db.collection(BUDGET_COL).add(d);toast('Added ✓','ok');}
     togBudgetForm(false);
+    if(d.project===activeBudgetProject)renderBudgetDash();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
 async function deleteBudget(id){
-  if(!confirm('Delete this budget entry?'))return;
-  showLoad('Deleting...');
-  try{await db.collection(BUDGET_COL).doc(id).delete();toast('Deleted','ok');}
+  if(!confirm('Delete this line item?'))return;showLoad('Deleting…');
+  try{await db.collection(BUDGET_COL).doc(id).delete();toast('Deleted ✓','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 
-function renderBudget(){
-  var projF=el('budget-ff-proj')?el('budget-ff-proj').value:'';
-  var catF=el('budget-ff-cat')?el('budget-ff-cat').value:'';
-  var statusF=el('budget-ff-status')?el('budget-ff-status').value:'';
-  var q=(el('budget-search')?el('budget-search').value||'':'').toLowerCase().trim();
-
-  var list=budgetData.filter(function(b){
-    if(projF&&b.project!==projF)return false;
-    if(catF&&b.category!==catF)return false;
-    if(statusF&&budgetStatus(b.budgeted,b.actual)!==statusF)return false;
-    if(q){var h=[b.project,b.category,b.description,b.owner,b.remarks].join(' ').toLowerCase();if(!h.includes(q))return false;}
-    return true;
-  });
-
-  var totalBudgeted=budgetData.reduce(function(s,b){return s+(b.budgeted||0);},0);
-  var totalActual=budgetData.reduce(function(s,b){return s+(b.actual||0);},0);
-  var remaining=totalBudgeted-totalActual;
-  var overCount=budgetData.filter(function(b){return budgetStatus(b.budgeted,b.actual)==='Over Budget';}).length;
-
-  el('bg-st-budgeted').textContent='\u20B9 '+fmtAmt(totalBudgeted);
-  el('bg-st-actual').textContent='\u20B9 '+fmtAmt(totalActual);
-  var remEl=el('bg-st-remaining');
-  remEl.textContent=(remaining<0?'-':'')+'\u20B9 '+fmtAmt(Math.abs(remaining));
-  remEl.style.color=remaining<0?'#B71C1C':remaining===0?'#666':'#1B5E20';
-  el('bg-st-overcount').textContent=overCount;
-  el('bg-st-overcount').style.color=overCount>0?'#B71C1C':'#666';
-
-  var projNames=[...new Set(budgetData.map(function(b){return b.project;}))].filter(Boolean).sort();
-  var rollupWrap=el('budget-rollup-wrap');
-  if(projNames.length){
-    rollupWrap.style.display='block';
-    el('budget-rollup').innerHTML=projNames.map(function(pn){
-      var rows=budgetData.filter(function(b){return b.project===pn;});
-      var pb=rows.reduce(function(s,b){return s+(b.budgeted||0);},0);
-      var pa=rows.reduce(function(s,b){return s+(b.actual||0);},0);
-      var pct=pb>0?Math.min(Math.round((pa/pb)*100),200):0;
-      var col=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
-      return '<div style="margin-bottom:10px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;flex-wrap:wrap;gap:4px">'
-        +'<span style="font-size:12px;font-weight:600">'+esc(pn)+'</span>'
-        +'<span style="font-size:11px;color:var(--t2)">\u20B9'+fmtAmt(pa)+' of \u20B9'+fmtAmt(pb)+' &nbsp;&middot;&nbsp; <b style="color:'+col+'">'+pct+'%</b></span>'
-        +'</div>'
-        +'<div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+col+'"></div></div>'
-        +'</div>';
-    }).join('');
-  } else {
-    rollupWrap.style.display='none';
-  }
-
-  el('budget-count').textContent=list.length+' of '+budgetData.length+' entries';
-  var tb=el('budget-tbody');
-  if(!list.length){
-    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:28px;color:var(--t2)">'+(budgetData.length?'No entries match':'No budget entries yet. Click Add entry to get started.')+'</td></tr>';
+// ── BUDGET ENTRIES RENDER ─────────────────────────
+function renderBudgetEntries(){
+  const proj=activeBudgetProject;
+  const wrap=el('budget-table-wrap');
+  const noProj=el('budget-no-proj');
+  if(!proj){
+    if(wrap)wrap.innerHTML='';
+    if(noProj)noProj.style.display='flex';
+    el('budget-count').textContent='';
+    renderBudgetDash();
     return;
   }
-  tb.innerHTML=list.map(function(b,i){
-    var bud=b.budgeted||0,act=b.actual||0;
-    var variance=act-bud;
-    var pct=bud>0?Math.round((act/bud)*100):0;
-    var status=budgetStatus(bud,act);
-    var varCol=variance>0?'#B71C1C':variance<0?'#1B5E20':'#666';
-    var barCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
-    var varSign=variance>=0?'+':'';
-    return '<tr>'
-      +'<td style="font-size:10px;font-weight:600;color:var(--t2)">'+(i+1)+'</td>'
-      +'<td style="font-weight:500;white-space:nowrap">'+esc(b.project||'\u2014')+'</td>'
-      +'<td><span class="tag">'+esc(b.category||'\u2014')+'</span></td>'
-      +'<td style="max-width:160px;font-size:12px">'+esc(b.description||'\u2014')+'</td>'
-      +'<td style="font-weight:600;white-space:nowrap">\u20B9 '+fmtAmt(bud)+'</td>'
-      +'<td style="font-weight:600;white-space:nowrap">\u20B9 '+fmtAmt(act)+'</td>'
-      +'<td style="font-weight:600;white-space:nowrap;color:'+varCol+'">'+varSign+'\u20B9 '+fmtAmt(Math.abs(variance))+'</td>'
-      +'<td style="min-width:90px"><div style="display:flex;align-items:center;gap:5px">'
-      +'<div style="flex:1;height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:50px"><div style="height:100%;border-radius:3px;background:'+barCol+';width:'+Math.min(pct,100)+'%"></div></div>'
-      +'<span style="font-size:10.5px;font-weight:600;color:'+barCol+';width:32px;text-align:right">'+pct+'%</span>'
-      +'</div></td>'
-      +'<td>'+bbudgetStatus(status)+'</td>'
-      +'<td style="white-space:nowrap">'+(b.date||'\u2014')+'</td>'
-      +'<td style="white-space:nowrap">'+esc(b.owner||'\u2014')+'</td>'
-      +'<td style="max-width:130px;font-size:11.5px;color:var(--t2)">'+esc(b.remarks||'\u2014')+'</td>'
-      +'<td><div style="display:flex;gap:3px">'
-      +(CU&&(CU.isAdmin||b.owner===CU.fullName)?'<button class="btn sm" onclick="togBudgetForm(true,budgetData.find(function(x){return x.id===\''+b.id+'\'}))"><i class="ti ti-edit"></i></button>':'')
-      +(CU&&CU.isAdmin?'<button class="btn sm danger" onclick="deleteBudget(\''+b.id+'\')"><i class="ti ti-trash"></i></button>':'')
-      +'</div></td>'
-      +'</tr>';
-  }).join('');
+  if(noProj)noProj.style.display='none';
+  renderBudgetDash();
+  const headF=el('budget-ff-head')?.value||'';
+  const q=(el('budget-search')?.value||'').toLowerCase().trim();
+  let list=budgetData.filter(b=>{
+    if(b.project!==proj)return false;
+    if(headF&&b.budgetHead!==headF)return false;
+    if(q&&![b.description,b.budgetHead,b.owner].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+  el('budget-count').textContent=`${list.length} items`;
+  if(!list.length){
+    wrap.innerHTML=`<div class="empty"><i class="ti ti-file-invoice eico"></i><div class="etit">${budgetData.filter(b=>b.project===proj).length?'No items match filters':'No line items yet for this project'}</div><div class="edesc">Click "Add line item" to start tracking costs</div></div>`;
+    return;
+  }
+  // Group by budget head
+  const groups={};BUDGET_HEADS.forEach(h=>{groups[h]=[];});
+  list.forEach(b=>{if(!groups[b.budgetHead])groups[b.budgetHead]=[];groups[b.budgetHead].push(b);});
+  let html='<div class="card"><div class="wtable-wrap"><table class="wtable">';
+  html+='<thead><tr><th>#</th><th>Budget Head / Vendor</th><th>Date</th><th>Pln Days</th><th>Act Days</th><th>Service (₹)</th><th>Qty</th><th>Materials (₹)</th><th>Equipment (₹)</th><th>Freight (₹)</th><th>Misc (₹)</th><th>Total (₹)</th><th>Owner</th><th>Actions</th></tr></thead><tbody>';
+  let gIdx=0;
+  BUDGET_HEADS.forEach(head=>{
+    const rows=groups[head];if(!rows||!rows.length)return;
+    const headTotal=rows.reduce((s,r)=>s+(r.total||0),0);
+    gIdx++;
+    html+=`<tr class="bg-head-row"><td colspan="14" style="padding:7px 12px">${esc(head)} — ₹ ${fmtAmt(headTotal)}</td></tr>`;
+    rows.forEach((b,i)=>{
+      html+=`<tr>
+        <td style="font-size:10px;color:var(--t2)">${i+1}</td>
+        <td style="font-weight:500">${esc(b.description||'—')}</td>
+        <td style="white-space:nowrap">${b.date||'—'}</td>
+        <td style="text-align:center">${b.plannedDays||'—'}</td>
+        <td style="text-align:center">${b.actualDays||'—'}</td>
+        <td style="text-align:right">${b.serviceAmt?fmtAmt(b.serviceAmt):'—'}</td>
+        <td style="text-align:center">${b.materialQty||'—'}</td>
+        <td style="text-align:right">${b.materialAmt?fmtAmt(b.materialAmt):'—'}</td>
+        <td style="text-align:right">${b.equipment?fmtAmt(b.equipment):'—'}</td>
+        <td style="text-align:right">${b.freight?fmtAmt(b.freight):'—'}</td>
+        <td style="text-align:right">${b.misc?fmtAmt(b.misc):'—'}</td>
+        <td style="text-align:right;font-weight:700">₹ ${fmtAmt(b.total||0)}</td>
+        <td>${esc(b.owner||'—')}</td>
+        <td><div style="display:flex;gap:3px">
+          <button class="btn sm" onclick="togBudgetForm(true,budgetData.find(x=>x.id==='${b.id}'))"><i class="ti ti-edit"></i></button>
+          ${CU?.isAdmin?`<button class="btn sm danger" onclick="deleteBudget('${b.id}')"><i class="ti ti-trash"></i></button>`:''}
+        </div></td>
+      </tr>`;
+    });
+    // sub-total row
+    html+=`<tr class="bg-sub-total"><td colspan="11" style="text-align:right;padding:6px 12px;font-size:11px">Sub-total</td><td style="text-align:right;font-weight:700;color:var(--p)">₹ ${fmtAmt(headTotal)}</td><td colspan="2"></td></tr>`;
+  });
+  html+='</tbody></table></div></div>';
+  wrap.innerHTML=html;
 }
 
-function exportBudgetExcel(){
-  if(!budgetData.length){toast('No data to export','err');return;}
-  var headers=['Project','Category','Description','Budgeted (Rs)','Actual (Rs)','Variance (Rs)','Utilisation %','Status','Date','Owner','Remarks'];
-  var rows=budgetData.map(function(b){
-    var bud=b.budgeted||0,act=b.actual||0;
-    return[b.project||'',b.category||'',b.description||'',bud,act,act-bud,bud>0?Math.round((act/bud)*100):0,budgetStatus(bud,act),b.date||'',b.owner||'',b.remarks||''];
+// ── PMO BUDGET STATS ──────────────────────────────
+function renderPMOBudgetHealth(){
+  const wrap=el('pmo-budget-health');if(!wrap)return;
+  // Only consider projects that have a budget config
+  const projsWithCfg=budgetCfgData.map(c=>c.projectName);
+  if(!projsWithCfg.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  let onTrack=0,nearLimit=0,overBudget=0;
+  projsWithCfg.forEach(pn=>{
+    const {status}=getProjBudget(pn);
+    if(status==='On Track')onTrack++;
+    else if(status==='Near Limit')nearLimit++;
+    else if(status==='Over Budget')overBudget++;
   });
-  var ws=XLSX.utils.aoa_to_sheet([headers].concat(rows));
-  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Budget');
-  XLSX.writeFile(wb,'DQAP_Budget_Tracker.xlsx');
-  toast('Exported','ok');
+  el('pbh-on-track').textContent=onTrack;
+  el('pbh-near-limit').textContent=nearLimit;
+  el('pbh-over-budget').textContent=overBudget;
+  el('pbh-over-budget').style.color=overBudget>0?'#B71C1C':'#1B5E20';
+  el('pbh-near-limit').style.color=nearLimit>0?'#E65100':'#666';
+}
+
+// ── BUDGET EXPORT ─────────────────────────────────
+function exportBudgetExcel(){
+  if(!activeBudgetProject){toast('Select a project first','err');return;}
+  const {cfg,entries,consumed,allocated,poAmount,pct}=getProjBudget(activeBudgetProject);
+  const rows=[
+    ['Project Budget Tracker'],
+    ['Project',activeBudgetProject,'','PO Amount','₹'+fmtAmt(poAmount)],
+    ['PM',cfg.projectManager||'','','Budget Allocated','₹'+fmtAmt(allocated)],
+    ['PO Date',cfg.poDate||'','','Budget Consumed','₹'+fmtAmt(consumed)],
+    ['','','','Balance','₹'+fmtAmt(allocated-consumed)],
+    [],
+    ['#','Budget Head','Description','Date','Pln Days','Act Days','Service (₹)','Qty','Material (₹)','Equipment (₹)','Freight (₹)','Misc (₹)','Total (₹)','Owner']
+  ];
+  let i=1;BUDGET_HEADS.forEach(h=>{
+    const hRows=entries.filter(e=>e.budgetHead===h);
+    if(!hRows.length)return;
+    rows.push(['',h,'','','','','','','','','','','','']);
+    hRows.forEach(e=>{rows.push([i++,h,e.description||'',e.date||'',e.plannedDays||0,e.actualDays||0,e.serviceAmt||0,e.materialQty||0,e.materialAmt||0,e.equipment||0,e.freight||0,e.misc||0,e.total||0,e.owner||'']);});
+    rows.push(['','Sub-total','','','','','','','','','','',hRows.reduce((s,e)=>s+(e.total||0),0),'']);
+    rows.push([]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Budget');
+  XLSX.writeFile(wb,`DQAP_Budget_${activeBudgetProject.replace(/[^a-z0-9]/gi,'_')}.xlsx`);
+  toast('Exported ✓','ok');
 }
 
 if('serviceWorker' in navigator){
