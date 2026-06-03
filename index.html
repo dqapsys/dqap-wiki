@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_16
+// DQAP_WIKI_VERSION_18
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -106,6 +106,7 @@ input[type="file"].fi{padding:5px 8px;cursor:pointer}
 .b-adm{background:#E8EAF6;color:#1A237E}.b-eng{background:#ECEFF1;color:#37474F}
 .b-act{background:#E3F2FD;color:#0D47A1}.b-hld{background:#FFF3E0;color:#E65100}.b-del{background:#FFEBEE;color:#B71C1C}.b-cmp{background:#E8F5E9;color:#1B5E20}.b-nst{background:#ECEFF1;color:#37474F}
 .b-pnd{background:#FFF3E0;color:#E65100}.b-prt{background:#E3F2FD;color:#0D47A1}.b-rcv{background:#E8F5E9;color:#1B5E20}
+.b-adm{background:#FCE4EC;color:#880E4F}.b-mgr{background:#EDE7F6;color:#311B92}.b-usr{background:#ECEFF1;color:#37474F}.b-eng{background:#E8F5E9;color:#1B5E20}
 .b-rai{background:#E3F2FD;color:#0D47A1}.b-apr{background:#FFFDE7;color:#F57F17}.b-rep{background:#E8F5E9;color:#1B5E20}.b-cls{background:#ECEFF1;color:#37474F}
 .b-ovr{background:#FFEBEE;color:#B71C1C}.b-nrl{background:#FFF3E0;color:#E65100}.b-ont{background:#E8F5E9;color:#1B5E20}
 .bg-bar-wrap{height:7px;background:#ECEFF1;border-radius:4px;overflow:hidden;margin:4px 0 2px}
@@ -308,7 +309,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="sb-foot">
     <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connecting…</span></div>
-    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span></div>
+    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span></div>
     <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase">Colour theme</div>
     <div class="tdots">
       <div class="tdot active" onclick="setTheme('blue')"   title="Ocean Blue"  style="background:#1A6FD4" data-t="blue"></div>
@@ -486,26 +487,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pmo-st-done">—</div><div class="sl">Completed</div></div></div>
       <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="pmo-st-delay">—</div><div class="sl">Delayed / On Hold</div></div></div>
     </div>
-    <!-- Budget health summary -->
-    <div id="pmo-budget-health" style="display:none;margin-bottom:14px">
-      <div class="card">
-        <div class="ch"><div class="ct"><i class="ti ti-wallet" style="font-size:14px"></i>Budget Health</div><button class="btn sm" onclick="go('budget')">Open Budget Tracker <i class="ti ti-arrow-right"></i></button></div>
-        <div class="cb" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="pmo-budget-health-cards">
-          <div style="text-align:center;padding:8px;border-radius:8px;background:#E8F5E9">
-            <div style="font-size:22px;font-weight:700;color:#1B5E20" id="pbh-on-track">—</div>
-            <div style="font-size:11px;color:#2E7D32;margin-top:2px"><i class="ti ti-circle-check" style="font-size:11px"></i> Within Budget</div>
-          </div>
-          <div style="text-align:center;padding:8px;border-radius:8px;background:#FFF3E0">
-            <div style="font-size:22px;font-weight:700;color:#E65100" id="pbh-near-limit">—</div>
-            <div style="font-size:11px;color:#E65100;margin-top:2px"><i class="ti ti-alert-circle" style="font-size:11px"></i> Near Limit</div>
-          </div>
-          <div style="text-align:center;padding:8px;border-radius:8px;background:#FFEBEE">
-            <div style="font-size:22px;font-weight:700;color:#B71C1C" id="pbh-over-budget">—</div>
-            <div style="font-size:11px;color:#B71C1C;margin-top:2px"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Over Budget</div>
-          </div>
-        </div>
-      </div>
-    </div>
     <div class="fbar">
       <select class="fsel" id="pmo-ff-status" onchange="renderPMO()"><option value="">All statuses</option><option>Not Started</option><option>In Progress</option><option>Completed</option><option>On Hold</option><option>Delayed</option></select>
       <input class="fi" id="pmo-search" oninput="renderPMO()" placeholder="Search projects…" style="max-width:240px;padding:5px 10px">
@@ -548,6 +529,13 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="tr" id="pay-add-btn-wrap"><button class="btn pri" onclick="togPayForm(true)"><i class="ti ti-plus"></i>Add payment</button></div>
   </div>
   <div class="content">
+    <div id="pay-unauth" style="display:none">
+      <div class="empty" style="min-height:40vh">
+        <i class="ti ti-shield-off eico" style="color:#B71C1C;font-size:40px"></i>
+        <div class="etit" style="color:#B71C1C">Unauthorized Access</div>
+        <div class="edesc">You do not have permission to view the Payment Tracker.<br>Contact your administrator to request access.</div>
+      </div>
+    </div>
     <!-- Add/edit form -->
     <div id="pay-form-panel" style="display:none;margin-bottom:16px">
       <div class="card">
@@ -589,7 +577,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-rma" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-replace" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>RMA Tracker</div><div class="pg-s">Return Material Authorisation — faulty product tracking</div></div>
-    <div class="tr"><button class="btn pri" onclick="togRMAForm(true)"><i class="ti ti-plus"></i>New RMA</button></div>
+    <div class="tr" id="rma-add-btn-wrap"><button class="btn pri" onclick="togRMAForm(true)"><i class="ti ti-plus"></i>New RMA</button></div>
   </div>
   <div class="content">
     <!-- Add/edit form -->
@@ -643,7 +631,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-budget" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking — PO value vs budget allocated vs actual spend</div></div>
-    <div class="tr">
+    <div class="tr" id="budget-add-btn-wrap">
       <button class="btn grn" onclick="exportBudgetExcel()"><i class="ti ti-file-spreadsheet"></i>Export</button>
       <button class="btn pri" onclick="togBudgetForm(true)"><i class="ti ti-plus"></i>Add line item</button>
     </div>
@@ -656,22 +644,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         <div class="ct"><i class="ti ti-building" style="font-size:14px"></i>Project</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="fsel" id="budget-sel-proj" onchange="onBudgetProjChange()" style="min-width:220px"><option value="">— Select a project —</option></select>
-          <button class="btn pri sm" id="budget-cfg-btn" onclick="togBudgetCfg()" style="display:none"><i class="ti ti-settings"></i>Budget Config</button>
-        </div>
-      </div>
-      <!-- Config edit panel -->
-      <div id="budget-cfg-panel" style="display:none">
-        <div class="cb" style="border-top:.5px solid var(--bd)">
-          <div class="fsec-t"><i class="ti ti-adjustments"></i>Project Budget Configuration</div>
-          <div class="g4" style="margin-bottom:10px">
-            <div class="fg"><label class="fl r">PO Amount (&#8377;)</label><input class="fi" id="bcfg-po" type="number" min="0" placeholder="Contract value"></div>
-            <div class="fg"><label class="fl r">Budget Allocated (&#8377;)</label><input class="fi" id="bcfg-alloc" type="number" min="0" placeholder="Internal budget"></div>
-            <div class="fg"><label class="fl">Project Manager</label><select class="fs" id="bcfg-pm"><option value="">Select PM</option></select></div>
-          </div>
-          <div style="display:flex;gap:7px">
-            <button class="btn pri" onclick="saveBudgetConfig()"><i class="ti ti-device-floppy"></i>Save config</button>
-            <button class="btn sm" onclick="togBudgetCfg()"><i class="ti ti-x"></i>Cancel</button>
-          </div>
         </div>
       </div>
       <!-- Dashboard summary (shown when project selected) -->
@@ -822,9 +794,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="fg"><label class="fl r">Username</label><input class="fi" id="u-un" placeholder="e.g. rajesh (lowercase)"></div>
           <div class="fg"><label class="fl r">Password</label><input class="fi" id="u-pw" placeholder="Set initial password"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px"><input type="checkbox" id="u-adm" style="width:auto;accent-color:var(--p)">Grant admin rights</label>
-          <button class="btn pri" onclick="addUser()"><i class="ti ti-user-plus"></i>Add user</button>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div class="fg" style="min-width:180px"><label class="fl r">Access level</label>
+            <select class="fs" id="u-role">
+              <option value="user">User — read-only</option>
+              <option value="manager">Manager — can add &amp; edit</option>
+              <option value="admin">Admin — full access</option>
+            </select></div>
+          <button class="btn pri" onclick="addUser()" style="align-self:flex-end;margin-bottom:1px"><i class="ti ti-user-plus"></i>Add user</button>
         </div>
       </div>
     </div>
@@ -841,7 +818,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null;
-let activeBudgetProject='';
+let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null;
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
 
@@ -866,12 +843,15 @@ document.addEventListener('DOMContentLoaded',async()=>{
   showLoad('Loading DQAP Wiki…');
   await seedAdmin();
   const s=sessionStorage.getItem('dqap_sess');
-  if(s){try{CU=JSON.parse(s);startApp();}catch{showLogin();}}
+  if(s){try{const raw=JSON.parse(s);
+    const role=raw.role||(raw.isAdmin?'admin':'user');
+    CU={...raw,role,isAdmin:role==='admin',isManager:role==='manager',isUser:role==='user',canWrite:role==='admin'||role==='manager'};
+    startApp();}catch{showLogin();}}
   else{hideLoad();showLogin();}
 });
 
 async function seedAdmin(){
-  try{const sn=await db.collection(USERS).limit(1).get();if(sn.empty)await db.collection(USERS).add({username:'admin',password:'dqap@2024',fullName:'Administrator',isAdmin:true,createdAt:new Date().toISOString()});}catch(e){}
+  try{const sn=await db.collection(USERS).limit(1).get();if(sn.empty)await db.collection(USERS).add({username:'admin',password:'dqap@2024',fullName:'Administrator',role:'admin',isAdmin:true,createdAt:new Date().toISOString()});}catch(e){}
 }
 
 // ── AUTH ──────────────────────────────────────────
@@ -887,7 +867,12 @@ async function login(){
     const sn=await db.collection(USERS).where('username','==',u).where('password','==',p).get();
     if(sn.empty){hideLoad();el('l-err').textContent='Incorrect username or password.';return;}
     const d=sn.docs[0].data();
-    CU={username:d.username,fullName:d.fullName,isAdmin:d.isAdmin===true};
+    const role=d.role||(d.isAdmin===true?'admin':'user');
+    CU={username:d.username,fullName:d.fullName,role,
+       isAdmin:role==='admin',
+       isManager:role==='manager',
+       isUser:role==='user',
+       canWrite:role==='admin'||role==='manager'};
     sessionStorage.setItem('dqap_sess',JSON.stringify(CU));
     hideLogin();startApp();
   }catch(e){hideLoad();el('l-err').textContent='Connection error: '+e.message;}
@@ -908,7 +893,17 @@ function startApp(){
   el('sb-user').textContent=CU.fullName;
   el('f-date').value=new Date().toISOString().split('T')[0];
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
-  else{el('lib-upload-btn-wrap').style.display='none';el('pmo-add-btn-wrap').style.display='none';el('pay-add-btn-wrap').style.display='none';}
+  if(!CU.canWrite){
+    ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
+    const ni=el('ni-payments');if(ni)ni.style.display='none';
+  }
+  // show role badge in sidebar
+  const roleBadgeEl=el('sb-role');
+  if(roleBadgeEl){
+    const rb={'admin':'Admin','manager':'Manager','user':'User'};
+    roleBadgeEl.textContent=rb[CU.role]||CU.role;
+    roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
+  }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();populateEngineers();
 }
@@ -959,7 +954,7 @@ async function populateEngineers(){
   try{
     const sn=await db.collection(USERS).orderBy('fullName','asc').get();
     const names=sn.docs.map(d=>d.data().fullName).filter(Boolean);
-    ['f-eng','rma-eng','pay-owner','budget-owner','bcfg-pm','np-pm'].forEach(sid=>{
+    ['f-eng','rma-eng','pay-owner','budget-owner','np-pm'].forEach(sid=>{
       const s=el(sid);if(!s)return;
       const cur=s.value;
       s.innerHTML=`<option value="">Select engineer</option>`+names.map(n=>`<option>${esc(n)}</option>`).join('');
@@ -1106,18 +1101,6 @@ async function savePMO(){
   }catch(e){toast('Save failed: '+e.message,'err');}finally{hideLoad();}
 }
 
-function editPMO(id){
-  const p=pmoData.find(x=>x.id===id);if(!p)return;
-  // set project dropdown
-  const s=el('pmo-proj');for(let i=0;i<s.options.length;i++){if(s.options[i].value===p.projId){s.selectedIndex=i;break;}}
-  el('pmo-client').value=p.client||'';
-  el('pmo-status').value=p.status||'In Progress';
-  el('pmo-eid').value=p.id;
-  if(p.stages)setStagesData(p.stages);
-  el('pmo-add-t').innerHTML='<i class="ti ti-edit" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Edit PMO project';
-  el('pmo-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update project';
-  go('pmo-add');
-}
 
 async function deletePMO(id,name){
   if(!confirm('Delete PMO entry for "'+name+'"?'))return;
@@ -1134,7 +1117,6 @@ function resetPMOForm(){
 }
 
 function renderPMO(){
-  renderPMOBudgetHealth();
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
   let list=pmoData.filter(p=>{
@@ -1148,74 +1130,146 @@ function renderPMO(){
   el('pmo-count').textContent=`${list.length} of ${pmoData.length} projects`;
   const c=el('pmo-list');
   if(!list.length){c.innerHTML=`<div class="empty"><i class="ti ti-chart-gantt eico"></i><div class="etit">${pmoData.length?'No projects match':'No PMO projects yet'}</div><div class="edesc">${CU?.isAdmin?'Add your first project using the button above.':'No projects have been added yet.'}</div></div>`;return;}
+
   c.innerHTML=list.map(p=>{
+    const id=p.id;
     const overall=p.overall||0;
     const barColor=overall===100?'#1B5E20':overall>=60?'#1A6FD4':'#E65100';
     const stBadge=bpmoStatus(p.status);
-    // LD Date chip from projectsData
+    const isExpanded=(pmoExpandedId===id);
+    const isEdit=(pmoEditId===id);
+    // Permission: admin or PM named in budget config
+    const projCfg=budgetCfgData.find(c=>c.projectName===p.projName)||{};
+    const canEdit=CU?.canWrite||false;
+    // LD chip
     const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
-    const ldChipHtml=projRef.ldDate?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
-      <span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-gavel" style="font-size:11px"></i> LD Date</span>
-      ${renderLdChip(projRef.ldDate)}
+    const ldChipHtml=projRef.ldDate?`<div style="display:flex;align-items:center;gap:6px;padding:4px 16px 6px;flex-wrap:wrap"><span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-gavel" style="font-size:11px"></i> LD</span>${renderLdChip(projRef.ldDate)}</div>`:'';
+    // Budget mini
+    const {allocated,consumed,pct:bgPct,status:bgStatus,gmValue,gmPct}=getProjBudget(p.projName);
+    const bgCol=bgPct>100?'#B71C1C':bgPct>=80?'#E65100':'#1B5E20';
+    const budgetMini=allocated?`<div style="border-top:.5px solid var(--bd);padding:7px 16px 10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
+        <span style="font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-wallet" style="font-size:11px"></i> Budget</span>
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <span style="font-size:10.5px;color:var(--t2)">₹${fmtAmt(consumed)} of ₹${fmtAmt(allocated)}</span>
+          ${bbudgetStatus(bgStatus)}
+          ${(()=>{if(gmValue===null)return'';const pos=gmValue>=0;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:700;background:${pos?'#E8F5E9':'#FFEBEE'};color:${pos?'#1B5E20':'#B71C1C'}"><i class="ti ti-trending-${pos?'up':'down'}" style="font-size:10px"></i>GM ${gmPct.toFixed(1)}% · ₹${fmtAmt(Math.abs(gmValue))}</span>`;})()}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="pmo-bg-bar"><div style="height:100%;border-radius:3px;background:${bgCol};width:${Math.min(bgPct,100)}%"></div></div>
+        <span style="font-size:10.5px;font-weight:700;color:${bgCol};white-space:nowrap">${bgPct}%</span>
+      </div>
     </div>`:'';
-    // Budget mini-block
-    const {allocated,consumed,pct,status:bgStatus}=getProjBudget(p.projName);
-    const bgCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
-    const budgetMini=allocated?`
-      <div style="border-top:.5px solid var(--bd);padding:8px 16px 10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
-          <span style="font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-wallet" style="font-size:11px"></i> Budget</span>
-          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-            <span style="font-size:10.5px;color:var(--t2)">₹${fmtAmt(consumed)} of ₹${fmtAmt(allocated)}</span>
-            ${bbudgetStatus(bgStatus)}
-            ${(()=>{const {gmValue:gv,gmPct:gp}=getProjBudget(p.projName);if(gv===null)return '';const pos=gv>=0;return `<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:700;background:${pos?'#E8F5E9':'#FFEBEE'};color:${pos?'#1B5E20':'#B71C1C'}"><i class="ti ti-trending-${pos?'up':'down'}" style="font-size:10px"></i>GM ${gp.toFixed(1)}% · ₹${fmtAmt(Math.abs(gv))}</span>`;})()}
+
+    // Stage detail: view or edit mode
+    let stageDetail='';
+    if(isExpanded){
+      if(isEdit){
+        // ── Edit mode ──────────────────────────────────
+        stageDetail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:600;color:var(--p)">Editing stage progress</span>
+            <div style="display:flex;align-items:center;gap:7px;margin-left:auto">
+              <label style="font-size:11px;font-weight:600;color:var(--t2)">Status:</label>
+              <select class="fs" id="pmo-is-${id}" style="padding:4px 8px;font-size:12px;min-width:130px">
+                ${['Not Started','In Progress','On Hold','Delayed','Completed'].map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
           </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:7px">
-          <div class="pmo-bg-bar"><div style="height:100%;border-radius:3px;background:${bgCol};width:${Math.min(pct,100)}%"></div></div>
-          <span style="font-size:10.5px;font-weight:700;color:${bgCol};white-space:nowrap">${pct}%</span>
-        </div>
-      </div>`:'';
-    return`<div class="pmo-card">
-      <div class="pmo-hd">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            ${p.projNum?`<span style="font-size:10px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600">${esc(p.projNum)}</span>`:''}
-            <div class="pmo-title">${esc(p.projName)}</div>
-            ${stBadge}
-          </div>
-          <div class="pmo-sub">${p.client?`<i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(p.client)}`:''}  Last updated: ${(p.updatedAt||'').split('T')[0]}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div class="pmo-pct">${overall}%</div>
-          <div style="font-size:10px;color:var(--t2)">overall</div>
-        </div>
-      </div>
-      <div style="padding:8px 16px 4px">
-        <div class="pmo-bar-wrap"><div class="pmo-bar-fill" style="width:${overall}%;background:${barColor}"></div></div>
-      </div>
-      <div style="padding:4px 16px 12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:10.5px;color:var(--t2)">Stage breakdown</span>
-          <div style="display:flex;gap:6px">
-            ${CU?.isAdmin?`<button class="btn sm" onclick="editPMO('${p.id}')"><i class="ti ti-edit"></i>Edit</button>
-            <button class="btn sm danger" onclick="deletePMO('${p.id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
-          ${(p.stages||[]).map(s=>`
-            <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid var(--bd)">
-              <div style="font-size:11px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.stage)}">${esc(s.stage)}</div>
-              <div style="font-size:10.5px;font-weight:600;color:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'var(--t2)'};width:32px;text-align:right">${s.pct}%</div>
-              <div style="width:50px;height:4px;background:#f0f0f0;border-radius:3px;overflow:hidden;flex-shrink:0"><div style="height:100%;background:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'#f0f0f0'};width:${s.pct}%;border-radius:3px"></div></div>
+          ${(p.stages||[]).map((s,i)=>`
+            <div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:.5px solid var(--bd)">
+              <div style="font-size:11.5px;font-weight:500;color:var(--t1)">${i+1}. ${esc(s.stage)}</div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <input type="number" class="fi" id="pmo-ie-${id}-${i}" min="0" max="100" value="${s.pct||0}"
+                  style="width:58px;text-align:center;padding:4px 6px;font-size:13px;font-weight:600" oninput="clampPct(this)">
+                <span style="font-size:11px;color:var(--t2)">%</span>
+              </div>
+              <input class="fi" id="pmo-ir-${id}-${i}" value="${esc(s.remarks||'')}"
+                placeholder="Remarks…" style="font-size:11.5px;padding:5px 8px">
             </div>`).join('')}
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn pri" onclick="savePMOInline('${id}')"><i class="ti ti-device-floppy"></i>Save changes</button>
+            <button class="btn sm" onclick="cancelPMOEdit()"><i class="ti ti-x"></i>Cancel</button>
+          </div>
+        </div>`;
+      } else {
+        // ── View mode ──────────────────────────────────
+        const done=(p.stages||[]).filter(s=>s.pct===100).length;
+        stageDetail=`<div style="border-top:.5px solid var(--bd);padding:12px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+            <span style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete</span>
+            <div style="display:flex;gap:6px">
+              ${canEdit?`<button class="btn sm pri" onclick="event.stopPropagation();enterPMOEdit('${id}')"><i class="ti ti-edit"></i>Edit stages</button>`:''}
+              ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deletePMO('${id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+            ${(p.stages||[]).map(s=>`
+              <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid var(--bd)">
+                <div style="font-size:11px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.stage)}">${esc(s.stage)}</div>
+                <div style="font-size:10.5px;font-weight:600;color:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'var(--t2)'};width:32px;text-align:right">${s.pct}%</div>
+                <div style="width:50px;height:4px;background:#f0f0f0;border-radius:3px;overflow:hidden;flex-shrink:0"><div style="height:100%;background:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'#f0f0f0'};width:${s.pct}%;border-radius:3px"></div></div>
+              </div>`).join('')}
+          </div>
+          ${(p.stages||[]).some(s=>s.remarks)?`<div style="margin-top:10px;font-size:10.5px;color:var(--t2);line-height:1.6"><b style="color:var(--t1)">Remarks:</b> ${(p.stages||[]).filter(s=>s.remarks).map(s=>`<span style="margin-right:10px"><b>${esc(s.stage)}:</b> ${esc(s.remarks)}</span>`).join('')}</div>`:''}
+        </div>`;
+      }
+    }
+
+    return`<div class="pmo-card" id="pmc-${id}">
+      <div style="cursor:pointer;user-select:none" onclick="if(!event.target.closest('button'))togglePMOCard('${id}')">
+        <div class="pmo-hd">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+              ${p.projNum?`<span style="font-size:10px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${esc(p.projNum)}</span>`:''}
+              <div class="pmo-title" style="min-width:0">${esc(p.projName)}</div>
+              ${stBadge}
+            </div>
+            <div class="pmo-sub">${p.client?`<i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(p.client)} &nbsp;·&nbsp; `:''}Last updated: ${(p.updatedAt||'').split('T')[0]}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <div style="text-align:right">
+              <div class="pmo-pct">${overall}%</div>
+              <div style="font-size:10px;color:var(--t2)">overall</div>
+            </div>
+            <i class="ti ${isExpanded?'ti-chevron-up':'ti-chevron-down'}" style="font-size:14px;color:var(--t2);transition:transform .2s"></i>
+          </div>
         </div>
-        ${(p.stages||[]).some(s=>s.remarks)?`<div style="margin-top:10px;font-size:10.5px;color:var(--t2)"><b>Remarks:</b> ${(p.stages||[]).filter(s=>s.remarks).map(s=>`<span style="margin-right:10px"><b>${esc(s.stage)}:</b> ${esc(s.remarks)}</span>`).join('')}</div>`:''}
+        <div style="padding:6px 16px 8px">
+          <div class="pmo-bar-wrap"><div class="pmo-bar-fill" style="width:${overall}%;background:${barColor}"></div></div>
+        </div>
+        ${ldChipHtml}
       </div>
-      ${ldChipHtml?`<div style="padding:4px 16px 10px">${ldChipHtml}</div>`:''}
+      ${stageDetail}
       ${budgetMini}
     </div>`;
   }).join('');
+}
+
+function togglePMOCard(id){
+  if(pmoExpandedId===id){pmoExpandedId=null;pmoEditId=null;}
+  else{pmoExpandedId=id;pmoEditId=null;}
+  renderPMO();
+}
+function enterPMOEdit(id){pmoExpandedId=id;pmoEditId=id;renderPMO();}
+function cancelPMOEdit(){pmoEditId=null;renderPMO();}
+
+async function savePMOInline(id){
+  const p=pmoData.find(x=>x.id===id);if(!p)return;
+  const stages=(p.stages||[]).map((s,i)=>({
+    stage:s.stage,
+    pct:parseInt(el(`pmo-ie-${id}-${i}`)?.value)||0,
+    remarks:(el(`pmo-ir-${id}-${i}`)?.value||'').trim()
+  }));
+  const overall=calcOverall(stages);
+  const status=el(`pmo-is-${id}`)?.value||p.status;
+  showLoad('Saving\u2026');
+  try{
+    await db.collection(PMO_COL).doc(id).update({stages,overall,status,updatedAt:new Date().toISOString()});
+    toast('Saved \u2713','ok');
+    pmoEditId=null;
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
 
@@ -1254,7 +1308,7 @@ async function deletePayment(id){
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 
-function renderPayments(){
+function renderPayments(){if(CU?.isUser)return;
   const statusF=el('pay-ff-status')?.value||'';
   const q=(el('pay-search')?.value||'').toLowerCase().trim();
   let list=payData.filter(p=>{
@@ -1280,7 +1334,7 @@ function renderPayments(){
     <td>${esc(p.owner||'—')}</td>
     <td style="font-size:11.5px;color:var(--t2);max-width:140px">${esc(p.remarks||'—')}</td>
     <td><div style="display:flex;gap:3px">
-      ${CU?.isAdmin?`<button class="btn sm" onclick="togPayForm(true,payData.find(x=>x.id==='${p.id}'))"><i class="ti ti-edit"></i></button>
+      ${CU?.canWrite?`<button class="btn sm" onclick="togPayForm(true,payData.find(x=>x.id==='${p.id}'))"><i class="ti ti-edit"></i></button>
       <button class="btn sm danger" onclick="deletePayment('${p.id}')"><i class="ti ti-trash"></i></button>`:'—'}
     </div></td></tr>`).join('');
 }
@@ -1358,7 +1412,7 @@ function renderRMA(){
     <td>${brmaStatus(r.status)}</td>
     <td style="max-width:160px;font-size:11.5px">${esc(r.faultDetails||'—')}</td>
     <td><div style="display:flex;gap:3px">
-      <button class="btn sm" onclick="togRMAForm(true,rmaData.find(x=>x.id==='${r.id}'))"><i class="ti ti-edit"></i></button>
+      ${CU?.canWrite?`<button class="btn sm" onclick="togRMAForm(true,rmaData.find(x=>x.id==='${r.id}'))"><i class="ti ti-edit"></i></button>`:''}
       ${CU?.isAdmin?`<button class="btn sm danger" onclick="deleteRMA('${r.id}')"><i class="ti ti-trash"></i></button>`:''}
     </div></td></tr>`).join('');
 }
@@ -1574,18 +1628,34 @@ async function loadUsers(){
   try{
     const sn=await db.collection(USERS).orderBy('createdAt','asc').get();
     const users=sn.docs.map(d=>({id:d.id,...d.data()}));
-    el('u-list').innerHTML=users.length?users.map(u=>`<tr><td style="font-weight:500">${esc(u.fullName)}</td><td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td><td>${u.isAdmin?'<span class="badge b-adm">Admin</span>':'<span class="badge b-eng">Engineer</span>'}</td><td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td><td><div style="display:flex;gap:5px"><button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset pwd</button><button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button></div></td></tr>`).join('')
+    el('u-list').innerHTML=users.length?users.map(u=>`<tr><td style="font-weight:500">${esc(u.fullName)}</td><td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td><td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td><td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td><td><div style="display:flex;gap:5px"><button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button><button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button><button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button></div></td></tr>`).join('')
     :'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
+async function changeRole(id,currentRole,name){
+  const roles=['user','manager','admin'];
+  const labels={'user':'User (read-only)','manager':'Manager','admin':'Admin'};
+  const opts=roles.map(r=>`${r===currentRole?'* ':''}${labels[r]}`).join('\n');
+  const choice=prompt(`Change role for ${name}\n\nCurrent: ${labels[currentRole]}\n\nType new role:\n  user\n  manager\n  admin`,'');
+  if(!choice||!roles.includes(choice.trim().toLowerCase()))return;
+  const newRole=choice.trim().toLowerCase();
+  if(newRole===currentRole){toast('No change','ok');return;}
+  showLoad('Updating role…');
+  try{
+    await db.collection(USERS).doc(id).update({role:newRole,isAdmin:newRole==='admin',updatedAt:new Date().toISOString()});
+    toast('Role updated ✓','ok');await loadUsers();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+
 async function addUser(){
   const fn=g('u-fn'),un=(g('u-un')||'').toLowerCase().replace(/\s+/g,''),pw=g('u-pw'),adm=el('u-adm').checked;
   if(!fn||!un||!pw){toast('All fields required','err');return;}if(un.length<3){toast('Username min 3 chars','err');return;}
   showLoad('Adding…');
   try{
     const chk=await db.collection(USERS).where('username','==',un).get();if(!chk.empty){hideLoad();toast('Username taken','err');return;}
-    await db.collection(USERS).add({fullName:fn,username:un,password:pw,isAdmin:adm,createdAt:new Date().toISOString()});
-    ['u-fn','u-un','u-pw'].forEach(id=>el(id).value='');el('u-adm').checked=false;toast('User added ✓','ok');await loadUsers();
+    await db.collection(USERS).add({fullName:fn,username:un,password:pw,role,isAdmin:role==='admin',createdAt:new Date().toISOString()});
+    ['u-fn','u-un','u-pw'].forEach(id=>el(id).value='');el('u-role').value='user';toast('User added ✓','ok');await loadUsers();
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function delUser(id,username){if(!confirm('Delete "'+username+'"?'))return;showLoad('Deleting…');try{await db.collection(USERS).doc(id).delete();toast('Deleted','ok');await loadUsers();}catch(e){toast('Failed','err');}finally{hideLoad();}}
@@ -1665,7 +1735,17 @@ function go(n){
   if(n==='projects')renderProjectsPage();
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
-  if(n==='payments'){renderPayments();populatePayCustomers();populateEngineers();}
+  if(n==='payments'){
+    const pu=el('pay-unauth');
+    if(CU?.isUser){
+      if(pu)pu.style.display='block';
+      document.querySelectorAll('#v-payments .content > *:not(#pay-unauth)').forEach(e=>e.style.display='none');
+      return;
+    }
+    if(pu)pu.style.display='none';
+    document.querySelectorAll('#v-payments .content > *:not(#pay-unauth)').forEach(e=>e.style.display='');
+    renderPayments();populatePayCustomers();populateEngineers();
+  }
   if(n==='rma'){renderRMA();populateRMAProjects();}
   if(n==='budget'){activeBudgetProject='';populateBudgetProjDropdown();renderBudgetEntries();}
 }
@@ -1722,7 +1802,7 @@ function startBudgetListen(){
   budgetUnsub=db.collection(BUDGET_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     budgetData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetEntries();
-    renderPMO();// refresh PMO budget badges
+    renderPMO();
   },err=>{});
 }
 function startBudgetCfgListen(){
@@ -1773,10 +1853,6 @@ function populateBudgetProjDropdown(){
 
 function onBudgetProjChange(){
   activeBudgetProject=el('budget-sel-proj').value;
-  const btn=el('budget-cfg-btn');
-  if(btn)btn.style.display=activeBudgetProject?'inline-flex':'none';
-  // Hide config panel on project switch
-  const cfgPanel=el('budget-cfg-panel');if(cfgPanel)cfgPanel.style.display='none';
   renderBudgetDash();
   renderBudgetEntries();
 }
@@ -1856,37 +1932,7 @@ function renderBudgetDash(){
 }
 
 // ── BUDGET CONFIG ─────────────────────────────────
-function togBudgetCfg(){
-  const panel=el('budget-cfg-panel');if(!panel)return;
-  const show=panel.style.display==='none';
-  panel.style.display=show?'block':'none';
-  if(show){
-    const cfg=budgetCfgData.find(c=>c.projectName===activeBudgetProject)||{};
-    el('bcfg-po').value=cfg.poAmount||'';
-    el('bcfg-alloc').value=cfg.budgetAllocated||'';
-    el('bcfg-date').value=cfg.poDate||'';
-    // set PM
-    const pm=el('bcfg-pm');if(pm)pm.value=cfg.projectManager||'';
-  }
-}
 
-async function saveBudgetConfig(){
-  const proj=activeBudgetProject;if(!proj){toast('Select a project first','err');return;}
-  const poAmount=parseFloat(el('bcfg-po').value)||0;
-  const budgetAllocated=parseFloat(el('bcfg-alloc').value)||0;
-  const poDate=el('bcfg-date').value||'';
-  const projectManager=el('bcfg-pm').value||'';
-  if(!poAmount&&!budgetAllocated){toast('Enter at least PO Amount or Budget Allocated','err');return;}
-  showLoad('Saving config…');
-  try{
-    const existing=budgetCfgData.find(c=>c.projectName===proj);
-    const d={projectName:proj,poAmount,budgetAllocated,projectManager,updatedAt:new Date().toISOString()};
-    if(existing){await db.collection(BUDGET_CFG_COL).doc(existing.id).update(d);}
-    else{d.createdAt=new Date().toISOString();await db.collection(BUDGET_CFG_COL).add(d);}
-    toast('Config saved ✓','ok');
-    el('budget-cfg-panel').style.display='none';
-  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
-}
 
 // ── BUDGET FORM ───────────────────────────────────
 function togBudgetForm(show,data){
@@ -2032,25 +2078,6 @@ function renderBudgetEntries(){
 }
 
 // ── PMO BUDGET STATS ──────────────────────────────
-function renderPMOBudgetHealth(){
-  const wrap=el('pmo-budget-health');if(!wrap)return;
-  // Only consider projects that have a budget config
-  const projsWithCfg=budgetCfgData.map(c=>c.projectName);
-  if(!projsWithCfg.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  let onTrack=0,nearLimit=0,overBudget=0;
-  projsWithCfg.forEach(pn=>{
-    const {status}=getProjBudget(pn);
-    if(status==='On Track')onTrack++;
-    else if(status==='Near Limit')nearLimit++;
-    else if(status==='Over Budget')overBudget++;
-  });
-  el('pbh-on-track').textContent=onTrack;
-  el('pbh-near-limit').textContent=nearLimit;
-  el('pbh-over-budget').textContent=overBudget;
-  el('pbh-over-budget').style.color=overBudget>0?'#B71C1C':'#1B5E20';
-  el('pbh-near-limit').style.color=nearLimit>0?'#E65100':'#666';
-}
 
 // ── BUDGET EXPORT ─────────────────────────────────
 function exportBudgetExcel(){
