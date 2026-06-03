@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_28
-const APP_VERSION="28";
+// DQAP_WIKI_VERSION_30
+const APP_VERSION="30";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -305,6 +305,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
+    <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management</div>
     <div class="sb-sec" id="admin-sec" style="display:none">Admin</div>
     <div class="ni" onclick="go('projects')"        id="ni-projects" style="display:none"><i class="ti ti-building"></i>Manage Projects</div>
     <div class="ni" onclick="go('users')"           id="ni-users"    style="display:none"><i class="ti ti-users"></i>Manage Users</div>
@@ -2383,7 +2384,7 @@ function renderTasks(){
   }).join('');
 }
 
-// ── AMC MANAGEMENT JS ─────────────────────────────────────
+// ── AMC MANAGEMENT (v29) ─────────────────────────────────
 let amcData = [];
 let amcUnsub = null;
 
@@ -2400,232 +2401,99 @@ function calculateNextVisit(startDate, frequency, lastVisit = null) {
   const base = new Date(lastVisit || startDate);
   const today = new Date();
   let next = new Date(base);
+  const add = (u, v) => next[`set${u}`](next[`get${u}`]() + v);
 
-  const add = (unit, val) => { next[`set${unit}`](next[`get${unit}`]() + val); };
+  const step = () => {
+    if(frequency === 'Monthly') add('Month',1);
+    else if(frequency === 'Quarterly') add('Month',3);
+    else if(frequency === 'Bi-Annually') add('Month',6);
+    else add('FullYear',1);
+  };
 
-  switch(frequency) {
-    case 'Monthly': add('Month', 1); break;
-    case 'Quarterly': add('Month', 3); break;
-    case 'Bi-Annually': add('Month', 6); break;
-    case 'Annual': add('FullYear', 1); break;
-    default: add('Month', 1);
-  }
-
-  while (next < today) {
-    switch(frequency) {
-      case 'Monthly': add('Month', 1); break;
-      case 'Quarterly': add('Month', 3); break;
-      case 'Bi-Annually': add('Month', 6); break;
-      case 'Annual': add('FullYear', 1); break;
-    }
-  }
+  step();
+  while(next < today) step();
   return next.toISOString().split('T')[0];
 }
 
-function renderAMCList() {
-  const container = el('amc-list');
-  if(!container) return;
-
-  const search = (el('amc-search')?.value || '').toLowerCase().trim();
-  const statusFilter = el('amc-filter-status')?.value || '';
-
-  let filtered = amcData.filter(amc => {
-    const matchesSearch = !search || 
-      (amc.client || '').toLowerCase().includes(search) ||
-      (amc.contractNumber || '').toLowerCase().includes(search) ||
-      (amc.project || '').toLowerCase().includes(search);
-
-    let matchesStatus = true;
-    if(statusFilter === 'active') matchesStatus = !amc.endDate || new Date(amc.endDate) >= new Date();
-    if(statusFilter === 'expired') matchesStatus = amc.endDate && new Date(amc.endDate) < new Date();
-
-    return matchesSearch && matchesStatus;
+function renderAMCList(){
+  const c = el('amc-list'); if(!c) return;
+  const q = (el('amc-search')?.value||'').toLowerCase().trim();
+  const f = el('amc-filter-status')?.value || '';
+  let list = amcData.filter(a => {
+    const okQ = !q || (a.client+' '+a.contractNumber+' '+a.project).toLowerCase().includes(q);
+    let okS = true;
+    if(f==='active') okS = !a.endDate || new Date(a.endDate) >= new Date();
+    if(f==='expired') okS = a.endDate && new Date(a.endDate) < new Date();
+    return okQ && okS;
   });
+  el('amc-count').textContent = list.length + ' contract' + (list.length!==1?'s':'');
+  if(!list.length){ c.innerHTML = `<div class="empty"><i class="ti ti-calendar-off eico"></i><div class="etit">No contracts</div></div>`; return; }
 
-  const countEl = el('amc-count');
-  if(countEl) countEl.textContent = `${filtered.length} contract${filtered.length !== 1 ? 's' : ''}`;
-
-  if(!filtered.length) {
-    container.innerHTML = `<div class="empty"><i class="ti ti-calendar-off eico"></i><div class="etit">No AMC contracts found</div><div class="edesc">Create your first AMC contract using the button above.</div></div>`;
-    return;
-  }
-
-  let html = '';
-  filtered.forEach(amc => {
-    const nextVisit = calculateNextVisit(amc.startDate, amc.frequency, amc.lastVisit);
-    const daysLeft = Math.ceil((new Date(nextVisit) - new Date()) / (1000*60*60*24));
-    const isOverdue = daysLeft < 0;
-
-    html += `
-      <div class="pmo-card">
-        <div class="pmo-hd">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:14px">${esc(amc.contractNumber || 'AMC Contract')}</div>
-            <div style="font-size:13px;color:var(--t1)">${esc(amc.client || '')}</div>
-            ${amc.project ? `<div style="font-size:11px;color:var(--t2)">${esc(amc.project)}</div>` : ''}
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:11px;color:var(--t2)">${amc.frequency || 'Monthly'}</div>
-            <div style="font-size:20px;font-weight:700;color:${isOverdue ? '#B71C1C' : '#1B5E20'}">${isOverdue ? 'OVERDUE' : daysLeft + 'd'}</div>
-          </div>
-        </div>
-        <div style="padding:12px 16px;border-top:.5px solid var(--bd)">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-            <div>
-              <div style="font-size:11px;color:var(--t2)">Next Visit</div>
-              <div style="font-weight:600">${nextVisit}</div>
-            </div>
-            <div style="display:flex;gap:6px">
-              <button class="btn sm" onclick="logVisit('${amc.id}')"><i class="ti ti-check"></i>Log Visit</button>
-              <button class="btn sm" onclick="togAMCForm(true, amcData.find(a=>a.id==='${amc.id}'))"><i class="ti ti-edit"></i>Edit</button>
-            </div>
-          </div>
-        </div>
-      </div>`;
-  });
-
-  container.innerHTML = html;
-}
-
-function togAMCForm(show, data = null) {
-  const modal = el('amc-modal');
-  if(!modal) return;
-  modal.style.display = show ? 'flex' : 'none';
-
-  const content = el('amc-form-content');
-  if(!content) return;
-
-  if(!show) {
-    content.innerHTML = '';
-    return;
-  }
-
-  const isEdit = !!data;
-  const titleEl = el('amc-form-title');
-  if(titleEl) titleEl.textContent = isEdit ? 'Edit AMC Contract' : 'New AMC Contract';
-
-  content.innerHTML = `
-    <div class="g2" style="margin-bottom:16px">
-      <div class="fg"><label class="fl r">Contract Number</label><input class="fi" id="amc-contract" value="${esc(data?.contractNumber || '')}"></div>
-      <div class="fg"><label class="fl r">Client Name</label><input class="fi" id="amc-client" value="${esc(data?.client || '')}"></div>
-    </div>
-    <div class="g2" style="margin-bottom:16px">
-      <div class="fg"><label class="fl">Project</label><select class="fs" id="amc-project"><option value="">Select project</option></select></div>
-      <div class="fg"><label class="fl r">Frequency</label>
-        <select class="fs" id="amc-frequency">
-          <option value="Monthly" ${data?.frequency==='Monthly'?'selected':''}>Monthly</option>
-          <option value="Quarterly" ${data?.frequency==='Quarterly'?'selected':''}>Quarterly</option>
-          <option value="Bi-Annually" ${data?.frequency==='Bi-Annually'?'selected':''}>Bi-Annually</option>
-          <option value="Annual" ${data?.frequency==='Annual'?'selected':''}>Annual</option>
-        </select>
+  c.innerHTML = list.map(a => {
+    const nv = calculateNextVisit(a.startDate, a.frequency, a.lastVisit);
+    const d = Math.ceil((new Date(nv)-new Date())/(1000*3600*24));
+    const over = d < 0;
+    return `<div class="pmo-card">
+      <div class="pmo-hd">
+        <div style="flex:1"><div style="font-weight:600">${esc(a.contractNumber||'AMC')}</div><div>${esc(a.client||'')}</div></div>
+        <div style="text-align:right"><div style="font-size:11px;color:var(--t2)">${a.frequency||''}</div><div style="font-size:18px;font-weight:700;color:${over?'#B71C1C':'#1B5E20'}">${over?'OVERDUE':d+'d'}</div></div>
       </div>
-    </div>
-    <div class="g2" style="margin-bottom:16px">
-      <div class="fg"><label class="fl r">Start Date</label><input type="date" class="fi" id="amc-start" value="${data?.startDate || ''}"></div>
-      <div class="fg"><label class="fl">End Date</label><input type="date" class="fi" id="amc-end" value="${data?.endDate || ''}"></div>
-    </div>
-    <div class="fg"><label class="fl">Assigned Engineer</label><input class="fi" id="amc-assigned" value="${esc(data?.assignedTo || '')}"></div>
-    <div class="fg" style="margin-top:12px"><label class="fl">Remarks</label><textarea class="fta" id="amc-remarks" style="min-height:80px">${esc(data?.remarks || '')}</textarea></div>
-    <div style="margin-top:20px">
-      <button class="btn pri" onclick="saveAMCContract('${data ? data.id : ''}')" style="width:100%">Save AMC Contract</button>
-    </div>
-  `;
-
-  // Populate projects dropdown
-  setTimeout(() => {
-    const projSel = el('amc-project');
-    if(projSel && typeof projectsData !== 'undefined') {
-      projSel.innerHTML = '<option value="">Select project</option>' + 
-        projectsData.map(p => `<option value="${esc(p.name)}" ${p.name === data?.project ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
-    }
-  }, 50);
+      <div style="padding:12px 16px;border-top:.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:11px;color:var(--t2)">Next</div><div style="font-weight:600">${nv}</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm" onclick="logVisit('${a.id}')">Log Visit</button>
+          <button class="btn sm" onclick="togAMCForm(true,amcData.find(x=>x.id==='${a.id}'))">Edit</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-async function saveAMCContract(id = '') {
-  const contractNumber = g('amc-contract');
-  const client = g('amc-client');
-  const frequency = g('amc-frequency');
-  const startDate = g('amc-start');
-
-  if(!contractNumber || !client || !frequency || !startDate) {
-    toast('Please fill required fields (Contract #, Client, Frequency, Start Date)', 'err');
-    return;
-  }
-
-  showLoad('Saving AMC...');
-  try {
-    const payload = {
-      contractNumber,
-      client,
-      project: g('amc-project'),
-      frequency,
-      startDate,
-      endDate: g('amc-end'),
-      assignedTo: g('amc-assigned'),
-      remarks: g('amc-remarks'),
-      lastVisit: null,
-      updatedAt: new Date().toISOString()
-    };
-
-    if(id) {
-      await db.collection('dqap_amc').doc(id).update(payload);
-      toast('AMC updated successfully ✓', 'ok');
-    } else {
-      payload.createdAt = new Date().toISOString();
-      await db.collection('dqap_amc').add(payload);
-      toast('AMC contract created successfully ✓', 'ok');
-    }
-
-    togAMCForm(false);
-    renderAMCList();
-  } catch(e) {
-    toast('Error saving AMC: ' + e.message, 'err');
-  } finally {
-    hideLoad();
-  }
+function togAMCForm(show, data=null){
+  const m = el('amc-modal'); if(!m) return;
+  m.style.display = show ? 'flex' : 'none';
+  const ct = el('amc-form-content'); if(!ct) return;
+  if(!show){ ct.innerHTML=''; return; }
+  el('amc-form-title').textContent = data ? 'Edit AMC' : 'New AMC Contract';
+  ct.innerHTML = `
+    <div class="g2"><div class="fg"><label class="fl r">Contract #</label><input class="fi" id="amc-cn" value="${esc(data?.contractNumber||'')}"></div>
+    <div class="fg"><label class="fl r">Client</label><input class="fi" id="amc-cli" value="${esc(data?.client||'')}"></div></div>
+    <div class="g2"><div class="fg"><label class="fl">Project</label><select class="fs" id="amc-proj"></select></div>
+    <div class="fg"><label class="fl r">Frequency</label><select class="fs" id="amc-freq">
+      <option ${data?.frequency==='Monthly'?'selected':''}>Monthly</option>
+      <option ${data?.frequency==='Quarterly'?'selected':''}>Quarterly</option>
+      <option ${data?.frequency==='Bi-Annually'?'selected':''}>Bi-Annually</option>
+      <option ${data?.frequency==='Annual'?'selected':''}>Annual</option>
+    </select></div></div>
+    <div class="g2"><div class="fg"><label class="fl r">Start</label><input type="date" class="fi" id="amc-start" value="${data?.startDate||''}"></div>
+    <div class="fg"><label class="fl">End</label><input type="date" class="fi" id="amc-end" value="${data?.endDate||''}"></div></div>
+    <div class="fg"><label class="fl">Engineer</label><input class="fi" id="amc-eng" value="${esc(data?.assignedTo||'')}"></div>
+    <button class="btn pri" style="margin-top:16px;width:100%" onclick="saveAMC('${data?data.id:''}')">Save</button>`;
+  // populate projects
+  setTimeout(()=>{ const s=el('amc-proj'); if(s && window.projectsData) s.innerHTML = '<option></option>' + projectsData.map(p=>`<option ${p.name===(data?.project||'')?'selected':''}>${esc(p.name)}</option>`).join(''); },30);
 }
 
-async function logVisit(id) {
-  if(!confirm('Mark this visit as completed today?')) return;
-
-  showLoad('Logging visit...');
-  try {
-    await db.collection('dqap_amc').doc(id).update({
-      lastVisit: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString()
-    });
-    toast('Visit logged successfully ✓', 'ok');
-    renderAMCList();
-  } catch(e) {
-    toast('Error logging visit: ' + e.message, 'err');
-  } finally {
-    hideLoad();
-  }
+async function saveAMC(id=''){
+  const d = { contractNumber:g('amc-cn'), client:g('amc-cli'), project:g('amc-proj'), frequency:g('amc-freq'), startDate:g('amc-start'), endDate:g('amc-end'), assignedTo:g('amc-eng'), updatedAt:new Date().toISOString() };
+  if(!d.contractNumber||!d.client||!d.startDate){ toast('Required fields missing','err'); return; }
+  showLoad('Saving...');
+  try{
+    if(id) await db.collection('dqap_amc').doc(id).update(d);
+    else { d.createdAt = new Date().toISOString(); await db.collection('dqap_amc').add(d); }
+    toast('Saved ✓','ok'); togAMCForm(false); renderAMCList();
+  }catch(e){toast(e.message,'err');}finally{hideLoad();}
 }
 
-function updateAMCDashboard() {
-  const statsEl = el('amc-stats');
-  if(!statsEl) return;
-
-  const now = new Date();
-  const active = amcData.filter(a => !a.endDate || new Date(a.endDate) >= now).length;
-
-  const upcoming = amcData.filter(a => {
-    if(!a.startDate || !a.frequency) return false;
-    const next = calculateNextVisit(a.startDate, a.frequency, a.lastVisit);
-    const days = Math.ceil((new Date(next) - now) / (1000*60*60*24));
-    return days >= 0 && days <= 30;
-  }).length;
-
-  statsEl.innerHTML = `
-    <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-calendar" style="color:#1565C0;font-size:18px"></i></div><div><div class="sv">${active}</div><div class="sl">Active AMCs</div></div></div>
-    <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-calendar-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv">${upcoming}</div><div class="sl">Upcoming (30 days)</div></div></div>
-  `;
+async function logVisit(id){
+  if(!confirm('Log visit as done today?')) return;
+  await db.collection('dqap_amc').doc(id).update({lastVisit:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString()});
+  toast('Visit logged','ok'); renderAMCList();
 }
 
-// Initialize AMC listener (call this in your init or after login)
-if(typeof startAMCListen === 'function') {
-  // Will be called from main init if needed
+function updateAMCDashboard(){
+  const elStats = el('amc-stats'); if(!elStats) return;
+  const active = amcData.filter(a=>!a.endDate || new Date(a.endDate)>=new Date()).length;
+  elStats.innerHTML = `<div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-calendar"></i></div><div><div class="sv">${active}</div><div class="sl">Active AMCs</div></div></div>`;
 }
 
 if('serviceWorker' in navigator){
