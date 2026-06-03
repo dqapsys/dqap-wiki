@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_22
-const APP_VERSION="22";
+// DQAP_WIKI_VERSION_23
+const APP_VERSION="23";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -1969,6 +1969,84 @@ function renderBudgetList(){
 }
 
 // ── PMO BUDGET STATS ──────────────────────────────
+
+// ── BUDGET FORM ───────────────────────────────────
+function togBudgetForm(show,data,preProj){
+  el('budget-form-panel').style.display=show?'block':'none';
+  if(!show){
+    el('budget-eid').value='';
+    ['budget-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    ['budget-plan-days','budget-act-days','budget-svc-amt','budget-mat-qty','budget-mat-amt','budget-equip','budget-freight','budget-misc'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    el('budget-head').value='';el('budget-owner').value='';
+    el('budget-date').value=new Date().toISOString().split('T')[0];
+    el('budget-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>New line item';
+    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save line item';
+    el('budget-total-preview').textContent='₹ 0';
+    return;
+  }
+  if(data){
+    el('budget-proj').value=data.project||'';
+    el('budget-head').value=data.budgetHead||'';
+    el('budget-desc').value=data.description||'';
+    el('budget-date').value=data.date||'';
+    el('budget-plan-days').value=data.plannedDays||'';
+    el('budget-act-days').value=data.actualDays||'';
+    el('budget-svc-amt').value=data.serviceAmt||'';
+    el('budget-mat-qty').value=data.materialQty||'';
+    el('budget-mat-amt').value=data.materialAmt||'';
+    el('budget-equip').value=data.equipment||'';
+    el('budget-freight').value=data.freight||'';
+    el('budget-misc').value=data.misc||'';
+    el('budget-owner').value=data.owner||'';
+    populateBudgetProjDropdown();
+    el('budget-proj').value=data.project||'';
+    calcBudgetTotal();
+    el('budget-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit line item';
+    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update';
+  } else {
+    populateBudgetProjDropdown();
+    const presel=preProj||activeBudgetProject||'';
+    if(presel)el('budget-proj').value=presel;
+    el('budget-date').value=new Date().toISOString().split('T')[0];
+  }
+}
+
+function calcBudgetTotal(){
+  const v=id=>parseFloat(el(id)?.value)||0;
+  const tot=v('budget-svc-amt')+v('budget-mat-amt')+v('budget-equip')+v('budget-freight')+v('budget-misc');
+  el('budget-total-preview').textContent='₹ '+fmtAmt(tot);
+  return tot;
+}
+
+async function saveBudget(){
+  const project=g('budget-proj'),budgetHead=g('budget-head'),description=g('budget-desc'),date=g('budget-date');
+  if(!project){toast('Select a project','err');return;}
+  if(!budgetHead){toast('Select a budget head','err');return;}
+  if(!description){toast('Enter a description/vendor','err');return;}
+  if(!date){toast('Select a date','err');return;}
+  const v=id=>parseFloat(el(id)?.value)||0;
+  const serviceAmt=v('budget-svc-amt'),materialAmt=v('budget-mat-amt');
+  const equipment=v('budget-equip'),freight=v('budget-freight'),misc=v('budget-misc');
+  const total=serviceAmt+materialAmt+equipment+freight+misc;
+  const d={project,budgetHead,description,date,
+    plannedDays:v('budget-plan-days'),actualDays:v('budget-act-days'),
+    serviceAmt,materialQty:v('budget-mat-qty'),materialAmt,equipment,freight,misc,total,
+    owner:g('budget-owner'),updatedAt:new Date().toISOString()};
+  showLoad('Saving…');
+  try{
+    const eid=g('budget-eid');
+    if(eid){await db.collection(BUDGET_COL).doc(eid).update(d);toast('Updated ✓','ok');}
+    else{d.createdAt=new Date().toISOString();await db.collection(BUDGET_COL).add(d);toast('Added ✓','ok');}
+    togBudgetForm(false);
+    renderBudgetList();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function deleteBudget(id){
+  if(!confirm('Delete this line item?'))return;showLoad('Deleting…');
+  try{await db.collection(BUDGET_COL).doc(id).delete();toast('Deleted ✓','ok');}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
+}
 
 // ── BUDGET EXPORT ─────────────────────────────────
 function exportBudgetExcel(){
