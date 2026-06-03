@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_21
-const APP_VERSION="21";
+// DQAP_WIKI_VERSION_22
+const APP_VERSION="22";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -1731,6 +1731,7 @@ function go(n){
     }
     if(bu)bu.style.display='none';
     document.querySelectorAll('#v-budget .content > *:not(#budget-unauth)').forEach(e=>e.style.display='');
+    togBudgetForm(false);// keep the Add form hidden until "Add line item" is clicked
     activeBudgetProject='';populateBudgetProjDropdown();renderBudgetList();
   }
 }
