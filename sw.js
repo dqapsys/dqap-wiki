@@ -1,6 +1,6 @@
 // DQAP Wiki Service Worker
 // Bump CACHE_VERSION on every deploy to invalidate old caches.
-const CACHE_VERSION = 'dqap-v21';
+const CACHE_VERSION = 'dqap-v22';
 const CACHE_NAME = CACHE_VERSION;
 
 // Install: activate immediately, don't wait for old tabs to close.
