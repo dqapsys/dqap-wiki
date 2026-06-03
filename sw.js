@@ -1,89 +1,81 @@
-// DQAP Wiki — Service Worker v3
-const CACHE_VERSION = 'dqap-wiki-v4';
+// DQAP Wiki Service Worker
+// Bump CACHE_VERSION on every deploy to invalidate old caches.
+const CACHE_VERSION = 'dqap-v19';
+const CACHE_NAME = CACHE_VERSION;
 
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './dqap-logo.png',
-  './icon-192.png',
-  './icon-512.png',
-  './manifest.json',
-  'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap',
-  'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css',
-  'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js',
-  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-  'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js'
-];
+// Install: activate immediately, don't wait for old tabs to close.
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
 
-// ── INSTALL ───────────────────────────────────────
-self.addEventListener('install', event => {
+// Activate: delete any cache that isn't the current version, then take control.
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then(cache => {
-      return Promise.allSettled(
-        STATIC_ASSETS.map(url => cache.add(url).catch(() => {}))
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
       );
-    }).then(() => self.skipWaiting())
+      await self.clients.claim();
+    })()
   );
 });
 
-// ── ACTIVATE: clear old caches ────────────────────
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
-
-// ── FETCH ─────────────────────────────────────────
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // Always go to network for Firebase — never cache
-  if (
-    url.hostname.includes('firebase') ||
-    url.hostname.includes('firestore') ||
-    url.hostname.includes('firebasestorage') ||
-    (url.hostname.includes('googleapis') && url.pathname.includes('firestore'))
-  ) {
-    return;
+// Allow the page to trigger immediate activation of a waiting worker.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
+});
 
-  // Cache-first for Google Fonts
-  if (url.hostname === 'fonts.gstatic.com' || url.hostname === 'fonts.googleapis.com') {
+// Fetch strategy:
+//  - HTML / navigation requests  -> NETWORK FIRST (always get the freshest page;
+//    fall back to cache only when offline). This is what prevents stale versions.
+//  - Everything else (assets)    -> STALE-WHILE-REVALIDATE (fast, but self-updating).
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // Only handle GET; let the browser deal with the rest.
+  if (req.method !== 'GET') return;
+
+  // Never cache cross-origin calls (Firebase, CDNs, APIs) — pass straight through.
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isHTML =
+    req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html');
+
+  if (isHTML) {
+    // NETWORK FIRST for pages
     event.respondWith(
-      caches.match(event.request).then(cached =>
-        cached || fetch(event.request).then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
-          return response;
-        })
-      )
+      (async () => {
+        try {
+          const fresh = await fetch(req, { cache: 'no-store' });
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(req, fresh.clone());
+          return fresh;
+        } catch (e) {
+          const cached = await caches.match(req);
+          return cached || caches.match('./index.html');
+        }
+      })()
     );
     return;
   }
 
-  // Cache-first for all other assets (CDN scripts, local files)
+  // STALE-WHILE-REVALIDATE for static assets
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
-        const clone = response.clone();
-        caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
-        return response;
-      }).catch(() => {
-        // Offline fallback for page navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(req);
+      const network = fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) cache.put(req, res.clone());
+          return res;
+        })
+        .catch(() => cached);
+      return cached || network;
+    })()
   );
 });
