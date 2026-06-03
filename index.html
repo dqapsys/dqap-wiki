@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_19
-const APP_VERSION="19";
+// DQAP_WIKI_VERSION_20
+const APP_VERSION="20";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -639,6 +639,13 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
   </div>
   <div class="content">
+    <div id="budget-unauth" style="display:none">
+      <div class="empty" style="min-height:40vh">
+        <i class="ti ti-shield-off eico" style="color:#B71C1C;font-size:40px"></i>
+        <div class="etit" style="color:#B71C1C">Unauthorized Access</div>
+        <div class="edesc">You do not have permission to view the Budget Tracker.<br>Contact your administrator to request access.</div>
+      </div>
+    </div>
 
     <!-- Project selector + config panel -->
     <div class="card" style="margin-bottom:14px">
@@ -898,7 +905,6 @@ function startApp(){
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
-    const ni=el('ni-payments');if(ni)ni.style.display='none';
   }
   // show role badge in sidebar
   const roleBadgeEl=el('sb-role');
@@ -1750,7 +1756,17 @@ function go(n){
     renderPayments();populatePayCustomers();populateEngineers();
   }
   if(n==='rma'){renderRMA();populateRMAProjects();}
-  if(n==='budget'){activeBudgetProject='';populateBudgetProjDropdown();renderBudgetEntries();}
+  if(n==='budget'){
+    const bu=el('budget-unauth');
+    if(CU?.isUser){
+      if(bu)bu.style.display='block';
+      document.querySelectorAll('#v-budget .content > *:not(#budget-unauth)').forEach(e=>e.style.display='none');
+      return;
+    }
+    if(bu)bu.style.display='none';
+    document.querySelectorAll('#v-budget .content > *:not(#budget-unauth)').forEach(e=>e.style.display='');
+    activeBudgetProject='';populateBudgetProjDropdown();renderBudgetEntries();
+  }
 }
 
 // ── MOBILE ────────────────────────────────────────
@@ -1861,7 +1877,7 @@ function onBudgetProjChange(){
 }
 
 // ── BUDGET DASHBOARD ──────────────────────────────
-function renderBudgetDash(){
+function renderBudgetDash(){if(CU?.isUser)return;
   const proj=activeBudgetProject;
   const dash=el('budget-proj-dash');
   const noProj=el('budget-no-proj');
@@ -2015,7 +2031,7 @@ async function deleteBudget(id){
 }
 
 // ── BUDGET ENTRIES RENDER ─────────────────────────
-function renderBudgetEntries(){
+function renderBudgetEntries(){if(CU?.isUser)return;
   const proj=activeBudgetProject;
   const wrap=el('budget-table-wrap');
   const noProj=el('budget-no-proj');
