@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_9
+// DQAP_WIKI_VERSION_10
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -31,7 +31,7 @@ firebase.initializeApp({
 });
 const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects";
-const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma";
+const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget";
 const CFG={NOTIFY_ON:false,EJS_KEY:"",EJS_SERVICE:"",EJS_TEMPLATE:"",NOTIFY_TO:""};
 const THEMES={
   blue:{sb1:"#0E52A8",sb2:"#1A6FD4",p:"#1A6FD4",pd:"#0E52A8",pl:"#EAF3FB",bg:"#F4F6FA"},
@@ -106,6 +106,9 @@ input[type="file"].fi{padding:5px 8px;cursor:pointer}
 .b-act{background:#E3F2FD;color:#0D47A1}.b-hld{background:#FFF3E0;color:#E65100}.b-del{background:#FFEBEE;color:#B71C1C}.b-cmp{background:#E8F5E9;color:#1B5E20}.b-nst{background:#ECEFF1;color:#37474F}
 .b-pnd{background:#FFF3E0;color:#E65100}.b-prt{background:#E3F2FD;color:#0D47A1}.b-rcv{background:#E8F5E9;color:#1B5E20}
 .b-rai{background:#E3F2FD;color:#0D47A1}.b-apr{background:#FFFDE7;color:#F57F17}.b-rep{background:#E8F5E9;color:#1B5E20}.b-cls{background:#ECEFF1;color:#37474F}
+.b-ovr{background:#FFEBEE;color:#B71C1C}.b-nrl{background:#FFF3E0;color:#E65100}.b-ont{background:#E8F5E9;color:#1B5E20}
+.budget-bar-wrap{height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;margin:4px 0}
+.budget-bar-fill{height:100%;border-radius:4px;transition:width .5s}
 .ecard{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);transition:border .15s,box-shadow .15s;margin-bottom:8px}
 .ecard:hover{border-color:#90CAF9;box-shadow:0 2px 10px rgba(0,0,0,.07)}
 .ech{padding:11px 13px;cursor:pointer;display:flex;align-items:flex-start;gap:10px}
@@ -291,6 +294,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
+    <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="sb-sec" id="admin-sec" style="display:none">Admin</div>
     <div class="ni" onclick="go('projects')"        id="ni-projects" style="display:none"><i class="ti ti-building"></i>Manage Projects</div>
     <div class="ni" onclick="go('users')"           id="ni-users"    style="display:none"><i class="ti ti-users"></i>Manage Users</div>
@@ -607,6 +611,62 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
+
+<!-- ══ BUDGET TRACKER ══ -->
+<div id="v-budget" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking — budgeted vs actual spend</div></div>
+    <div class="tr">
+      <button class="btn grn" onclick="exportBudgetExcel()"><i class="ti ti-file-spreadsheet"></i>Export</button>
+      <button class="btn pri" onclick="togBudgetForm(true)"><i class="ti ti-plus"></i>Add entry</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="budget-form-panel" style="display:none;margin-bottom:16px">
+      <div class="card">
+        <div class="ch"><div class="ct" id="budget-form-t"><i class="ti ti-wallet" style="font-size:14px"></i>New budget entry</div><button class="btn sm" onclick="togBudgetForm(false)"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl r">Project</label><select class="fs" id="budget-proj"><option value="">Select project</option></select></div>
+            <div class="fg"><label class="fl r">Category</label><select class="fs" id="budget-cat"><option value="">Select category</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Subcontractor</option><option>Testing &amp; Commissioning</option><option>Overheads</option><option>Other</option></select></div>
+            <div class="fg"><label class="fl r">Description</label><input class="fi" id="budget-desc" placeholder="Brief description of expense"></div>
+            <div class="fg"><label class="fl r">Budgeted amount (&#8377;)</label><input class="fi" id="budget-budgeted" type="number" min="0" placeholder="e.g. 500000"></div>
+            <div class="fg"><label class="fl r">Actual spent (&#8377;)</label><input class="fi" id="budget-actual" type="number" min="0" placeholder="e.g. 480000"></div>
+            <div class="fg"><label class="fl r">Date</label><input type="date" class="fi" id="budget-date"></div>
+            <div class="fg"><label class="fl">Owner</label><select class="fs" id="budget-owner"><option value="">Select owner</option></select></div>
+            <div class="fg" style="grid-column:span 2"><label class="fl">Remarks</label><input class="fi" id="budget-remarks" placeholder="Optional notes or justification"></div>
+          </div>
+          <input type="hidden" id="budget-eid">
+          <button class="btn pri" onclick="saveBudget()" id="budget-save-btn"><i class="ti ti-device-floppy"></i>Save entry</button>
+        </div>
+      </div>
+    </div>
+    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-report-money" style="color:#1565C0;font-size:18px"></i></div><div><div class="sv" id="bg-st-budgeted">&#8377; &#8212;</div><div class="sl">Total budgeted</div></div></div>
+      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-credit-card" style="color:#880E4F;font-size:18px"></i></div><div><div class="sv" id="bg-st-actual">&#8377; &#8212;</div><div class="sl">Total spent</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-pig-money" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="bg-st-remaining">&#8377; &#8212;</div><div class="sl">Remaining</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="bg-st-overcount">&#8212;</div><div class="sl">Over budget entries</div></div></div>
+    </div>
+    <div id="budget-rollup-wrap" style="margin-bottom:14px;display:none">
+      <div class="card">
+        <div class="ch"><div class="ct"><i class="ti ti-chart-bar" style="font-size:14px"></i>Budget by project</div></div>
+        <div class="cb" id="budget-rollup"></div>
+      </div>
+    </div>
+    <div class="fbar">
+      <select class="fsel" id="budget-ff-proj" onchange="renderBudget()"><option value="">All projects</option></select>
+      <select class="fsel" id="budget-ff-cat" onchange="renderBudget()"><option value="">All categories</option><option>Materials</option><option>Labour</option><option>Transport</option><option>Subcontractor</option><option>Testing &amp; Commissioning</option><option>Overheads</option><option>Other</option></select>
+      <select class="fsel" id="budget-ff-status" onchange="renderBudget()"><option value="">All statuses</option><option value="Over Budget">Over Budget</option><option value="Near Limit">Near Limit</option><option value="On Track">On Track</option></select>
+      <input class="fi" id="budget-search" oninput="renderBudget()" placeholder="Search project, desc, owner..." style="max-width:220px;padding:5px 10px">
+      <span id="budget-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
+    </div>
+    <div class="card"><div class="wtable-wrap"><table class="wtable">
+      <thead><tr><th>#</th><th>Project</th><th>Category</th><th>Description</th><th>Budgeted (&#8377;)</th><th>Actual (&#8377;)</th><th>Variance (&#8377;)</th><th>Utilisation</th><th>Status</th><th>Date</th><th>Owner</th><th>Remarks</th><th>Actions</th></tr></thead>
+      <tbody id="budget-tbody"></tbody>
+    </table></div></div>
+  </div>
+</div>
+
 <!-- ══ MANAGE PROJECTS ══ -->
 <div id="v-projects" class="view" style="display:none">
   <div class="topbar">
@@ -673,8 +733,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null;
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
 
@@ -729,9 +789,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub].forEach(u=>{if(u)u();});
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -743,7 +803,7 @@ function startApp(){
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
   else{el('lib-upload-btn-wrap').style.display='none';el('pmo-add-btn-wrap').style.display='none';el('pay-add-btn-wrap').style.display='none';}
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();populateEngineers();
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -763,7 +823,7 @@ function startProjListen(){
   if(projUnsub)projUnsub();
   projUnsub=db.collection(PROJ).orderBy('name','asc').onSnapshot(sn=>{
     projectsData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    populateProjDropdown();populatePayCustomers();populateRMAProjects();populatePMOProjects();
+    populateProjDropdown();populatePayCustomers();populateRMAProjects();populatePMOProjects();populateBudgetProjects();
     if(el('v-projects').style.display!=='none')renderProjectsPage();
   },err=>{});
 }
@@ -792,7 +852,7 @@ async function populateEngineers(){
   try{
     const sn=await db.collection(USERS).orderBy('fullName','asc').get();
     const names=sn.docs.map(d=>d.data().fullName).filter(Boolean);
-    ['f-eng','rma-eng','pay-owner'].forEach(sid=>{
+    ['f-eng','rma-eng','pay-owner','budget-owner'].forEach(sid=>{
       const s=el(sid);if(!s)return;
       const cur=s.value;
       s.innerHTML=`<option value="">Select engineer</option>`+names.map(n=>`<option>${esc(n)}</option>`).join('');
@@ -1423,6 +1483,7 @@ function go(n){
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='payments'){renderPayments();populatePayCustomers();populateEngineers();}
   if(n==='rma'){renderRMA();populateRMAProjects();}
+  if(n==='budget'){renderBudget();populateBudgetProjects();}
 }
 
 // ── MOBILE ────────────────────────────────────────
@@ -1449,6 +1510,193 @@ function bsta(v){if(!v)return'';const m={Resolved:'res',Workaround:'wor',Open:'o
 function bpmoStatus(v){const m={'Not Started':'nst','In Progress':'act','Completed':'cmp','On Hold':'hld','Delayed':'del'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 function bpayStatus(v){const m={Pending:'pnd',Partial:'prt',Received:'rcv'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 function brmaStatus(v){const m={Raised:'rai',Approved:'apr','Replacement Received':'rep',Closed:'cls'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
+
+
+// ── BUDGET LISTENER ───────────────────────────────
+function startBudgetListen(){
+  if(budgetUnsub)budgetUnsub();
+  budgetUnsub=db.collection(BUDGET_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
+    budgetData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudget();
+  },err=>{console.log('budget listen err',err);});
+}
+
+function budgetStatus(bud,act){
+  if(!bud)return 'On Track';
+  const p=(act/bud)*100;
+  if(p>100)return 'Over Budget';
+  if(p>=80)return 'Near Limit';
+  return 'On Track';
+}
+function bbudgetStatus(v){
+  const m={'Over Budget':'ovr','Near Limit':'nrl','On Track':'ont'};
+  return '<span class="badge b-'+(m[v]||'ont')+'">'+v+'</span>';
+}
+
+function populateBudgetProjects(){
+  ['budget-proj','budget-ff-proj'].forEach(function(sid){
+    var s=el(sid);if(!s)return;
+    var cur=s.value;
+    var pre=sid==='budget-ff-proj'?'<option value="">All projects</option>':'<option value="">Select project</option>';
+    s.innerHTML=pre+projectsData.map(function(p){return '<option'+(p.name===cur?' selected':'')+'>'+esc(p.name)+'</option>';}).join('');
+  });
+}
+
+function togBudgetForm(show,data){
+  el('budget-form-panel').style.display=show?'block':'none';
+  if(!show){
+    el('budget-eid').value='';
+    ['budget-proj','budget-cat','budget-owner'].forEach(function(id){var e=el(id);if(e)e.value='';});
+    ['budget-desc','budget-budgeted','budget-actual','budget-remarks'].forEach(function(id){var e=el(id);if(e)e.value='';});
+    el('budget-date').value=new Date().toISOString().split('T')[0];
+    el('budget-form-t').innerHTML='<i class="ti ti-wallet" style="font-size:14px"></i>New budget entry';
+    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save entry';
+    return;
+  }
+  if(data){
+    el('budget-proj').value=data.project||'';
+    el('budget-cat').value=data.category||'';
+    el('budget-desc').value=data.description||'';
+    el('budget-budgeted').value=data.budgeted||'';
+    el('budget-actual').value=data.actual||'';
+    el('budget-date').value=data.date||'';
+    el('budget-owner').value=data.owner||'';
+    el('budget-remarks').value=data.remarks||'';
+    el('budget-eid').value=data.id;
+    el('budget-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit budget entry';
+    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update entry';
+  } else {
+    el('budget-date').value=new Date().toISOString().split('T')[0];
+  }
+  populateBudgetProjects();
+}
+
+async function saveBudget(){
+  var project=g('budget-proj'),category=g('budget-cat'),description=g('budget-desc');
+  var budgeted=parseFloat(el('budget-budgeted').value)||0;
+  var actual=parseFloat(el('budget-actual').value)||0;
+  var date=g('budget-date'),owner=g('budget-owner'),remarks=g('budget-remarks');
+  if(!project){toast('Select a project','err');return;}
+  if(!category){toast('Select a category','err');return;}
+  if(!description){toast('Enter a description','err');return;}
+  if(!budgeted){toast('Enter budgeted amount','err');return;}
+  if(!date){toast('Select a date','err');return;}
+  showLoad('Saving...');
+  try{
+    var now=new Date().toISOString(),eid=g('budget-eid');
+    var d={project:project,category:category,description:description,budgeted:budgeted,actual:actual,date:date,owner:owner,remarks:remarks,updatedAt:now};
+    if(eid){await db.collection(BUDGET_COL).doc(eid).update(d);toast('Entry updated','ok');}
+    else{d.createdAt=now;await db.collection(BUDGET_COL).add(d);toast('Entry added','ok');}
+    togBudgetForm(false);
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function deleteBudget(id){
+  if(!confirm('Delete this budget entry?'))return;
+  showLoad('Deleting...');
+  try{await db.collection(BUDGET_COL).doc(id).delete();toast('Deleted','ok');}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+
+function renderBudget(){
+  var projF=el('budget-ff-proj')?el('budget-ff-proj').value:'';
+  var catF=el('budget-ff-cat')?el('budget-ff-cat').value:'';
+  var statusF=el('budget-ff-status')?el('budget-ff-status').value:'';
+  var q=(el('budget-search')?el('budget-search').value||'':'').toLowerCase().trim();
+
+  var list=budgetData.filter(function(b){
+    if(projF&&b.project!==projF)return false;
+    if(catF&&b.category!==catF)return false;
+    if(statusF&&budgetStatus(b.budgeted,b.actual)!==statusF)return false;
+    if(q){var h=[b.project,b.category,b.description,b.owner,b.remarks].join(' ').toLowerCase();if(!h.includes(q))return false;}
+    return true;
+  });
+
+  var totalBudgeted=budgetData.reduce(function(s,b){return s+(b.budgeted||0);},0);
+  var totalActual=budgetData.reduce(function(s,b){return s+(b.actual||0);},0);
+  var remaining=totalBudgeted-totalActual;
+  var overCount=budgetData.filter(function(b){return budgetStatus(b.budgeted,b.actual)==='Over Budget';}).length;
+
+  el('bg-st-budgeted').textContent='\u20B9 '+fmtAmt(totalBudgeted);
+  el('bg-st-actual').textContent='\u20B9 '+fmtAmt(totalActual);
+  var remEl=el('bg-st-remaining');
+  remEl.textContent=(remaining<0?'-':'')+'\u20B9 '+fmtAmt(Math.abs(remaining));
+  remEl.style.color=remaining<0?'#B71C1C':remaining===0?'#666':'#1B5E20';
+  el('bg-st-overcount').textContent=overCount;
+  el('bg-st-overcount').style.color=overCount>0?'#B71C1C':'#666';
+
+  var projNames=[...new Set(budgetData.map(function(b){return b.project;}))].filter(Boolean).sort();
+  var rollupWrap=el('budget-rollup-wrap');
+  if(projNames.length){
+    rollupWrap.style.display='block';
+    el('budget-rollup').innerHTML=projNames.map(function(pn){
+      var rows=budgetData.filter(function(b){return b.project===pn;});
+      var pb=rows.reduce(function(s,b){return s+(b.budgeted||0);},0);
+      var pa=rows.reduce(function(s,b){return s+(b.actual||0);},0);
+      var pct=pb>0?Math.min(Math.round((pa/pb)*100),200):0;
+      var col=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
+      return '<div style="margin-bottom:10px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;flex-wrap:wrap;gap:4px">'
+        +'<span style="font-size:12px;font-weight:600">'+esc(pn)+'</span>'
+        +'<span style="font-size:11px;color:var(--t2)">\u20B9'+fmtAmt(pa)+' of \u20B9'+fmtAmt(pb)+' &nbsp;&middot;&nbsp; <b style="color:'+col+'">'+pct+'%</b></span>'
+        +'</div>'
+        +'<div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+col+'"></div></div>'
+        +'</div>';
+    }).join('');
+  } else {
+    rollupWrap.style.display='none';
+  }
+
+  el('budget-count').textContent=list.length+' of '+budgetData.length+' entries';
+  var tb=el('budget-tbody');
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:28px;color:var(--t2)">'+(budgetData.length?'No entries match':'No budget entries yet. Click Add entry to get started.')+'</td></tr>';
+    return;
+  }
+  tb.innerHTML=list.map(function(b,i){
+    var bud=b.budgeted||0,act=b.actual||0;
+    var variance=act-bud;
+    var pct=bud>0?Math.round((act/bud)*100):0;
+    var status=budgetStatus(bud,act);
+    var varCol=variance>0?'#B71C1C':variance<0?'#1B5E20':'#666';
+    var barCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
+    var varSign=variance>=0?'+':'';
+    return '<tr>'
+      +'<td style="font-size:10px;font-weight:600;color:var(--t2)">'+(i+1)+'</td>'
+      +'<td style="font-weight:500;white-space:nowrap">'+esc(b.project||'\u2014')+'</td>'
+      +'<td><span class="tag">'+esc(b.category||'\u2014')+'</span></td>'
+      +'<td style="max-width:160px;font-size:12px">'+esc(b.description||'\u2014')+'</td>'
+      +'<td style="font-weight:600;white-space:nowrap">\u20B9 '+fmtAmt(bud)+'</td>'
+      +'<td style="font-weight:600;white-space:nowrap">\u20B9 '+fmtAmt(act)+'</td>'
+      +'<td style="font-weight:600;white-space:nowrap;color:'+varCol+'">'+varSign+'\u20B9 '+fmtAmt(Math.abs(variance))+'</td>'
+      +'<td style="min-width:90px"><div style="display:flex;align-items:center;gap:5px">'
+      +'<div style="flex:1;height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:50px"><div style="height:100%;border-radius:3px;background:'+barCol+';width:'+Math.min(pct,100)+'%"></div></div>'
+      +'<span style="font-size:10.5px;font-weight:600;color:'+barCol+';width:32px;text-align:right">'+pct+'%</span>'
+      +'</div></td>'
+      +'<td>'+bbudgetStatus(status)+'</td>'
+      +'<td style="white-space:nowrap">'+(b.date||'\u2014')+'</td>'
+      +'<td style="white-space:nowrap">'+esc(b.owner||'\u2014')+'</td>'
+      +'<td style="max-width:130px;font-size:11.5px;color:var(--t2)">'+esc(b.remarks||'\u2014')+'</td>'
+      +'<td><div style="display:flex;gap:3px">'
+      +(CU&&(CU.isAdmin||b.owner===CU.fullName)?'<button class="btn sm" onclick="togBudgetForm(true,budgetData.find(function(x){return x.id===\''+b.id+'\'}))"><i class="ti ti-edit"></i></button>':'')
+      +(CU&&CU.isAdmin?'<button class="btn sm danger" onclick="deleteBudget(\''+b.id+'\')"><i class="ti ti-trash"></i></button>':'')
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function exportBudgetExcel(){
+  if(!budgetData.length){toast('No data to export','err');return;}
+  var headers=['Project','Category','Description','Budgeted (Rs)','Actual (Rs)','Variance (Rs)','Utilisation %','Status','Date','Owner','Remarks'];
+  var rows=budgetData.map(function(b){
+    var bud=b.budgeted||0,act=b.actual||0;
+    return[b.project||'',b.category||'',b.description||'',bud,act,act-bud,bud>0?Math.round((act/bud)*100):0,budgetStatus(bud,act),b.date||'',b.owner||'',b.remarks||''];
+  });
+  var ws=XLSX.utils.aoa_to_sheet([headers].concat(rows));
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Budget');
+  XLSX.writeFile(wb,'DQAP_Budget_Tracker.xlsx');
+  toast('Exported','ok');
+}
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
