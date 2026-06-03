@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_23
-const APP_VERSION="23";
+// DQAP_WIKI_VERSION_24
+const APP_VERSION="24";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -31,7 +31,7 @@ firebase.initializeApp({
   appId:"1:932523956178:web:cc83a8e7369eaa80649a0b"
 });
 const db=firebase.firestore(),storage=firebase.storage();
-const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects";
+const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks";
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Other Expenses"];
 const CFG={NOTIFY_ON:false,EJS_KEY:"",EJS_SERVICE:"",EJS_TEMPLATE:"",NOTIFY_TO:""};
@@ -300,6 +300,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('search')"          id="ni-search"><i class="ti ti-search"></i>Search</div>
     <div class="ni" onclick="go('library')"         id="ni-library"><i class="ti ti-library"></i>Library</div>
     <div class="sb-sec">Operations</div>
+    <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management</div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
@@ -700,6 +701,60 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
+<!-- ══ TASK MANAGEMENT ══ -->
+<div id="v-tasks" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-checklist" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Task Management</div><div class="pg-s">Assign tasks down the hierarchy and track deadlines</div></div>
+    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
+  </div>
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-list-check" style="color:#1565C0;font-size:18px"></i></div><div><div class="sv" id="tk-st-total">—</div><div class="sl">Total</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-circle-dot" style="color:#0D47A1;font-size:18px"></i></div><div><div class="sv" id="tk-st-open">—</div><div class="sl">Open</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF8E1"><i class="ti ti-progress" style="color:#F57F17;font-size:18px"></i></div><div><div class="sv" id="tk-st-prog">—</div><div class="sl">In Progress</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="tk-st-done">—</div><div class="sl">Completed</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="tk-st-overdue">—</div><div class="sl">Overdue</div></div></div>
+    </div>
+
+    <!-- Assign form -->
+    <div id="task-form-panel" style="display:none;margin-bottom:14px">
+      <div class="card">
+        <div class="ch"><div class="ct" id="task-form-t"><i class="ti ti-plus" style="font-size:14px"></i>Assign new task</div><button class="btn sm" onclick="togTaskForm(false)"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div class="g2" style="margin-bottom:12px">
+            <div class="fg" style="grid-column:span 2"><label class="fl r">Task title</label><input class="fi" id="task-title" placeholder="e.g. Submit material test certificates"></div>
+            <div class="fg" style="grid-column:span 2"><label class="fl">Description</label><input class="fi" id="task-desc" placeholder="Details / scope of the task"></div>
+            <div class="fg"><label class="fl r">Assign to</label><select class="fs" id="task-assignee"><option value="">Select assignee</option></select></div>
+            <div class="fg"><label class="fl r">Deadline</label><input type="date" class="fi" id="task-deadline"></div>
+            <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Low</option></select></div>
+            <div class="fg"><label class="fl">Link to project</label><select class="fs" id="task-project"><option value="">— None —</option></select></div>
+          </div>
+          <input type="hidden" id="task-eid">
+          <button class="btn pri" onclick="saveTask()" id="task-save-btn"><i class="ti ti-send"></i>Assign task</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="fbar">
+      <select class="fsel" id="task-ff-view" onchange="renderTasks()">
+        <option value="mine">My tasks</option>
+        <option value="bymes">Assigned by me</option>
+        <option value="all">All tasks</option>
+      </select>
+      <select class="fsel" id="task-ff-status" onchange="renderTasks()">
+        <option value="">All statuses</option>
+        <option>Open</option><option>In Progress</option><option>Completed</option>
+      </select>
+      <input class="fi" id="task-search" oninput="renderTasks()" placeholder="Search title, person…" style="max-width:220px;padding:5px 10px">
+      <span id="task-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
+    </div>
+
+    <div id="task-list"></div>
+  </div>
+</div>
+
 <!-- ══ MANAGE PROJECTS ══ -->
 <div id="v-projects" class="view" style="display:none">
   <div class="topbar">
@@ -791,8 +846,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null;
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
@@ -856,9 +911,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];activeBudgetProject='';
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];activeBudgetProject='';
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -870,7 +925,7 @@ function startApp(){
   el('f-date').value=new Date().toISOString().split('T')[0];
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
   if(!CU.canWrite){
-    ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
+    ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','task-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
   }
   // show role badge in sidebar
   const roleBadgeEl=el('sb-role');
@@ -880,7 +935,7 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();populateEngineers();
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -1708,6 +1763,7 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
+  if(n==='tasks'){togTaskForm(false);renderTasks();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='payments'){
@@ -2073,6 +2129,227 @@ function exportBudgetExcel(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Budget');
   XLSX.writeFile(wb,`DQAP_Budget_${activeBudgetProject.replace(/[^a-z0-9]/gi,'_')}.xlsx`);
   toast('Exported ✓','ok');
+}
+
+
+// ── TASK LISTENERS ────────────────────────────────
+function startTaskListen(){
+  if(taskUnsub)taskUnsub();
+  taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
+    taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    if(el('v-tasks')&&el('v-tasks').style.display!=='none')renderTasks();
+  },err=>{});
+}
+function startUsersListen(){
+  if(usersUnsub)usersUnsub();
+  usersUnsub=db.collection(USERS).orderBy('fullName','asc').onSnapshot(sn=>{
+    usersData=sn.docs.map(d=>({id:d.id,...d.data()}));
+  },err=>{});
+}
+
+// ── TASK HELPERS ──────────────────────────────────
+function roleRank(r){return r==='admin'?3:(r==='manager'?2:1);}
+function roleLabel(r){return r==='admin'?'Admin':(r==='manager'?'Manager':'User');}
+function roleBadgeCls(r){return r==='admin'?'b-adm':(r==='manager'?'b-mgr':'b-usr');}
+
+function taskDeadlineStatus(deadline,status){
+  if(status==='Completed')return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-circle-check',label:'Completed'};
+  if(!deadline)return{color:'#37474F',bg:'#ECEFF1',icon:'ti-calendar',label:'No deadline'};
+  const today=new Date();today.setHours(0,0,0,0);
+  const dl=new Date(deadline);dl.setHours(0,0,0,0);
+  const days=Math.round((dl-today)/(1000*60*60*24));
+  if(days<0)return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-alert-triangle',label:'Overdue by '+Math.abs(days)+'d',days};
+  if(days===0)return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-alarm',label:'Due today',days};
+  if(days<=3)return{color:'#E65100',bg:'#FFF3E0',icon:'ti-clock-exclamation',label:days+'d left',days};
+  return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-calendar',label:days+'d left',days};
+}
+function taskStatusBadge(s){
+  const m={'Open':'b-rai','In Progress':'b-apr','Completed':'b-rep'};
+  return`<span class="badge ${m[s]||'b-rai'}">${s||'Open'}</span>`;
+}
+function taskPriBadge(p){
+  if(!p)return'';
+  const m={'High':{bg:'#FFEBEE',c:'#B71C1C'},'Medium':{bg:'#FFF3E0',c:'#E65100'},'Low':{bg:'#ECEFF1',c:'#37474F'}};
+  const s=m[p]||m['Medium'];
+  return`<span style="font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:${s.bg};color:${s.c}">${p}</span>`;
+}
+
+// ── TASK ASSIGNEE DROPDOWN (hierarchy) ────────────
+function populateTaskAssignees(){
+  const sel=el('task-assignee');if(!sel)return;
+  const myRank=roleRank(CU.role);
+  const cur=sel.value;
+  // eligible = anyone strictly lower in rank than me
+  const eligible=usersData.filter(u=>roleRank(u.role||'user')<myRank);
+  if(!eligible.length){
+    sel.innerHTML='<option value="">No eligible assignees</option>';
+    return;
+  }
+  sel.innerHTML='<option value="">Select assignee</option>'+eligible.map(u=>
+    `<option value="${esc(u.fullName)}" data-role="${u.role||'user'}"${u.fullName===cur?' selected':''}>${esc(u.fullName)} — ${roleLabel(u.role||'user')}</option>`
+  ).join('');
+}
+function populateTaskProjects(){
+  const sel=el('task-project');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— None —</option>'+projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');
+}
+
+// ── TASK FORM ─────────────────────────────────────
+function togTaskForm(show,data){
+  const panel=el('task-form-panel');if(!panel)return;
+  // Only admin/manager can assign
+  if(show&&!CU.canWrite){toast('You do not have permission to assign tasks','err');return;}
+  panel.style.display=show?'block':'none';
+  if(!show){
+    el('task-eid').value='';
+    ['task-title','task-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    el('task-assignee').value='';el('task-deadline').value='';el('task-priority').value='Medium';el('task-project').value='';
+    el('task-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>Assign new task';
+    el('task-save-btn').innerHTML='<i class="ti ti-send"></i>Assign task';
+    return;
+  }
+  populateTaskAssignees();populateTaskProjects();
+  if(data){
+    el('task-title').value=data.title||'';
+    el('task-desc').value=data.description||'';
+    el('task-assignee').value=data.assignedTo||'';
+    el('task-deadline').value=data.deadline||'';
+    el('task-priority').value=data.priority||'Medium';
+    el('task-project').value=data.project||'';
+    el('task-eid').value=data.id;
+    el('task-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit task';
+    el('task-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update task';
+  }
+}
+
+async function saveTask(){
+  if(!CU.canWrite){toast('Not permitted','err');return;}
+  const title=g('task-title'),description=g('task-desc');
+  const assignedTo=g('task-assignee'),deadline=g('task-deadline');
+  const priority=g('task-priority')||'Medium',project=g('task-project');
+  if(!title){toast('Enter a task title','err');return;}
+  if(!assignedTo){toast('Select an assignee','err');return;}
+  if(!deadline){toast('Set a deadline','err');return;}
+  // Determine assignee role + enforce hierarchy
+  const sel=el('task-assignee');
+  const opt=sel.options[sel.selectedIndex];
+  const assignedToRole=opt?opt.getAttribute('data-role')||'user':'user';
+  if(roleRank(assignedToRole)>=roleRank(CU.role)){
+    toast('You can only assign tasks to people below your level','err');return;
+  }
+  showLoad('Saving…');
+  try{
+    const eid=g('task-eid');
+    const now=new Date().toISOString();
+    if(eid){
+      await db.collection(TASK_COL).doc(eid).update({title,description,assignedTo,assignedToRole,deadline,priority,project,updatedAt:now});
+      toast('Task updated ✓','ok');
+    }else{
+      await db.collection(TASK_COL).add({title,description,
+        assignedBy:CU.fullName,assignedByRole:CU.role,
+        assignedTo,assignedToRole,deadline,priority,project,
+        status:'Open',createdAt:now,updatedAt:now});
+      toast('Task assigned ✓','ok');
+    }
+    togTaskForm(false);
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function updateTaskStatus(id,status){
+  showLoad('Updating…');
+  try{
+    const d={status,updatedAt:new Date().toISOString()};
+    if(status==='Completed')d.completedAt=new Date().toISOString();
+    await db.collection(TASK_COL).doc(id).update(d);
+    toast('Status updated ✓','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function deleteTask(id){
+  if(!confirm('Delete this task?'))return;showLoad('Deleting…');
+  try{await db.collection(TASK_COL).doc(id).delete();toast('Deleted ✓','ok');}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+
+// ── TASK RENDER ───────────────────────────────────
+function renderTasks(){
+  const view=el('task-ff-view')?.value||'mine';
+  const statusF=el('task-ff-status')?.value||'';
+  const q=(el('task-search')?.value||'').toLowerCase().trim();
+
+  // Stats over the tasks relevant to this user (mine + by me; admin sees all)
+  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName);
+  el('tk-st-total').textContent=scope.length;
+  el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
+  el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
+  el('tk-st-done').textContent=scope.filter(t=>t.status==='Completed').length;
+  const overdue=scope.filter(t=>{const s=taskDeadlineStatus(t.deadline,t.status);return s&&s.days!==undefined&&s.days<0;}).length;
+  el('tk-st-overdue').textContent=overdue;
+  el('tk-st-overdue').style.color=overdue>0?'#B71C1C':'';
+
+  let list=taskData.filter(t=>{
+    if(view==='mine'&&t.assignedTo!==CU.fullName)return false;
+    if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
+    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName))return false;
+    if(statusF&&t.status!==statusF)return false;
+    if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+  // sort: overdue/urgent first, completed last
+  list.sort((a,b)=>{
+    if((a.status==='Completed')!==(b.status==='Completed'))return a.status==='Completed'?1:-1;
+    const da=taskDeadlineStatus(a.deadline,a.status),db_=taskDeadlineStatus(b.deadline,b.status);
+    const va=da&&da.days!==undefined?da.days:9999,vb=db_&&db_.days!==undefined?db_.days:9999;
+    return va-vb;
+  });
+
+  el('task-count').textContent=`${list.length} task${list.length!==1?'s':''}`;
+  const wrap=el('task-list');
+  if(!list.length){
+    wrap.innerHTML=`<div class="empty"><i class="ti ti-checklist eico"></i><div class="etit">No tasks</div><div class="edesc">${CU.canWrite?'Click "Assign task" to create one.':'No tasks assigned to you yet.'}</div></div>`;
+    return;
+  }
+
+  wrap.innerHTML=list.map(t=>{
+    const ds=taskDeadlineStatus(t.deadline,t.status);
+    const dchip=ds?`<span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span>`:'';
+    const dl=t.deadline?new Date(t.deadline).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
+    const canEditTask=CU.isAdmin||t.assignedBy===CU.fullName;
+    const canStatus=CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName;
+    const leftBar=ds&&ds.days!==undefined&&ds.days<0&&t.status!=='Completed'?'#B71C1C':(ds&&ds.days!==undefined&&ds.days<=3&&t.status!=='Completed'?'#E65100':(t.status==='Completed'?'#1B5E20':'#1A6FD4'));
+    return`<div class="pmo-card" style="border-left:3px solid ${leftBar}">
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px">
+              <span style="font-size:13.5px;font-weight:600;color:var(--t1)">${esc(t.title)}</span>
+              ${taskStatusBadge(t.status)}
+              ${taskPriBadge(t.priority)}
+              ${t.project?`<span style="font-size:9.5px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600"><i class="ti ti-building" style="font-size:10px"></i> ${esc(t.project)}</span>`:''}
+            </div>
+            ${t.description?`<div style="font-size:11.5px;color:var(--t2);margin-bottom:6px">${esc(t.description)}</div>`:''}
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--t2)">
+              <span><i class="ti ti-user" style="font-size:11px"></i> To: <b style="color:var(--t1)">${esc(t.assignedTo)}</b> <span class="badge ${roleBadgeCls(t.assignedToRole)}" style="font-size:8.5px;padding:0 5px">${roleLabel(t.assignedToRole)}</span></span>
+              <span><i class="ti ti-user-up" style="font-size:11px"></i> By: <b style="color:var(--t1)">${esc(t.assignedBy)}</b></span>
+              ${dl?`<span><i class="ti ti-calendar-event" style="font-size:11px"></i> ${dl}</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+            ${dchip}
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+              ${canStatus&&t.status!=='Completed'?`<select class="fsel" style="padding:3px 6px;font-size:10.5px" onchange="updateTaskStatus('${t.id}',this.value)">
+                <option value="">Set status…</option>
+                ${['Open','In Progress','Completed'].filter(s=>s!==t.status).map(s=>`<option value="${s}">${s}</option>`).join('')}
+              </select>`:''}
+              ${canEditTask?`<button class="btn sm" onclick="togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i></button>`:''}
+              ${canEditTask?`<button class="btn sm danger" onclick="deleteTask('${t.id}')"><i class="ti ti-trash"></i></button>`:''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 if('serviceWorker' in navigator){
