@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_20
-const APP_VERSION="20";
+// DQAP_WIKI_VERSION_21
+const APP_VERSION="21";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -647,37 +647,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       </div>
     </div>
 
-    <!-- Project selector + config panel -->
-    <div class="card" style="margin-bottom:14px">
-      <div class="ch">
-        <div class="ct"><i class="ti ti-building" style="font-size:14px"></i>Project</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select class="fsel" id="budget-sel-proj" onchange="onBudgetProjChange()" style="min-width:220px"><option value="">— Select a project —</option></select>
-        </div>
-      </div>
-      <!-- Dashboard summary (shown when project selected) -->
-      <div id="budget-proj-dash" style="display:none">
-        <div class="cb" style="border-top:.5px solid var(--bd)">
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px">
-            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">PO Amount</div><div style="font-size:16px;font-weight:700;color:var(--p)" id="bd-po">&#8377; —</div></div>
-            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Allocated</div><div style="font-size:16px;font-weight:700;color:var(--p)" id="bd-alloc">&#8377; —</div></div>
-            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Consumed</div><div style="font-size:16px;font-weight:700" id="bd-consumed">&#8377; —</div></div>
-            <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Available</div><div style="font-size:16px;font-weight:700" id="bd-balance">&#8377; —</div></div>
-            <div style="border-radius:8px;padding:8px 10px;border:.5px solid var(--bd)" id="bd-gm-tile"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1" id="bd-gm">—</div><div style="font-size:13px;font-weight:600;margin-top:3px;line-height:1" id="bd-gm-val"></div><div style="font-size:9px;color:var(--t2);margin-top:3px">% · ₹ value of PO</div></div>
-          </div>
-          <div id="bd-ld-wrap" style="display:none;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <span style="font-size:10.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px">LD Deadline</span>
-            <span id="bd-ld-chip" class="ld-chip"></span>
-            <span id="bd-ld-date-txt" style="font-size:11px;color:var(--t2)"></span>
-          </div>
-          <div id="bd-bar-wrap">
-            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span id="bd-bar-label" style="color:var(--t2)">Budget utilisation</span><span id="bd-bar-pct" style="font-weight:600"></span></div>
-            <div class="bg-bar-wrap" style="height:10px"><div class="bg-bar-fill" id="bd-bar-fill"></div></div>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:10px" id="bd-heads-summary"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Add / Edit form -->
     <div id="budget-form-panel" style="display:none;margin-bottom:14px">
@@ -719,17 +688,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Project search -->
     <div class="fbar">
-      <select class="fsel" id="budget-ff-head" onchange="renderBudgetEntries()"><option value="">All heads</option><option>OEM Material Purchase</option><option>Cable Purchase</option><option>3rd Party</option><option>I&amp;C</option><option>Other Expenses</option></select>
-      <input class="fi" id="budget-search" oninput="renderBudgetEntries()" placeholder="Search vendor, description..." style="max-width:220px;padding:5px 10px">
+      <input class="fi" id="budget-search" oninput="renderBudgetList()" placeholder="Search project…" style="max-width:260px;padding:5px 10px">
       <span id="budget-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
 
-    <!-- Entry table -->
-    <div id="budget-table-wrap">
-      <div class="empty" id="budget-no-proj"><i class="ti ti-arrow-up-left eico"></i><div class="etit">Select a project above</div><div class="edesc">Choose a project to view its budget tracker</div></div>
-    </div>
+    <!-- Project accordion list -->
+    <div id="budget-list"></div>
 
   </div>
 </div>
@@ -1765,7 +1731,7 @@ function go(n){
     }
     if(bu)bu.style.display='none';
     document.querySelectorAll('#v-budget .content > *:not(#budget-unauth)').forEach(e=>e.style.display='');
-    activeBudgetProject='';populateBudgetProjDropdown();renderBudgetEntries();
+    activeBudgetProject='';populateBudgetProjDropdown();renderBudgetList();
   }
 }
 
@@ -1820,7 +1786,7 @@ function startBudgetListen(){
   if(budgetUnsub)budgetUnsub();
   budgetUnsub=db.collection(BUDGET_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     budgetData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetEntries();
+    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetList();
     renderPMO();
   },err=>{});
 }
@@ -1828,7 +1794,7 @@ function startBudgetCfgListen(){
   if(budgetCfgUnsub)budgetCfgUnsub();
   budgetCfgUnsub=db.collection(BUDGET_CFG_COL).onSnapshot(sn=>{
     budgetCfgData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetDash();
+    if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetList();
     renderPMO();
   },err=>{});
 }
@@ -1861,239 +1827,144 @@ function getProjBudget(projName){
 
 // ── BUDGET PROJECT DROPDOWN ───────────────────────
 function populateBudgetProjDropdown(){
-  ['budget-proj','budget-sel-proj'].forEach(sid=>{
-    const s=el(sid);if(!s)return;
-    const cur=s.value;
-    const pre=sid==='budget-sel-proj'?'<option value="">— Select a project —</option>':'<option value="">Select project</option>';
-    s.innerHTML=pre+projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');
-    if(sid==='budget-sel-proj'&&activeBudgetProject)s.value=activeBudgetProject;
-  });
+  const s=el('budget-proj');if(!s)return;
+  const cur=s.value;
+  s.innerHTML='<option value="">Select project</option>'+projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');
 }
 
-function onBudgetProjChange(){
-  activeBudgetProject=el('budget-sel-proj').value;
-  renderBudgetDash();
-  renderBudgetEntries();
+// ── BUDGET PROJECT LIST (accordion) ──────────────
+function toggleBudgetCard(projName){
+  activeBudgetProject=(activeBudgetProject===projName)?'':projName;
+  renderBudgetList();
 }
 
-// ── BUDGET DASHBOARD ──────────────────────────────
-function renderBudgetDash(){if(CU?.isUser)return;
-  const proj=activeBudgetProject;
-  const dash=el('budget-proj-dash');
-  const noProj=el('budget-no-proj');
-  if(!proj){
-    if(dash)dash.style.display='none';
-    if(noProj)noProj.style.display='flex';
-    return;
-  }
-  if(noProj)noProj.style.display='none';
-  if(dash)dash.style.display='block';
-  const {consumed,allocated,poAmount,pct,status,gmValue,gmPct}=getProjBudget(proj);
-  const balance=allocated-consumed;
-  el('bd-po').textContent='₹ '+(poAmount?fmtAmt(poAmount):'—');
-  el('bd-alloc').textContent='₹ '+(allocated?fmtAmt(allocated):'—');
-  const cEl=el('bd-consumed');cEl.textContent='₹ '+fmtAmt(consumed);
-  cEl.style.color=status==='Over Budget'?'#B71C1C':status==='Near Limit'?'#E65100':'#1B5E20';
-  const bEl=el('bd-balance');
-  bEl.textContent=(balance<0?'- ':'')+'₹ '+fmtAmt(Math.abs(balance));
-  bEl.style.color=balance<0?'#B71C1C':'#1B5E20';
-  // Bar
-  const barCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
-  const fill=el('bd-bar-fill');if(fill){fill.style.width=Math.min(pct,100)+'%';fill.style.background=barCol;}
-  const pctEl=el('bd-bar-pct');if(pctEl){pctEl.textContent=pct+'% used';pctEl.style.color=barCol;}
-  // Gross Margin tile
-  const gmEl=el('bd-gm');const gmValEl=el('bd-gm-val');const gmTile=el('bd-gm-tile');
-  if(gmEl){
-    if(gmValue!==null){
-      const gmPos=gmValue>=0;
-      const gmCol=gmPos?'#1B5E20':'#B71C1C';
-      const gmBg=gmPos?'#E8F5E9':'#FFEBEE';
-      const gmBorder=gmPos?'#A5D6A7':'#EF9A9A';
-      gmEl.textContent=gmPct.toFixed(1)+'%';
-      gmEl.style.color=gmCol;
-      if(gmValEl){gmValEl.textContent=(gmValue<0?'- ':'')+'₹ '+fmtAmt(Math.abs(gmValue));gmValEl.style.color=gmCol;}
-      if(gmTile){gmTile.style.background=gmBg;gmTile.style.borderColor=gmBorder;}
-    }else{
-      gmEl.textContent='—';
-      if(gmValEl)gmValEl.textContent='';
-      if(gmTile){gmTile.style.background='var(--card)';gmTile.style.borderColor='var(--bd)';}
-    }
-  }
-  // LD Date
-  const proj_ld=projectsData.find(p=>p.name===proj);
-  const ldWrap=el('bd-ld-wrap');
-  if(ldWrap){
-    if(proj_ld&&proj_ld.ldDate){
-      ldWrap.style.display='flex';
-      const ldS=ldStatus(proj_ld.ldDate);
-      const chip=el('bd-ld-chip');const dtxt=el('bd-ld-date-txt');
-      if(chip&&ldS)chip.innerHTML=`<i class="ti ${ldS.icon}"></i>${ldS.label}`;
-      if(chip&&ldS){chip.style.background=ldS.bg;chip.style.color=ldS.color;}
-      if(dtxt)dtxt.textContent=proj_ld.ldDate?new Date(proj_ld.ldDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
-      // PO details
-      const poEl=el('bd-po');
-      if(poEl&&proj_ld.poNumber)poEl.title='PO: '+proj_ld.poNumber;
-    }else{
-      ldWrap.style.display='none';
-    }
-  }
-  // Per-head summary
-  const headsEl=el('bd-heads-summary');if(headsEl){
-    const entries=budgetData.filter(e=>e.project===proj);
-    headsEl.innerHTML=BUDGET_HEADS.map(h=>{
-      const tot=entries.filter(e=>e.budgetHead===h).reduce((s,e)=>s+(e.total||0),0);
-      return`<div style="background:#fafafa;border-radius:7px;padding:8px 10px;border:.5px solid var(--bd)">
-        <div style="font-size:9.5px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${esc(h)}</div>
-        <div style="font-size:13px;font-weight:700">₹ ${fmtAmt(tot)}</div>
-      </div>`;
-    }).join('');
-  }
-}
-
-// ── BUDGET CONFIG ─────────────────────────────────
-
-
-// ── BUDGET FORM ───────────────────────────────────
-function togBudgetForm(show,data){
-  el('budget-form-panel').style.display=show?'block':'none';
-  if(!show){
-    el('budget-eid').value='';
-    ['budget-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
-    ['budget-plan-days','budget-act-days','budget-svc-amt','budget-mat-qty','budget-mat-amt','budget-equip','budget-freight','budget-misc'].forEach(id=>{const e=el(id);if(e)e.value='';});
-    el('budget-head').value='';el('budget-owner').value='';
-    el('budget-date').value=new Date().toISOString().split('T')[0];
-    el('budget-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>New line item';
-    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save line item';
-    el('budget-total-preview').textContent='₹ 0';
-    return;
-  }
-  if(data){
-    el('budget-proj').value=data.project||'';
-    el('budget-head').value=data.budgetHead||'';
-    el('budget-desc').value=data.description||'';
-    el('budget-date').value=data.date||'';
-    el('budget-plan-days').value=data.plannedDays||'';
-    el('budget-act-days').value=data.actualDays||'';
-    el('budget-svc-amt').value=data.serviceAmt||'';
-    el('budget-mat-qty').value=data.materialQty||'';
-    el('budget-mat-amt').value=data.materialAmt||'';
-    el('budget-equip').value=data.equipment||'';
-    el('budget-freight').value=data.freight||'';
-    el('budget-misc').value=data.misc||'';
-    el('budget-owner').value=data.owner||'';
-    el('budget-eid').value=data.id;
-    calcBudgetTotal();
-    el('budget-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit line item';
-    el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update';
-  } else {
-    // pre-select active project
-    if(activeBudgetProject)el('budget-proj').value=activeBudgetProject;
-    el('budget-date').value=new Date().toISOString().split('T')[0];
-  }
-  populateBudgetProjDropdown();
-}
-
-function calcBudgetTotal(){
-  const v=id=>parseFloat(el(id)?.value)||0;
-  const tot=v('budget-svc-amt')+v('budget-mat-amt')+v('budget-equip')+v('budget-freight')+v('budget-misc');
-  el('budget-total-preview').textContent='₹ '+fmtAmt(tot);
-  return tot;
-}
-
-async function saveBudget(){
-  const project=g('budget-proj'),budgetHead=g('budget-head'),description=g('budget-desc'),date=g('budget-date');
-  if(!project){toast('Select a project','err');return;}
-  if(!budgetHead){toast('Select a budget head','err');return;}
-  if(!description){toast('Enter a description/vendor','err');return;}
-  if(!date){toast('Select a date','err');return;}
-  const v=id=>parseFloat(el(id)?.value)||0;
-  const serviceAmt=v('budget-svc-amt'),materialAmt=v('budget-mat-amt');
-  const equipment=v('budget-equip'),freight=v('budget-freight'),misc=v('budget-misc');
-  const total=serviceAmt+materialAmt+equipment+freight+misc;
-  const d={project,budgetHead,description,date,
-    plannedDays:v('budget-plan-days'),actualDays:v('budget-act-days'),
-    serviceAmt,materialQty:v('budget-mat-qty'),materialAmt,equipment,freight,misc,total,
-    owner:g('budget-owner'),updatedAt:new Date().toISOString()};
-  showLoad('Saving…');
-  try{
-    const eid=g('budget-eid');
-    if(eid){await db.collection(BUDGET_COL).doc(eid).update(d);toast('Updated ✓','ok');}
-    else{d.createdAt=new Date().toISOString();await db.collection(BUDGET_COL).add(d);toast('Added ✓','ok');}
-    togBudgetForm(false);
-    if(d.project===activeBudgetProject)renderBudgetDash();
-  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
-}
-
-async function deleteBudget(id){
-  if(!confirm('Delete this line item?'))return;showLoad('Deleting…');
-  try{await db.collection(BUDGET_COL).doc(id).delete();toast('Deleted ✓','ok');}
-  catch(e){toast('Failed','err');}finally{hideLoad();}
-}
-
-// ── BUDGET ENTRIES RENDER ─────────────────────────
-function renderBudgetEntries(){if(CU?.isUser)return;
-  const proj=activeBudgetProject;
-  const wrap=el('budget-table-wrap');
-  const noProj=el('budget-no-proj');
-  if(!proj){
-    if(wrap)wrap.innerHTML='';
-    if(noProj)noProj.style.display='flex';
-    el('budget-count').textContent='';
-    renderBudgetDash();
-    return;
-  }
-  if(noProj)noProj.style.display='none';
-  renderBudgetDash();
-  const headF=el('budget-ff-head')?.value||'';
+function renderBudgetList(){
+  if(CU?.isUser)return;
+  const wrap=el('budget-list');if(!wrap)return;
   const q=(el('budget-search')?.value||'').toLowerCase().trim();
-  let list=budgetData.filter(b=>{
-    if(b.project!==proj)return false;
-    if(headF&&b.budgetHead!==headF)return false;
-    if(q&&![b.description,b.budgetHead,b.owner].join(' ').toLowerCase().includes(q))return false;
-    return true;
-  });
-  el('budget-count').textContent=`${list.length} items`;
-  if(!list.length){
-    wrap.innerHTML=`<div class="empty"><i class="ti ti-file-invoice eico"></i><div class="etit">${budgetData.filter(b=>b.project===proj).length?'No items match filters':'No line items yet for this project'}</div><div class="edesc">Click "Add line item" to start tracking costs</div></div>`;
+  let projs=projectsData.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  if(q)projs=projs.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.number||'').toLowerCase().includes(q));
+  const cnt=el('budget-count');if(cnt)cnt.textContent=`${projs.length} project${projs.length!==1?'s':''}`;
+  if(!projs.length){
+    wrap.innerHTML=`<div class="empty"><i class="ti ti-building eico"></i><div class="etit">${projectsData.length?'No projects match':'No projects yet'}</div><div class="edesc">${projectsData.length?'Try a different search.':'Add a project in Manage Projects first.'}</div></div>`;
     return;
   }
-  // Group by budget head
-  const groups={};BUDGET_HEADS.forEach(h=>{groups[h]=[];});
-  list.forEach(b=>{if(!groups[b.budgetHead])groups[b.budgetHead]=[];groups[b.budgetHead].push(b);});
-  let html='<div class="card"><div class="wtable-wrap"><table class="wtable">';
-  html+='<thead><tr><th>#</th><th>Budget Head / Vendor</th><th>Date</th><th>Pln Days</th><th>Act Days</th><th>Service (₹)</th><th>Qty</th><th>Materials (₹)</th><th>Equipment (₹)</th><th>Freight (₹)</th><th>Misc (₹)</th><th>Total (₹)</th><th>Owner</th><th>Actions</th></tr></thead><tbody>';
-  let gIdx=0;
-  BUDGET_HEADS.forEach(head=>{
-    const rows=groups[head];if(!rows||!rows.length)return;
-    const headTotal=rows.reduce((s,r)=>s+(r.total||0),0);
-    gIdx++;
-    html+=`<tr class="bg-head-row"><td colspan="14" style="padding:7px 12px">${esc(head)} — ₹ ${fmtAmt(headTotal)}</td></tr>`;
-    rows.forEach((b,i)=>{
-      html+=`<tr>
-        <td style="font-size:10px;color:var(--t2)">${i+1}</td>
-        <td style="font-weight:500">${esc(b.description||'—')}</td>
-        <td style="white-space:nowrap">${b.date||'—'}</td>
-        <td style="text-align:center">${b.plannedDays||'—'}</td>
-        <td style="text-align:center">${b.actualDays||'—'}</td>
-        <td style="text-align:right">${b.serviceAmt?fmtAmt(b.serviceAmt):'—'}</td>
-        <td style="text-align:center">${b.materialQty||'—'}</td>
-        <td style="text-align:right">${b.materialAmt?fmtAmt(b.materialAmt):'—'}</td>
-        <td style="text-align:right">${b.equipment?fmtAmt(b.equipment):'—'}</td>
-        <td style="text-align:right">${b.freight?fmtAmt(b.freight):'—'}</td>
-        <td style="text-align:right">${b.misc?fmtAmt(b.misc):'—'}</td>
-        <td style="text-align:right;font-weight:700">₹ ${fmtAmt(b.total||0)}</td>
-        <td>${esc(b.owner||'—')}</td>
-        <td><div style="display:flex;gap:3px">
-          <button class="btn sm" onclick="togBudgetForm(true,budgetData.find(x=>x.id==='${b.id}'))"><i class="ti ti-edit"></i></button>
-          ${CU?.isAdmin?`<button class="btn sm danger" onclick="deleteBudget('${b.id}')"><i class="ti ti-trash"></i></button>`:''}
-        </div></td>
-      </tr>`;
-    });
-    // sub-total row
-    html+=`<tr class="bg-sub-total"><td colspan="11" style="text-align:right;padding:6px 12px;font-size:11px">Sub-total</td><td style="text-align:right;font-weight:700;color:var(--p)">₹ ${fmtAmt(headTotal)}</td><td colspan="2"></td></tr>`;
-  });
-  html+='</tbody></table></div></div>';
-  wrap.innerHTML=html;
+
+  wrap.innerHTML=projs.map(p=>{
+    const projName=p.name;
+    const safeName=projName.replace(/'/g,"\\'");
+    const {consumed,allocated,poAmount,pct,status,gmValue,gmPct}=getProjBudget(projName);
+    const isExpanded=(activeBudgetProject===projName);
+    const barCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
+    const balance=allocated-consumed;
+
+    const gmBadge=(gmValue!==null)?(()=>{const pos=gmValue>=0;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 8px;border-radius:20px;font-size:9.5px;font-weight:700;background:${pos?'#E8F5E9':'#FFEBEE'};color:${pos?'#1B5E20':'#B71C1C'}"><i class="ti ti-trending-${pos?'up':'down'}" style="font-size:10px"></i>GM ${gmPct.toFixed(1)}%</span>`;})():'';
+    const ldChip=p.ldDate?renderLdChip(p.ldDate):'';
+
+    // ── Expanded detail ──
+    let detail='';
+    if(isExpanded){
+      const entries=budgetData.filter(e=>e.project===projName);
+      // dashboard tiles
+      const cCol=status==='Over Budget'?'#B71C1C':status==='Near Limit'?'#E65100':'#1B5E20';
+      const gmTile=(()=>{
+        if(gmValue===null)return`<div style="border-radius:8px;padding:8px 10px;border:.5px solid var(--bd)"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1">—</div><div style="font-size:9px;color:var(--t2);margin-top:6px">set PO Amount</div></div>`;
+        const pos=gmValue>=0;const col=pos?'#1B5E20':'#B71C1C';const bg=pos?'#E8F5E9':'#FFEBEE';const bd=pos?'#A5D6A7':'#EF9A9A';
+        return`<div style="border-radius:8px;padding:8px 10px;border:.5px solid ${bd};background:${bg}"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1;color:${col}">${gmPct.toFixed(1)}%</div><div style="font-size:13px;font-weight:600;margin-top:3px;line-height:1;color:${col}">${gmValue<0?'- ':''}₹ ${fmtAmt(Math.abs(gmValue))}</div><div style="font-size:9px;color:var(--t2);margin-top:3px">% · ₹ value of PO</div></div>`;
+      })();
+      const headsSummary=BUDGET_HEADS.map(h=>{
+        const tot=entries.filter(e=>e.budgetHead===h).reduce((s,e)=>s+(e.total||0),0);
+        return`<div style="background:#fafafa;border-radius:7px;padding:8px 10px;border:.5px solid var(--bd)"><div style="font-size:9.5px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${esc(h)}</div><div style="font-size:13px;font-weight:700">₹ ${fmtAmt(tot)}</div></div>`;
+      }).join('');
+      const ldRow=p.ldDate?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><span style="font-size:10.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px">LD Deadline</span>${renderLdChip(p.ldDate)}</div>`:'';
+
+      // line item table
+      let tableHtml='';
+      if(!entries.length){
+        tableHtml=`<div class="empty" style="min-height:auto;padding:24px"><i class="ti ti-file-invoice eico"></i><div class="etit">No line items yet</div><div class="edesc">Click "Add line item" to start tracking costs for this project</div></div>`;
+      } else {
+        const groups={};BUDGET_HEADS.forEach(h=>{groups[h]=[];});
+        entries.forEach(b=>{if(!groups[b.budgetHead])groups[b.budgetHead]=[];groups[b.budgetHead].push(b);});
+        let t='<div class="wtable-wrap"><table class="wtable"><thead><tr><th>#</th><th>Vendor / Description</th><th>Date</th><th>Pln</th><th>Act</th><th>Service (₹)</th><th>Qty</th><th>Materials (₹)</th><th>Equip (₹)</th><th>Freight (₹)</th><th>Misc (₹)</th><th>Total (₹)</th><th>Owner</th><th>Actions</th></tr></thead><tbody>';
+        BUDGET_HEADS.forEach(head=>{
+          const rows=groups[head];if(!rows||!rows.length)return;
+          const headTotal=rows.reduce((s,r)=>s+(r.total||0),0);
+          t+=`<tr class="bg-head-row"><td colspan="14" style="padding:7px 12px">${esc(head)} — ₹ ${fmtAmt(headTotal)}</td></tr>`;
+          rows.forEach((b,i)=>{
+            t+=`<tr>
+              <td style="font-size:10px;color:var(--t2)">${i+1}</td>
+              <td style="font-weight:500">${esc(b.description||'—')}</td>
+              <td style="white-space:nowrap">${b.date||'—'}</td>
+              <td style="text-align:center">${b.plannedDays||'—'}</td>
+              <td style="text-align:center">${b.actualDays||'—'}</td>
+              <td style="text-align:right">${b.serviceAmt?fmtAmt(b.serviceAmt):'—'}</td>
+              <td style="text-align:center">${b.materialQty||'—'}</td>
+              <td style="text-align:right">${b.materialAmt?fmtAmt(b.materialAmt):'—'}</td>
+              <td style="text-align:right">${b.equipment?fmtAmt(b.equipment):'—'}</td>
+              <td style="text-align:right">${b.freight?fmtAmt(b.freight):'—'}</td>
+              <td style="text-align:right">${b.misc?fmtAmt(b.misc):'—'}</td>
+              <td style="text-align:right;font-weight:700">₹ ${fmtAmt(b.total||0)}</td>
+              <td>${esc(b.owner||'—')}</td>
+              <td><div style="display:flex;gap:3px">
+                ${CU?.canWrite?`<button class="btn sm" onclick="event.stopPropagation();togBudgetForm(true,budgetData.find(x=>x.id==='${b.id}'))"><i class="ti ti-edit"></i></button>`:''}
+                ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deleteBudget('${b.id}')"><i class="ti ti-trash"></i></button>`:''}
+              </div></td>
+            </tr>`;
+          });
+          t+=`<tr class="bg-sub-total"><td colspan="11" style="text-align:right;padding:6px 12px;font-size:11px">Sub-total</td><td style="text-align:right;font-weight:700;color:var(--p)">₹ ${fmtAmt(headTotal)}</td><td colspan="2"></td></tr>`;
+        });
+        t+='</tbody></table></div>';
+        tableHtml=t;
+      }
+
+      detail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px">
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">PO Amount</div><div style="font-size:16px;font-weight:700;color:var(--p)">₹ ${poAmount?fmtAmt(poAmount):'—'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Allocated</div><div style="font-size:16px;font-weight:700;color:var(--p)">₹ ${allocated?fmtAmt(allocated):'—'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Consumed</div><div style="font-size:16px;font-weight:700;color:${cCol}">₹ ${fmtAmt(consumed)}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Available</div><div style="font-size:16px;font-weight:700;color:${balance<0?'#B71C1C':'#1B5E20'}">${balance<0?'- ':''}₹ ${fmtAmt(Math.abs(balance))}</div></div>
+          ${gmTile}
+        </div>
+        ${ldRow}
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--t2)">Budget utilisation</span><span style="font-weight:600;color:${barCol}">${pct}% used</span></div>
+        <div class="bg-bar-wrap" style="height:10px"><div class="bg-bar-fill" style="width:${Math.min(pct,100)}%;background:${barCol}"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:12px 0 14px">${headsSummary}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:11px;font-weight:600;color:var(--p)"><i class="ti ti-list-details" style="font-size:13px"></i> Line items</span>
+          ${CU?.canWrite?`<button class="btn sm pri" onclick="event.stopPropagation();togBudgetForm(true,null,'${safeName}')"><i class="ti ti-plus"></i>Add line item</button>`:''}
+        </div>
+        ${tableHtml}
+      </div>`;
+    }
+
+    return`<div class="pmo-card" id="bgc-${p.id}">
+      <div style="cursor:pointer;user-select:none" onclick="toggleBudgetCard('${safeName}')">
+        <div class="pmo-hd">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+              ${p.number?`<span style="font-size:10px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${esc(p.number)}</span>`:''}
+              <div class="pmo-title" style="min-width:0">${esc(projName)}</div>
+              ${bbudgetStatus(status)}
+              ${gmBadge}
+            </div>
+            <div class="pmo-sub">${allocated?`Allocated ₹${fmtAmt(allocated)} · Consumed ₹${fmtAmt(consumed)}`:'No budget configured'}${ldChip?' &nbsp;·&nbsp; ':''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <div style="text-align:right">
+              <div class="pmo-pct" style="color:${barCol}">${pct}%</div>
+              <div style="font-size:10px;color:var(--t2)">used</div>
+            </div>
+            <i class="ti ${isExpanded?'ti-chevron-up':'ti-chevron-down'}" style="font-size:14px;color:var(--t2)"></i>
+          </div>
+        </div>
+        <div style="padding:6px 16px 8px">
+          <div class="pmo-bar-wrap"><div class="pmo-bar-fill" style="width:${Math.min(pct,100)}%;background:${barCol}"></div></div>
+        </div>
+        ${ldChip?`<div style="padding:0 16px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-gavel" style="font-size:11px"></i> LD</span>${ldChip}</div>`:''}
+      </div>
+      ${detail}
+    </div>`;
+  }).join('');
 }
 
 // ── PMO BUDGET STATS ──────────────────────────────
