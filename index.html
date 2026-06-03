@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_12
+// DQAP_WIKI_VERSION_15
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -677,11 +677,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <!-- Dashboard summary (shown when project selected) -->
       <div id="budget-proj-dash" style="display:none">
         <div class="cb" style="border-top:.5px solid var(--bd)">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px">
             <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">PO Amount</div><div style="font-size:16px;font-weight:700;color:var(--p)" id="bd-po">&#8377; —</div></div>
             <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Allocated</div><div style="font-size:16px;font-weight:700;color:var(--p)" id="bd-alloc">&#8377; —</div></div>
             <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Consumed</div><div style="font-size:16px;font-weight:700" id="bd-consumed">&#8377; —</div></div>
             <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Balance</div><div style="font-size:16px;font-weight:700" id="bd-balance">&#8377; —</div></div>
+            <div style="border-radius:8px;padding:8px 10px;border:.5px solid var(--bd)" id="bd-gm-tile"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;color:var(--t2)">Gross Margin</div><div style="font-size:22px;font-weight:700;line-height:1" id="bd-gm">—</div><div style="font-size:9px;color:var(--t2);margin-top:2px">% of PO value</div></div>
           </div>
           <div id="bd-ld-wrap" style="display:none;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span style="font-size:10.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px">LD Deadline</span>
@@ -763,15 +764,21 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="card">
         <div class="ch"><div class="ct"><i class="ti ti-building-plus" style="font-size:14px"></i>New project</div><button class="btn sm" onclick="togNewProj()"><i class="ti ti-x"></i>Cancel</button></div>
         <div class="cb">
-          <div class="g3" style="margin-bottom:12px">
+
+          <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
+          <div class="g3" style="margin-bottom:14px">
             <div class="fg"><label class="fl r">Project number</label><input class="fi" id="np-num" placeholder="e.g. PRJ-2025-001"></div>
-            <div class="fg" style="grid-column:span 2"><label class="fl r">Project name</label><input class="fi" id="np-name" placeholder="e.g. Site Alpha Expansion"></div>
+            <div class="fg" style="grid-column:span 2"><label class="fl r">Project name</label><input class="fi" id="np-name" placeholder="e.g. BPCL Panipat FDAS"></div>
           </div>
+
+          <div class="fsec-t"><i class="ti ti-file-invoice"></i>Contract details</div>
           <div class="g3" style="margin-bottom:14px">
             <div class="fg"><label class="fl">PO Number</label><input class="fi" id="np-po-num" placeholder="e.g. PO/BPCL/2025/001"></div>
             <div class="fg"><label class="fl">PO Date</label><input type="date" class="fi" id="np-po-date"></div>
-            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages deadline)</span></label><input type="date" class="fi" id="np-ld-date"></div>
+            <div class="fg"><label class="fl r">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages)</span></label><input type="date" class="fi" id="np-ld-date"></div>
           </div>
+
+          <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
           <div class="g2" style="margin-bottom:14px">
             <div class="fg">
               <label class="fl r">Client / customer</label>
@@ -784,11 +791,20 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
               <div style="display:flex;gap:5px;margin-top:6px"><input class="fi" id="np-site-inp" placeholder="Site or location" onkeydown="if(event.key==='Enter')addNpItem('site')"><button class="btn sm pri" onclick="addNpItem('site')"><i class="ti ti-plus"></i>Add</button></div>
             </div>
           </div>
+
+          <div class="fsec-t"><i class="ti ti-report-money"></i>Budget configuration</div>
+          <div class="g3" style="margin-bottom:10px">
+            <div class="fg"><label class="fl r">PO Amount (&#8377;)</label><input class="fi" id="np-po-amt" type="number" min="0" placeholder="e.g. 5000000"></div>
+            <div class="fg"><label class="fl r">Budget Allocated (&#8377;)</label><input class="fi" id="np-budget-alloc" type="number" min="0" placeholder="Internal delivery budget"></div>
+            <div class="fg"><label class="fl r">Project Manager</label><select class="fs" id="np-pm"><option value="">Select PM</option></select></div>
+          </div>
+          
+
           <button class="btn pri" onclick="saveNewProject()"><i class="ti ti-device-floppy"></i>Save project</button>
         </div>
       </div>
     </div>
-    <div id="proj-list"></div>
+        <div id="proj-list"></div>
   </div>
 </div>
 
@@ -943,7 +959,7 @@ async function populateEngineers(){
   try{
     const sn=await db.collection(USERS).orderBy('fullName','asc').get();
     const names=sn.docs.map(d=>d.data().fullName).filter(Boolean);
-    ['f-eng','rma-eng','pay-owner','budget-owner','bcfg-pm'].forEach(sid=>{
+    ['f-eng','rma-eng','pay-owner','budget-owner','bcfg-pm','np-pm'].forEach(sid=>{
       const s=el(sid);if(!s)return;
       const cur=s.value;
       s.innerHTML=`<option value="">Select engineer</option>`+names.map(n=>`<option>${esc(n)}</option>`).join('');
@@ -1149,9 +1165,10 @@ function renderPMO(){
       <div style="border-top:.5px solid var(--bd);padding:8px 16px 10px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
           <span style="font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-wallet" style="font-size:11px"></i> Budget</span>
-          <div style="display:flex;align-items:center;gap:7px">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
             <span style="font-size:10.5px;color:var(--t2)">₹${fmtAmt(consumed)} of ₹${fmtAmt(allocated)}</span>
             ${bbudgetStatus(bgStatus)}
+            ${(()=>{const gv=getProjBudget(p.projName).gm;if(gv===null)return '';const gn=parseFloat(gv)>=20;return `<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:700;background:${parseFloat(gv)>=20?'#E8F5E9':'#FFEBEE'};color:${parseFloat(gv)>=20?'#1B5E20':'#B71C1C'}"><i class="ti ti-trending-${parseFloat(gv)>=20?'up':'down'}" style="font-size:10px"></i>GM ${gv}%</span>`;})()}
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:7px">
@@ -1462,7 +1479,7 @@ function sendNotification(e){
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-po-num').value='';el('np-po-date').value='';el('np-ld-date').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
+  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-po-num').value='';el('np-po-date').value='';el('np-ld-date').value='';el('np-po-amt').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
 }
 function addNpItem(type){const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();if(!val)return;if(type==='cli'){if(!npClients.includes(val))npClients.push(val);}else{if(!npSites.includes(val))npSites.push(val);}inp.value='';renderNpItems();inp.focus();}
 function removeNpItem(type,val){if(type==='cli')npClients=npClients.filter(v=>v!==val);else npSites=npSites.filter(v=>v!==val);renderNpItems();}
@@ -1474,9 +1491,22 @@ async function saveNewProject(){
   if(!num){toast('Project number is required','err');return;}if(!name){toast('Project name is required','err');return;}
   if(!npClients.length){toast('Add at least one client','err');return;}if(!npSites.length){toast('Add at least one site','err');return;}
   const exists=projectsData.find(p=>p.name.toLowerCase()===name.toLowerCase());if(exists){toast('Project already exists','err');return;}
+  const ldDate=(el('np-ld-date').value||'').trim();
+  const poAmount=parseFloat(el('np-po-amt').value)||0;
+  const budgetAllocated=parseFloat(el('np-budget-alloc').value)||0;
+  const projectManager=(el('np-pm').value||'').trim();
+  if(!ldDate){toast('LD Date is required','err');return;}
+  if(!poAmount){toast('PO Amount is required','err');return;}
+  if(!budgetAllocated){toast('Budget Allocated is required','err');return;}
+  if(!projectManager){toast('Select a Project Manager','err');return;}
   showLoad('Saving…');
-  const poNumber=(el('np-po-num').value||'').trim(),poDate=(el('np-po-date').value||'').trim(),ldDate=(el('np-ld-date').value||'').trim();
-  try{await db.collection(PROJ).add({number:num,name,clients:npClients,sites:npSites,poNumber,poDate,ldDate,createdAt:new Date().toISOString()});toast('Project added ✓','ok');togNewProj();}
+  const poNumber=(el('np-po-num').value||'').trim(),poDate=(el('np-po-date').value||'').trim();
+  try{
+    await db.collection(PROJ).add({number:num,name,clients:npClients,sites:npSites,poNumber,poDate,ldDate,createdAt:new Date().toISOString()});
+    const now=new Date().toISOString();
+    await db.collection(BUDGET_CFG_COL).add({projectName:name,poAmount,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
+    toast('Project added ✓','ok');togNewProj();
+  }
   catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function addSubItem(projId,type,inputId){
@@ -1774,7 +1804,23 @@ function renderBudgetDash(){
   // Bar
   const barCol=pct>100?'#B71C1C':pct>=80?'#E65100':'#1B5E20';
   const fill=el('bd-bar-fill');if(fill){fill.style.width=Math.min(pct,100)+'%';fill.style.background=barCol;}
-  const pctEl=el('bd-bar-pct');if(pctEl){pctEl.textContent=pct+'% used'+(gm?' · GM: '+gm+'%':'');pctEl.style.color=barCol;}
+  const pctEl=el('bd-bar-pct');if(pctEl){pctEl.textContent=pct+'% used';pctEl.style.color=barCol;}
+  // Gross Margin tile
+  const gmEl=el('bd-gm');const gmTile=el('bd-gm-tile');
+  if(gmEl){
+    if(gm!==null){
+      const gmVal=parseFloat(gm);
+      const gmGreen=gmVal>=20;
+      const gmCol=gmGreen?'#1B5E20':'#B71C1C';
+      const gmBg=gmGreen?'#E8F5E9':'#FFEBEE';
+      gmEl.textContent=gmVal.toFixed(1)+'%';
+      gmEl.style.color=gmCol;
+      if(gmTile){gmTile.style.background=gmBg;gmTile.style.borderColor=gmGreen?'#A5D6A7':'#EF9A9A';}
+    }else{
+      gmEl.textContent='—';
+      if(gmTile){gmTile.style.background='var(--card)';gmTile.style.borderColor='var(--bd)';}
+    }
+  }
   // LD Date
   const proj_ld=projectsData.find(p=>p.name===proj);
   const ldWrap=el('bd-ld-wrap');
