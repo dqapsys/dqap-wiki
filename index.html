@@ -20,7 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_18
+// DQAP_WIKI_VERSION_19
+const APP_VERSION="19";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -319,6 +320,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="tdot"        onclick="setTheme('ember')"  title="Ember"       style="background:#DC2626" data-t="ember"></div>
     </div>
     <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px"><i class="ti ti-logout"></i>Sign out</button>
+    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki · v—</div>
   </div>
 </nav>
 
@@ -891,6 +893,7 @@ function logout(){
 
 function startApp(){
   el('sb-user').textContent=CU.fullName;
+  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki · v'+APP_VERSION;
   el('f-date').value=new Date().toISOString().split('T')[0];
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
   if(!CU.canWrite){
@@ -2107,8 +2110,34 @@ function exportBudgetExcel(){
 }
 
 if('serviceWorker' in navigator){
+  let refreshing=false;
+  // When a new service worker takes control, reload once to get fresh assets
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(refreshing)return;refreshing=true;window.location.reload();
+  });
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js').then(r=>console.log('SW:',r.scope)).catch(e=>console.log('SW error:',e));
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      console.log('SW registered:',reg.scope);
+      // Force an immediate update check on every load
+      reg.update();
+      // If a new worker is found, activate it as soon as it's installed
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        if(!nw)return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed'&&navigator.serviceWorker.controller){
+            // New version ready — tell it to skip waiting; controllerchange will reload
+            nw.postMessage({type:'SKIP_WAITING'});
+          }
+        });
+      });
+    }).catch(e=>console.log('SW error:',e));
+    // Also poll for updates every time the tab regains focus
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='visible'){
+        navigator.serviceWorker.getRegistration().then(r=>{if(r)r.update();});
+      }
+    });
   });
 }
 </script>
