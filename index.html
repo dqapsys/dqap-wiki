@@ -734,6 +734,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
             <div class="fg"><label class="fl r">Assign to <span style="font-size:9px;color:var(--t2);font-weight:400">(does the task)</span></label><select class="fs" id="task-assignee"><option value="">Select assignee</option></select></div>
             <div class="fg"><label class="fl">Supervision <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — oversees)</span></label><select class="fs" id="task-supervisor"><option value="">— None —</option></select></div>
             <div class="fg"><label class="fl r">Deadline <span style="font-size:9px;color:var(--t2);font-weight:400">(date &amp; time, 24h)</span></label><input type="datetime-local" class="fi" id="task-deadline"></div>
+            <div class="fg"><label class="fl r">Frequency <span style="font-size:9px;color:var(--t2);font-weight:400">(recurs automatically)</span></label><select class="fs" id="task-frequency"><option>One Time</option><option>Monthly</option><option>Quarterly</option><option>Annually</option></select></div>
             <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Low</option></select></div>
             <div class="fg"><label class="fl">Link to project</label><select class="fs" id="task-project"><option value="">— None —</option></select></div>
           </div>
@@ -2423,6 +2424,33 @@ function taskPriBadge(p){
   const s=m[p]||m['Medium'];
   return`<span style="font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:${s.bg};color:${s.c}">${p}</span>`;
 }
+function taskFreqBadge(f){
+  if(!f||f==='One Time')return'';
+  return`<span style="font-size:8.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:#E0F2F1;color:#00695C"><i class="ti ti-repeat" style="font-size:10px"></i> ${f}</span>`;
+}
+// Add whole months to a Date, clamping month-end overflow (e.g. Jan 31 +1mo -> Feb 28).
+function addMonthsDate(base,months){
+  const day=base.getDate();
+  const nd=new Date(base.getTime());
+  nd.setDate(1);
+  nd.setMonth(nd.getMonth()+months);
+  const daysInMonth=new Date(nd.getFullYear(),nd.getMonth()+1,0).getDate();
+  nd.setDate(Math.min(day,daysInMonth));
+  return nd;
+}
+// Compute the next due date for a recurring task, skipping any periods already missed
+// so the next occurrence is always in the future. Returns a datetime-local string.
+function nextTaskOccurrence(deadline,frequency){
+  const step={'Monthly':1,'Quarterly':3,'Annually':12}[frequency];
+  if(!step||!deadline)return null;
+  const start=new Date(deadline.includes('T')?deadline:deadline+'T00:00');
+  let next=addMonthsDate(start,step);
+  const now=new Date();
+  let guard=0;
+  while(next-now<=0&&guard<600){next=addMonthsDate(next,step);guard++;}
+  const pad=n=>String(n).padStart(2,'0');
+  return`${next.getFullYear()}-${pad(next.getMonth()+1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`;
+}
 
 // ── TASK ASSIGNEE DROPDOWN (hierarchy) ────────────
 function populateTaskAssignees(){
@@ -2453,7 +2481,7 @@ function togTaskForm(show,data){
   if(!show){
     el('task-eid').value='';
     ['task-title','task-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
-    el('task-assignee').value='';el('task-supervisor').value='';el('task-deadline').value='';el('task-priority').value='Medium';el('task-project').value='';
+    el('task-assignee').value='';el('task-supervisor').value='';el('task-deadline').value='';el('task-frequency').value='One Time';el('task-priority').value='Medium';el('task-project').value='';
     el('task-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>Assign new task';
     el('task-save-btn').innerHTML='<i class="ti ti-send"></i>Assign task';
     return;
@@ -2465,6 +2493,7 @@ function togTaskForm(show,data){
     el('task-assignee').value=data.assignedTo||'';
     el('task-supervisor').value=data.supervisor||'';
     el('task-deadline').value=data.deadline?(data.deadline.includes('T')?data.deadline:data.deadline+'T00:00'):'';
+    el('task-frequency').value=data.frequency||'One Time';
     el('task-priority').value=data.priority||'Medium';
     el('task-project').value=data.project||'';
     el('task-eid').value=data.id;
@@ -2477,6 +2506,7 @@ async function saveTask(){
   const title=g('task-title'),description=g('task-desc');
   const assignedTo=g('task-assignee'),deadline=g('task-deadline'),supervisor=g('task-supervisor');
   const priority=g('task-priority')||'Medium',project=g('task-project');
+  const frequency=g('task-frequency')||'One Time';
   if(!title){toast('Enter a task title','err');return;}
   if(!assignedTo){toast('Select an assignee','err');return;}
   if(!deadline){toast('Set a deadline','err');return;}
@@ -2493,7 +2523,7 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,updatedAt:now};
+      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now};
       await db.collection(TASK_COL).doc(eid).update(upd);
       toast('Task updated ✓','ok');
       const existing=taskData.find(x=>x.id===eid)||{};
@@ -2501,7 +2531,7 @@ async function saveTask(){
     }else{
       const tObj={title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
-        assignedTo,assignedToRole,supervisor,deadline,priority,project,
+        assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,
         status:'Open',createdAt:now,updatedAt:now};
       await db.collection(TASK_COL).add(tObj);
       toast('Task assigned ✓','ok');
@@ -2514,12 +2544,32 @@ async function saveTask(){
 async function updateTaskStatus(id,status){
   showLoad('Updating…');
   try{
-    const d={status,updatedAt:new Date().toISOString()};
-    if(status==='Completed')d.completedAt=new Date().toISOString();
-    await db.collection(TASK_COL).doc(id).update(d);
-    toast('Status updated ✓','ok');
     const existing=taskData.find(x=>x.id===id)||{};
-    sendTaskNotification('status changed to '+status,{...existing,...d});
+    const now=new Date().toISOString();
+    const isRecurring=existing.frequency&&existing.frequency!=='One Time';
+    if(status==='Completed'&&isRecurring){
+      // Recurring task: log this completion and re-open with the next due date.
+      const nextDl=nextTaskOccurrence(existing.deadline,existing.frequency);
+      const completion={date:now,by:CU.fullName,wasDue:existing.deadline||''};
+      const d={
+        status:'Open',
+        deadline:nextDl||existing.deadline,
+        updatedAt:now,
+        lastCompletedAt:now,
+        timesCompleted:(existing.timesCompleted||0)+1,
+        completions:[...(existing.completions||[]),completion].slice(-24)
+      };
+      await db.collection(TASK_COL).doc(id).update(d);
+      const niceNext=nextDl?new Date(nextDl).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+      toast('Recurring task done ✓ — next due '+niceNext,'ok');
+      sendTaskNotification(existing.frequency.toLowerCase()+' occurrence completed — next due '+niceNext,{...existing,...d});
+    }else{
+      const d={status,updatedAt:now};
+      if(status==='Completed')d.completedAt=now;
+      await db.collection(TASK_COL).doc(id).update(d);
+      toast('Status updated ✓','ok');
+      sendTaskNotification('status changed to '+status,{...existing,...d});
+    }
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
@@ -2584,6 +2634,7 @@ function renderTasks(){
               <span style="font-size:13.5px;font-weight:600;color:var(--t1)">${esc(t.title)}</span>
               ${taskStatusBadge(t.status)}
               ${taskPriBadge(t.priority)}
+              ${taskFreqBadge(t.frequency)}
               ${(()=>{const r=t.assignedTo===CU.fullName?'Assignee':(t.supervisor===CU.fullName?'Supervisor':(t.assignedBy===CU.fullName?'Assigner':''));return r?`<span style="font-size:8.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:#EDE7F6;color:#311B92">YOU: ${r}</span>`:'';})()}
               ${t.project?`<span style="font-size:9.5px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600"><i class="ti ti-building" style="font-size:10px"></i> ${esc(t.project)}</span>`:''}
             </div>
@@ -2593,6 +2644,7 @@ function renderTasks(){
               ${t.supervisor?`<span><i class="ti ti-eye-check" style="font-size:11px"></i> Supervisor: <b style="color:var(--t1)">${esc(t.supervisor)}</b></span>`:''}
               <span><i class="ti ti-user-up" style="font-size:11px"></i> By: <b style="color:var(--t1)">${esc(t.assignedBy)}</b></span>
               ${dl?`<span><i class="ti ti-calendar-event" style="font-size:11px"></i> ${dl}</span>`:''}
+              ${t.timesCompleted?`<span><i class="ti ti-rotate-clockwise" style="font-size:11px"></i> Done ${t.timesCompleted}×${t.lastCompletedAt?' · last '+(t.lastCompletedAt||'').split('T')[0]:''}</span>`:''}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
