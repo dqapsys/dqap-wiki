@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_56
-const APP_VERSION="56";
+// DQAP_WIKI_VERSION_57
+const APP_VERSION="57";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -1668,31 +1668,79 @@ function sendTaskNotification(action, t){
 
   const emails = new Set();
 
-  const getUserEmail = (name) => {
-    if (!name || !usersData || usersData.length === 0) return null;
-    const u = usersData.find(x => x.fullName === name);
-    return u && u.email ? u.email.trim() : null;
+  // Robust lookup with fresh Firestore fallback
+  const getUserEmail = async (name) => {
+    if (!name) return null;
+    if (usersData && usersData.length > 0) {
+      const u = usersData.find(x => x.fullName === name);
+      if (u && u.email) return u.email.trim();
+    }
+    // Fresh lookup from Firestore
+    try {
+      const snap = await db.collection(USERS).where('fullName', '==', name).limit(1).get();
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        if (data.email) return data.email.trim();
+      }
+    } catch (e) {}
+    return null;
   };
 
-  const aEmail = getUserEmail(t.assignedTo);
-  if (aEmail) emails.add(aEmail);
+  // Make the whole function async-friendly
+  (async () => {
+    const aEmail = await getUserEmail(t.assignedTo);
+    if (aEmail) emails.add(aEmail);
 
-  const cEmail = getUserEmail(t.assignedBy);
-  if (cEmail) emails.add(cEmail);
+    const cEmail = await getUserEmail(t.assignedBy);
+    if (cEmail) emails.add(cEmail);
 
-  if (t.supervisor && t.supervisor !== t.assignedTo && t.supervisor !== t.assignedBy) {
-    const sEmail = getUserEmail(t.supervisor);
-    if (sEmail) emails.add(sEmail);
-  }
+    if (t.supervisor && t.supervisor !== t.assignedTo && t.supervisor !== t.assignedBy) {
+      const sEmail = await getUserEmail(t.supervisor);
+      if (sEmail) emails.add(sEmail);
+    }
 
-  if (CFG.NOTIFY_TO) {
-    CFG.NOTIFY_TO.split(',').forEach(e => {
-      const trimmed = e.trim();
-      if (trimmed) emails.add(trimmed);
-    });
-  }
+    if (CFG.NOTIFY_TO) {
+      CFG.NOTIFY_TO.split(',').forEach(e => {
+        const trimmed = e.trim();
+        if (trimmed) emails.add(trimmed);
+      });
+    }
 
-  if (emails.size === 0) return;
+    if (emails.size === 0) {
+      toast("No individual emails found — only sent to central (uv@dqap.in)", "err");
+      return;
+    }
+
+    try {
+      emailjs.init(CFG.EJS_KEY);
+      const subject = `Task ${action.toUpperCase()}: ${t.title || ''}`;
+      const body = `Task: "${t.title || ''}"
+Action: ${action}
+Assigned to: ${t.assignedTo || '—'}
+Created by: ${t.assignedBy || '—'}
+Supervisor: ${t.supervisor || '—'}
+Deadline: ${t.deadline || 'N/A'}
+Project: ${t.project || 'N/A'}
+Status: ${t.status || 'Open'}
+
+Please check DQAP Wiki for details.`;
+
+      emails.forEach(to => {
+        emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {
+          to_email: to,
+          subject: subject,
+          message: body
+        }).catch(() => {});
+      });
+
+      toast(`Task notification sent to ${emails.size} recipient(s)`, "ok");
+
+    } catch (err) {
+      console.error(err);
+      toast("Failed to send task email", "err");
+    }
+  })();
+}
 
   const fmtDL=(d)=>{if(!d)return 'Not set';try{return new Date(d.includes('T')?d:d+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});}catch(e){return d;}};
   const stCol={'Open':{c:'#E65100',bg:'#FFF3E0'},'In Progress':{c:'#1565C0',bg:'#E3F2FD'},'Completed':{c:'#2E7D32',bg:'#E8F5E9'}};
@@ -2377,21 +2425,18 @@ function getTaskSeen(){try{return localStorage.getItem(taskSeenKey())||'';}catch
 function setTaskSeen(ts){try{localStorage.setItem(taskSeenKey(),ts);}catch(e){}}
 function markTasksSeen(){setTaskSeen(new Date().toISOString());updateTaskNavBadge();}
 function updateTaskNavBadge(){
-  const badge = el('task-nav-badge');
-  if(!badge) return;
-
-  // Simple & reliable: show total open tasks
-  let count = 0;
-  taskData.forEach(t => {
-    if(t.status !== 'Completed') count++;
+  const badge=el('task-nav-badge');if(!badge||!CU)return;
+  const seen=getTaskSeen();
+  let n=0;
+  taskData.forEach(t=>{
+    if(t.status==='Completed')return;
+    const mine=(t.assignedTo===CU.fullName)||(t.supervisor===CU.fullName);
+    if(!mine)return;
+    const ts=t.updatedAt||t.createdAt||'';
+    if(!seen||ts>seen)n++;
   });
-
-  if(count > 0){
-    badge.style.display = 'inline-block';
-    badge.textContent = count;
-  } else {
-    badge.style.display = 'none';
-  }
+  if(n>0){badge.style.display='inline-block';badge.textContent=n;}
+  else badge.style.display='none';
 }
 
 // ── TASK HELPERS ──────────────────────────────────
@@ -2511,7 +2556,6 @@ async function saveTask(){
       sendTaskNotification('created',tObj);
     }
     togTaskForm(false);
-    updateTaskNavBadge();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
