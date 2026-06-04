@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_30
-const APP_VERSION="30";
+// DQAP_WIKI_VERSION_24
+const APP_VERSION="24";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -305,7 +305,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
-    <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management</div>
     <div class="sb-sec" id="admin-sec" style="display:none">Admin</div>
     <div class="ni" onclick="go('projects')"        id="ni-projects" style="display:none"><i class="ti ti-building"></i>Manage Projects</div>
     <div class="ni" onclick="go('users')"           id="ni-users"    style="display:none"><i class="ti ti-users"></i>Manage Users</div>
@@ -702,37 +701,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
-<!-- ══ AMC MANAGEMENT ══ -->
-<div id="v-amc" class="view" style="display:none">
-  <div class="topbar">
-    <div>
-      <div class="pg-t"><i class="ti ti-calendar-repeat" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>AMC Management</div>
-      <div class="pg-s">Annual Maintenance Contracts • Scheduled Client Visits</div>
-    </div>
-    <div class="tr">
-      <button class="btn pri" onclick="togAMCForm(true)"><i class="ti ti-plus"></i>New AMC Contract</button>
-    </div>
-  </div>
-  <div class="content">
-    <div class="stats" id="amc-stats"></div>
-
-    <div class="fbar" style="margin-bottom:14px">
-      <div class="sbox" style="flex:1;max-width:360px">
-        <i class="ti ti-search sico"></i>
-        <input type="text" class="sinput" id="amc-search" oninput="renderAMCList()" placeholder="Search client, contract...">
-      </div>
-      <select class="fsel" id="amc-filter-status" onchange="renderAMCList()">
-        <option value="">All Contracts</option>
-        <option value="active">Active</option>
-        <option value="expired">Expired</option>
-      </select>
-      <span id="amc-count" style="margin-left:auto;font-size:11px;color:var(--t2)"></span>
-    </div>
-
-    <div id="amc-list"></div>
-  </div>
-</div>
-
 <!-- ══ TASK MANAGEMENT ══ -->
 <div id="v-tasks" class="view" style="display:none">
   <div class="topbar">
@@ -967,7 +935,7 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -2382,118 +2350,6 @@ function renderTasks(){
       </div>
     </div>`;
   }).join('');
-}
-
-// ── AMC MANAGEMENT (v29) ─────────────────────────────────
-let amcData = [];
-let amcUnsub = null;
-
-function startAMCListen(){
-  if(amcUnsub) amcUnsub();
-  amcUnsub = db.collection("dqap_amc").orderBy('createdAt','desc').onSnapshot(sn => {
-    amcData = sn.docs.map(d => ({id: d.id, ...d.data()}));
-    if(el('v-amc') && el('v-amc').style.display !== 'none') renderAMCList();
-    updateAMCDashboard();
-  });
-}
-
-function calculateNextVisit(startDate, frequency, lastVisit = null) {
-  const base = new Date(lastVisit || startDate);
-  const today = new Date();
-  let next = new Date(base);
-  const add = (u, v) => next[`set${u}`](next[`get${u}`]() + v);
-
-  const step = () => {
-    if(frequency === 'Monthly') add('Month',1);
-    else if(frequency === 'Quarterly') add('Month',3);
-    else if(frequency === 'Bi-Annually') add('Month',6);
-    else add('FullYear',1);
-  };
-
-  step();
-  while(next < today) step();
-  return next.toISOString().split('T')[0];
-}
-
-function renderAMCList(){
-  const c = el('amc-list'); if(!c) return;
-  const q = (el('amc-search')?.value||'').toLowerCase().trim();
-  const f = el('amc-filter-status')?.value || '';
-  let list = amcData.filter(a => {
-    const okQ = !q || (a.client+' '+a.contractNumber+' '+a.project).toLowerCase().includes(q);
-    let okS = true;
-    if(f==='active') okS = !a.endDate || new Date(a.endDate) >= new Date();
-    if(f==='expired') okS = a.endDate && new Date(a.endDate) < new Date();
-    return okQ && okS;
-  });
-  el('amc-count').textContent = list.length + ' contract' + (list.length!==1?'s':'');
-  if(!list.length){ c.innerHTML = `<div class="empty"><i class="ti ti-calendar-off eico"></i><div class="etit">No contracts</div></div>`; return; }
-
-  c.innerHTML = list.map(a => {
-    const nv = calculateNextVisit(a.startDate, a.frequency, a.lastVisit);
-    const d = Math.ceil((new Date(nv)-new Date())/(1000*3600*24));
-    const over = d < 0;
-    return `<div class="pmo-card">
-      <div class="pmo-hd">
-        <div style="flex:1"><div style="font-weight:600">${esc(a.contractNumber||'AMC')}</div><div>${esc(a.client||'')}</div></div>
-        <div style="text-align:right"><div style="font-size:11px;color:var(--t2)">${a.frequency||''}</div><div style="font-size:18px;font-weight:700;color:${over?'#B71C1C':'#1B5E20'}">${over?'OVERDUE':d+'d'}</div></div>
-      </div>
-      <div style="padding:12px 16px;border-top:.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:11px;color:var(--t2)">Next</div><div style="font-weight:600">${nv}</div></div>
-        <div style="display:flex;gap:6px">
-          <button class="btn sm" onclick="logVisit('${a.id}')">Log Visit</button>
-          <button class="btn sm" onclick="togAMCForm(true,amcData.find(x=>x.id==='${a.id}'))">Edit</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function togAMCForm(show, data=null){
-  const m = el('amc-modal'); if(!m) return;
-  m.style.display = show ? 'flex' : 'none';
-  const ct = el('amc-form-content'); if(!ct) return;
-  if(!show){ ct.innerHTML=''; return; }
-  el('amc-form-title').textContent = data ? 'Edit AMC' : 'New AMC Contract';
-  ct.innerHTML = `
-    <div class="g2"><div class="fg"><label class="fl r">Contract #</label><input class="fi" id="amc-cn" value="${esc(data?.contractNumber||'')}"></div>
-    <div class="fg"><label class="fl r">Client</label><input class="fi" id="amc-cli" value="${esc(data?.client||'')}"></div></div>
-    <div class="g2"><div class="fg"><label class="fl">Project</label><select class="fs" id="amc-proj"></select></div>
-    <div class="fg"><label class="fl r">Frequency</label><select class="fs" id="amc-freq">
-      <option ${data?.frequency==='Monthly'?'selected':''}>Monthly</option>
-      <option ${data?.frequency==='Quarterly'?'selected':''}>Quarterly</option>
-      <option ${data?.frequency==='Bi-Annually'?'selected':''}>Bi-Annually</option>
-      <option ${data?.frequency==='Annual'?'selected':''}>Annual</option>
-    </select></div></div>
-    <div class="g2"><div class="fg"><label class="fl r">Start</label><input type="date" class="fi" id="amc-start" value="${data?.startDate||''}"></div>
-    <div class="fg"><label class="fl">End</label><input type="date" class="fi" id="amc-end" value="${data?.endDate||''}"></div></div>
-    <div class="fg"><label class="fl">Engineer</label><input class="fi" id="amc-eng" value="${esc(data?.assignedTo||'')}"></div>
-    <button class="btn pri" style="margin-top:16px;width:100%" onclick="saveAMC('${data?data.id:''}')">Save</button>`;
-  // populate projects
-  setTimeout(()=>{ const s=el('amc-proj'); if(s && window.projectsData) s.innerHTML = '<option></option>' + projectsData.map(p=>`<option ${p.name===(data?.project||'')?'selected':''}>${esc(p.name)}</option>`).join(''); },30);
-}
-
-async function saveAMC(id=''){
-  const d = { contractNumber:g('amc-cn'), client:g('amc-cli'), project:g('amc-proj'), frequency:g('amc-freq'), startDate:g('amc-start'), endDate:g('amc-end'), assignedTo:g('amc-eng'), updatedAt:new Date().toISOString() };
-  if(!d.contractNumber||!d.client||!d.startDate){ toast('Required fields missing','err'); return; }
-  showLoad('Saving...');
-  try{
-    if(id) await db.collection('dqap_amc').doc(id).update(d);
-    else { d.createdAt = new Date().toISOString(); await db.collection('dqap_amc').add(d); }
-    toast('Saved ✓','ok'); togAMCForm(false); renderAMCList();
-  }catch(e){toast(e.message,'err');}finally{hideLoad();}
-}
-
-async function logVisit(id){
-  if(!confirm('Log visit as done today?')) return;
-  await db.collection('dqap_amc').doc(id).update({lastVisit:new Date().toISOString().split('T')[0], updatedAt:new Date().toISOString()});
-  toast('Visit logged','ok'); renderAMCList();
-}
-
-function updateAMCDashboard(){
-  const elStats = el('amc-stats'); if(!elStats) return;
-  const active = amcData.filter(a=>!a.endDate || new Date(a.endDate)>=new Date()).length;
-  elStats.innerHTML = `<div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-calendar"></i></div><div><div class="sv">${active}</div><div class="sl">Active AMCs</div></div></div>`;
 }
 
 if('serviceWorker' in navigator){
