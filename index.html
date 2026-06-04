@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_29
-const APP_VERSION="29";
+// DQAP_WIKI_VERSION_31
+const APP_VERSION="31";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -305,7 +305,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('search')"          id="ni-search"><i class="ti ti-search"></i>Search</div>
     <div class="ni" onclick="go('library')"         id="ni-library"><i class="ti ti-library"></i>Library</div>
     <div class="sb-sec">Operations</div>
-    <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management</div>
+    <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
@@ -1657,6 +1657,27 @@ function sendNotification(e){
   try{emailjs.init(CFG.EJS_KEY);emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{to_email:CFG.NOTIFY_TO,engineer:e.engineer,title:e.title,project:e.project,category:e.category,severity:e.severity,entry_number:e.entryNumber,problem:e.problem,solution:e.solution});}catch(e){}
 }
 
+function sendTaskNotification(action, t){
+  if(!CFG.NOTIFY_ON || !CFG.EJS_KEY || !CFG.NOTIFY_TO) return;
+  try{
+    emailjs.init(CFG.EJS_KEY);
+    const subject = `Task ${action}: ${t.title}`;
+    const body = `Task "${t.title}" was ${action} by ${t.assignedBy || CU.fullName}.
+Assigned to: ${t.assignedTo}
+Deadline: ${t.deadline || 'N/A'}
+Project: ${t.project || 'N/A'}
+Status: ${t.status || 'Open'}`;
+    emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {
+      to_email: CFG.NOTIFY_TO,
+      subject: subject,
+      message: body,
+      task_title: t.title,
+      task_assigned_to: t.assignedTo,
+      task_deadline: t.deadline || 'N/A'
+    });
+  }catch(e){}
+}
+
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
@@ -2241,6 +2262,7 @@ function startTaskListen(){
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-tasks')&&el('v-tasks').style.display!=='none')renderTasks();
+    updateTaskNavBadge();
   },err=>{});
 }
 function startUsersListen(){
@@ -2351,6 +2373,7 @@ async function saveTask(){
   try{
     const eid=g('task-eid');
     const now=new Date().toISOString();
+    let action = eid ? 'updated' : 'created';
     if(eid){
       await db.collection(TASK_COL).doc(eid).update({title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,updatedAt:now});
       toast('Task updated ✓','ok');
@@ -2361,6 +2384,8 @@ async function saveTask(){
         status:'Open',createdAt:now,updatedAt:now});
       toast('Task assigned ✓','ok');
     }
+    // Email notification
+    sendTaskNotification(action, {title, assignedTo, assignedBy: CU.fullName, deadline, project, status: eid ? 'Updated' : 'Open'});
     togTaskForm(false);
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
@@ -2372,6 +2397,9 @@ async function updateTaskStatus(id,status){
     if(status==='Completed')d.completedAt=new Date().toISOString();
     await db.collection(TASK_COL).doc(id).update(d);
     toast('Status updated ✓','ok');
+    // Email notification for status change (especially close)
+    const t = taskData.find(x=>x.id===id);
+    if(t) sendTaskNotification(status==='Completed' ? 'closed' : 'updated', t);
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
@@ -2415,6 +2443,7 @@ function renderTasks(){
   });
 
   el('task-count').textContent=`${list.length} task${list.length!==1?'s':''}`;
+  updateTaskNavBadge();
   const wrap=el('task-list');
   if(!list.length){
     wrap.innerHTML=`<div class="empty"><i class="ti ti-checklist eico"></i><div class="etit">No tasks</div><div class="edesc">${CU.canWrite?'Click "Assign task" to create one.':'No tasks assigned to you yet.'}</div></div>`;
@@ -2513,6 +2542,39 @@ function updateAMCNavBadge(){
   amcData.forEach(c=>{const s=amcVisitStatus(c);if(s.state==='overdue'||s.state==='due')n++;});
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
+}
+
+function updateTaskNavBadge(){
+  const badge = el('task-nav-badge');
+  if(!badge) return;
+
+  // Count overdue + due soon tasks for current user
+  const now = new Date();
+  let count = 0;
+  taskData.forEach(t => {
+    if(t.status === 'Completed') return;
+    if(!(t.assignedTo === CU.fullName || t.supervisor === CU.fullName || CU.isAdmin)) return;
+
+    if(t.deadline){
+      const dl = new Date(t.deadline.includes('T') ? t.deadline : t.deadline + 'T00:00');
+      const days = Math.ceil((dl - now) / (1000*60*60*24));
+      if(days <= 3) count++; // due within 3 days or overdue
+    }
+  });
+
+  if(count > 0){
+    badge.style.display = 'inline-block';
+    badge.textContent = count;
+    // PWA App Badge (supported in Chrome/Edge on Android + Desktop)
+    if('setAppBadge' in navigator){
+      navigator.setAppBadge(count).catch(()=>{});
+    }
+  } else {
+    badge.style.display = 'none';
+    if('clearAppBadge' in navigator){
+      navigator.clearAppBadge().catch(()=>{});
+    }
+  }
 }
 
 // ── AMC DROPDOWNS ─────────────────────────────────
