@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_25
-const APP_VERSION="25";
+// DQAP_WIKI_VERSION_26
+const APP_VERSION="26";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -33,6 +33,8 @@ firebase.initializeApp({
 const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
+const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
+const AMC_SCOPES=["CAMC","N-CAMC"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Other Expenses"];
 const CFG={NOTIFY_ON:false,EJS_KEY:"",EJS_SERVICE:"",EJS_TEMPLATE:"",NOTIFY_TO:""};
@@ -848,7 +850,17 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
           <div class="g3" style="margin-bottom:14px">
             <div class="fg"><label class="fl r">Project number</label><input class="fi" id="np-num" placeholder="e.g. PRJ-2025-001"></div>
-            <div class="fg" style="grid-column:span 2"><label class="fl r">Project name</label><input class="fi" id="np-name" placeholder="e.g. BPCL Panipat FDAS"></div>
+            <div class="fg"><label class="fl r">Project name</label><input class="fi" id="np-name" placeholder="e.g. BPCL Panipat FDAS"></div>
+            <div class="fg"><label class="fl r">Project Scope</label>
+              <select class="fs" id="np-scope">
+                <option value="">Select scope</option>
+                <optgroup label="Project (appears in PMO)">
+                  <option>SITC</option><option>S&amp;C</option><option>Services</option><option>ITC</option>
+                </optgroup>
+                <optgroup label="Maintenance (appears in AMC)">
+                  <option>CAMC</option><option>N-CAMC</option>
+                </optgroup>
+              </select></div>
           </div>
 
           <div class="fsec-t"><i class="ti ti-file-invoice"></i>Contract details</div>
@@ -1087,7 +1099,8 @@ function populateProjDropdown(sel){
 function populatePMOProjects(){
   const s=el('pmo-proj');if(!s)return;
   const cur=s.value;
-  s.innerHTML='<option value="">Select project</option>'+projectsData.map(p=>`<option value="${esc(p.id)}" data-name="${esc(p.name)}" data-num="${esc(p.number||'')}" data-client="${esc((p.clients||[])[0]||'')}"${p.id===cur?' selected':''}>${esc(p.number?p.number+' — ':'')}${esc(p.name)}</option>`).join('');
+  const elig=projectsData.filter(p=>!AMC_SCOPES.includes(p.scope));
+  s.innerHTML='<option value="">Select project</option>'+elig.map(p=>`<option value="${esc(p.id)}" data-name="${esc(p.name)}" data-num="${esc(p.number||'')}" data-client="${esc((p.clients||[])[0]||'')}"${p.id===cur?' selected':''}>${esc(p.number?p.number+' — ':'')}${esc(p.name)}${p.scope?' ('+esc(p.scope)+')':''}</option>`).join('');
 }
 function populatePayCustomers(){
   const s=el('pay-customer');if(!s)return;
@@ -1642,7 +1655,7 @@ function sendNotification(e){
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-po-num').value='';el('np-po-date').value='';el('np-ld-date').value='';el('np-po-amt').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
+  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-po-num').value='';el('np-po-date').value='';el('np-ld-date').value='';el('np-po-amt').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
 }
 function addNpItem(type){const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();if(!val)return;if(type==='cli'){if(!npClients.includes(val))npClients.push(val);}else{if(!npSites.includes(val))npSites.push(val);}inp.value='';renderNpItems();inp.focus();}
 function removeNpItem(type,val){if(type==='cli')npClients=npClients.filter(v=>v!==val);else npSites=npSites.filter(v=>v!==val);renderNpItems();}
@@ -1654,6 +1667,8 @@ async function saveNewProject(){
   if(!num){toast('Project number is required','err');return;}if(!name){toast('Project name is required','err');return;}
   if(!npClients.length){toast('Add at least one client','err');return;}if(!npSites.length){toast('Add at least one site','err');return;}
   const exists=projectsData.find(p=>p.name.toLowerCase()===name.toLowerCase());if(exists){toast('Project already exists','err');return;}
+  const scope=(el('np-scope').value||'').trim();
+  if(!scope){toast('Select a Project Scope','err');return;}
   const ldDate=(el('np-ld-date').value||'').trim();
   const poAmount=parseFloat(el('np-po-amt').value)||0;
   const budgetAllocated=parseFloat(el('np-budget-alloc').value)||0;
@@ -1665,7 +1680,7 @@ async function saveNewProject(){
   showLoad('Saving…');
   const poNumber=(el('np-po-num').value||'').trim(),poDate=(el('np-po-date').value||'').trim();
   try{
-    await db.collection(PROJ).add({number:num,name,clients:npClients,sites:npSites,poNumber,poDate,ldDate,createdAt:new Date().toISOString()});
+    await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,poNumber,poDate,ldDate,createdAt:new Date().toISOString()});
     const now=new Date().toISOString();
     await db.collection(BUDGET_CFG_COL).add({projectName:name,poAmount,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
     toast('Project added ✓','ok');togNewProj();
@@ -1696,6 +1711,7 @@ function renderProjectsPage(){
   list.innerHTML=projectsData.map(p=>{
     const ldChip=p.ldDate?`<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">${renderLdChip(p.ldDate)}</span>`:'';
     const metaChips=[
+      p.scope?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:600"><i class="ti ti-category" style="font-size:11px"></i>${esc(p.scope)}</span>`:'',
       p.poNumber?`<span class="chip"><i class="ti ti-file-invoice" style="font-size:11px"></i>${esc(p.poNumber)}</span>`:'',
       p.poDate?`<span class="chip"><i class="ti ti-calendar" style="font-size:11px"></i>PO: ${p.poDate}</span>`:'',
     ].filter(Boolean).join('');
@@ -2486,7 +2502,7 @@ function updateAMCNavBadge(){
 // ── AMC DROPDOWNS ─────────────────────────────────
 function populateAMCDropdowns(){
   const ps=el('amc-project');
-  if(ps){const cur=ps.value;ps.innerHTML='<option value="">— None —</option>'+projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');}
+  if(ps){const cur=ps.value;const elig=projectsData.filter(p=>AMC_SCOPES.includes(p.scope));ps.innerHTML='<option value="">— None —</option>'+elig.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}${p.scope?' ('+esc(p.scope)+')':''}</option>`).join('');}
   const as=el('amc-assignee');
   if(as){const cur=as.value;const names=usersData.map(u=>u.fullName).filter(Boolean);as.innerHTML='<option value="">Select engineer</option>'+names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');}
 }
