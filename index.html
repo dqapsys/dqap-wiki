@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_24
-const APP_VERSION="24";
+// DQAP_WIKI_VERSION_25
+const APP_VERSION="25";
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -31,7 +31,8 @@ firebase.initializeApp({
   appId:"1:932523956178:web:cc83a8e7369eaa80649a0b"
 });
 const db=firebase.firestore(),storage=firebase.storage();
-const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks";
+const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
+const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Other Expenses"];
 const CFG={NOTIFY_ON:false,EJS_KEY:"",EJS_SERVICE:"",EJS_TEMPLATE:"",NOTIFY_TO:""};
@@ -57,6 +58,7 @@ body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-ser
 .sb-logo{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;justify-content:center}
 .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
 .sb-sec{font-size:9px;font-weight:600;opacity:.38;letter-spacing:1.6px;text-transform:uppercase;padding:4px 8px 6px}
+.nav-badge{background:#E53935;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center}
 .ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.78);margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.14);color:#fff}
 .ni.active{background:rgba(255,255,255,.22);color:#fff;font-weight:500}
@@ -301,6 +303,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('library')"         id="ni-library"><i class="ti ti-library"></i>Library</div>
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management</div>
+    <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
@@ -755,6 +758,81 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
+<!-- ══ AMC MANAGEMENT ══ -->
+<div id="v-amc" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-calendar-repeat" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>AMC Management</div><div class="pg-s">Track maintenance contracts and scheduled client visits</div></div>
+    <div class="tr" id="amc-add-btn-wrap"><button class="btn pri" onclick="togAMCForm(true)"><i class="ti ti-plus"></i>Add AMC Contract</button></div>
+  </div>
+  <div class="content">
+    <!-- Notification banner -->
+    <div id="amc-notify" style="margin-bottom:14px"></div>
+
+    <!-- Stats -->
+    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-file-certificate" style="color:#1565C0;font-size:18px"></i></div><div><div class="sv" id="amc-st-total">—</div><div class="sl">Total contracts</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="amc-st-active">—</div><div class="sl">Active</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-clock-exclamation" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="amc-st-due">—</div><div class="sl">Visits due soon</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="amc-st-overdue">—</div><div class="sl">Visits overdue</div></div></div>
+    </div>
+
+    <!-- Add/edit contract form -->
+    <div id="amc-form-panel" style="display:none;margin-bottom:14px">
+      <div class="card">
+        <div class="ch"><div class="ct" id="amc-form-t"><i class="ti ti-plus" style="font-size:14px"></i>New AMC contract</div><button class="btn sm" onclick="togAMCForm(false)"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div class="fsec-t"><i class="ti ti-info-circle"></i>Contract details</div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg" style="grid-column:span 2"><label class="fl r">Contract name</label><input class="fi" id="amc-name" placeholder="e.g. BPCL Panipat FDAS — AMC 2025-26"></div>
+            <div class="fg"><label class="fl r">Client</label><input class="fi" id="amc-client" placeholder="Customer name"></div>
+            <div class="fg"><label class="fl">Link to project</label><select class="fs" id="amc-project"><option value="">— None —</option></select></div>
+            <div class="fg"><label class="fl r">Visit frequency</label><select class="fs" id="amc-freq"><option value="">Select frequency</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annual</option></select></div>
+            <div class="fg"><label class="fl r">Assigned to</label><select class="fs" id="amc-assignee"><option value="">Select engineer</option></select></div>
+          </div>
+          <div class="fsec-t"><i class="ti ti-calendar"></i>Contract period &amp; value</div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl r">Start date</label><input type="date" class="fi" id="amc-start"></div>
+            <div class="fg"><label class="fl r">End date</label><input type="date" class="fi" id="amc-end"></div>
+            <div class="fg"><label class="fl">Contract value (&#8377;)</label><input class="fi" id="amc-value" type="number" min="0" placeholder="Optional"></div>
+            <div class="fg" style="grid-column:span 2"><label class="fl">Scope / notes</label><input class="fi" id="amc-scope" placeholder="Scope of maintenance"></div>
+            <div class="fg"><label class="fl">Status</label><select class="fs" id="amc-status"><option>Active</option><option>On Hold</option></select></div>
+          </div>
+          <input type="hidden" id="amc-eid">
+          <button class="btn pri" onclick="saveAMC()" id="amc-save-btn"><i class="ti ti-device-floppy"></i>Save contract</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visit log form -->
+    <div id="amc-visit-panel" style="display:none;margin-bottom:14px">
+      <div class="card" style="border:1px solid var(--p)">
+        <div class="ch"><div class="ct"><i class="ti ti-map-pin-check" style="font-size:14px"></i>Log a visit — <span id="amc-visit-ctx" style="color:var(--p)"></span></div><button class="btn sm" onclick="closeVisitLog()"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="cb">
+          <div class="g3" style="margin-bottom:12px">
+            <div class="fg"><label class="fl r">Visit date</label><input type="date" class="fi" id="amc-visit-date"></div>
+            <div class="fg"><label class="fl">Attended by</label><input class="fi" id="amc-visit-by" placeholder="Engineer name"></div>
+            <div class="fg"><label class="fl">Next due (auto)</label><input class="fi" id="amc-visit-next" disabled style="background:var(--pl)"></div>
+            <div class="fg" style="grid-column:span 3"><label class="fl">Observations / remarks</label><input class="fi" id="amc-visit-remarks" placeholder="Work done, issues found, parts replaced…"></div>
+          </div>
+          <input type="hidden" id="amc-visit-cid">
+          <button class="btn pri" onclick="saveVisit()"><i class="ti ti-check"></i>Record visit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="fbar">
+      <select class="fsel" id="amc-ff-status" onchange="renderAMC()"><option value="">All statuses</option><option>Active</option><option>On Hold</option><option>Expired</option></select>
+      <select class="fsel" id="amc-ff-freq" onchange="renderAMC()"><option value="">All frequencies</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annual</option></select>
+      <select class="fsel" id="amc-ff-due" onchange="renderAMC()"><option value="">All visits</option><option value="overdue">Overdue only</option><option value="due">Due soon only</option></select>
+      <input class="fi" id="amc-search" oninput="renderAMC()" placeholder="Search contract, client…" style="max-width:220px;padding:5px 10px">
+      <span id="amc-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
+    </div>
+
+    <div id="amc-list"></div>
+  </div>
+</div>
+
 <!-- ══ MANAGE PROJECTS ══ -->
 <div id="v-projects" class="view" style="display:none">
   <div class="topbar">
@@ -846,8 +924,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
+let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null;
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
@@ -911,9 +990,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];activeBudgetProject='';
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -925,7 +1004,7 @@ function startApp(){
   el('f-date').value=new Date().toISOString().split('T')[0];
   if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
   if(!CU.canWrite){
-    ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','task-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
+    ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','task-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
   }
   // show role badge in sidebar
   const roleBadgeEl=el('sb-role');
@@ -935,7 +1014,7 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();populateEngineers();
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -1764,6 +1843,7 @@ function go(n){
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
   if(n==='tasks'){togTaskForm(false);renderTasks();}
+  if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='payments'){
@@ -2348,6 +2428,302 @@ function renderTasks(){
           </div>
         </div>
       </div>
+    </div>`;
+  }).join('');
+}
+
+
+// ── AMC LISTENER ──────────────────────────────────
+function startAMCListen(){
+  if(amcUnsub)amcUnsub();
+  amcUnsub=db.collection(AMC_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
+    amcData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    updateAMCNavBadge();
+    if(el('v-amc')&&el('v-amc').style.display!=='none')renderAMC();
+  },err=>{});
+}
+
+// ── AMC HELPERS ───────────────────────────────────
+function freqMonths(f){return{'Monthly':1,'Quarterly':3,'Bi-Annual':6,'Annual':12}[f]||1;}
+function noticeWindow(f){return{'Monthly':7,'Quarterly':15,'Bi-Annual':30,'Annual':30}[f]||7;}
+
+function addMonths(date,m){const d=new Date(date);d.setMonth(d.getMonth()+m);return d;}
+
+// next visit due date based on last visit (or start) + frequency interval
+function nextVisitDue(c){
+  const m=freqMonths(c.frequency);
+  const visits=(c.visits||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const base=visits.length?new Date(visits[0].date):(c.startDate?new Date(c.startDate):new Date());
+  return addMonths(base,m);
+}
+
+function amcVisitStatus(c){
+  if(c.status==='On Hold')return{color:'#37474F',bg:'#ECEFF1',icon:'ti-player-pause',label:'On Hold',state:'hold'};
+  const today=new Date();today.setHours(0,0,0,0);
+  const end=c.endDate?new Date(c.endDate):null;if(end)end.setHours(0,0,0,0);
+  // expired contract
+  if(end&&end<today)return{color:'#37474F',bg:'#ECEFF1',icon:'ti-circle-x',label:'Contract expired',state:'expired'};
+  const due=nextVisitDue(c);due.setHours(0,0,0,0);
+  // all scheduled visits covered within contract period
+  if(end&&due>end)return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-circle-check',label:'All visits done',state:'complete',due};
+  const days=Math.round((due-today)/86400000);
+  const win=noticeWindow(c.frequency);
+  if(days<0)return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-alert-triangle',label:'Visit overdue by '+Math.abs(days)+'d',days,due,state:'overdue'};
+  if(days===0)return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-alarm',label:'Visit due today',days,due,state:'overdue'};
+  if(days<=win)return{color:'#E65100',bg:'#FFF3E0',icon:'ti-clock-exclamation',label:'Visit due in '+days+'d',days,due,state:'due'};
+  return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-calendar',label:'Next visit in '+days+'d',days,due,state:'ok'};
+}
+function fmtDate(d){return d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+
+function updateAMCNavBadge(){
+  const badge=el('amc-nav-badge');if(!badge)return;
+  let n=0;
+  amcData.forEach(c=>{const s=amcVisitStatus(c);if(s.state==='overdue'||s.state==='due')n++;});
+  if(n>0){badge.style.display='inline-block';badge.textContent=n;}
+  else badge.style.display='none';
+}
+
+// ── AMC DROPDOWNS ─────────────────────────────────
+function populateAMCDropdowns(){
+  const ps=el('amc-project');
+  if(ps){const cur=ps.value;ps.innerHTML='<option value="">— None —</option>'+projectsData.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}</option>`).join('');}
+  const as=el('amc-assignee');
+  if(as){const cur=as.value;const names=usersData.map(u=>u.fullName).filter(Boolean);as.innerHTML='<option value="">Select engineer</option>'+names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');}
+}
+
+// ── AMC FORM ──────────────────────────────────────
+function togAMCForm(show,data){
+  const panel=el('amc-form-panel');if(!panel)return;
+  if(show&&!CU.canWrite){toast('You do not have permission to add contracts','err');return;}
+  panel.style.display=show?'block':'none';
+  if(show){closeVisitLog();}
+  if(!show){
+    el('amc-eid').value='';
+    ['amc-name','amc-client','amc-value','amc-scope'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    ['amc-project','amc-freq','amc-assignee','amc-start','amc-end'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    el('amc-status').value='Active';
+    el('amc-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>New AMC contract';
+    el('amc-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save contract';
+    return;
+  }
+  populateAMCDropdowns();
+  if(data){
+    el('amc-name').value=data.contractName||'';
+    el('amc-client').value=data.client||'';
+    el('amc-project').value=data.project||'';
+    el('amc-freq').value=data.frequency||'';
+    el('amc-assignee').value=data.assignedTo||'';
+    el('amc-start').value=data.startDate||'';
+    el('amc-end').value=data.endDate||'';
+    el('amc-value').value=data.contractValue||'';
+    el('amc-scope').value=data.scope||'';
+    el('amc-status').value=data.status||'Active';
+    el('amc-eid').value=data.id;
+    el('amc-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit AMC contract';
+    el('amc-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update contract';
+  }
+}
+
+async function saveAMC(){
+  if(!CU.canWrite){toast('Not permitted','err');return;}
+  const contractName=g('amc-name'),client=g('amc-client'),frequency=g('amc-freq');
+  const assignedTo=g('amc-assignee'),startDate=g('amc-start'),endDate=g('amc-end');
+  if(!contractName){toast('Enter a contract name','err');return;}
+  if(!client){toast('Enter a client','err');return;}
+  if(!frequency){toast('Select a frequency','err');return;}
+  if(!assignedTo){toast('Select an assignee','err');return;}
+  if(!startDate){toast('Set a start date','err');return;}
+  if(!endDate){toast('Set an end date','err');return;}
+  if(new Date(endDate)<=new Date(startDate)){toast('End date must be after start date','err');return;}
+  const d={contractName,client,project:g('amc-project'),frequency,assignedTo,startDate,endDate,
+    contractValue:parseFloat(el('amc-value').value)||0,scope:g('amc-scope'),status:g('amc-status')||'Active',
+    updatedAt:new Date().toISOString()};
+  showLoad('Saving…');
+  try{
+    const eid=g('amc-eid');
+    if(eid){await db.collection(AMC_COL).doc(eid).update(d);toast('Contract updated ✓','ok');}
+    else{d.visits=[];d.createdAt=new Date().toISOString();await db.collection(AMC_COL).add(d);toast('Contract added ✓','ok');}
+    togAMCForm(false);
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function deleteAMC(id){
+  if(!confirm('Delete this AMC contract and its visit history?'))return;showLoad('Deleting…');
+  try{await db.collection(AMC_COL).doc(id).delete();toast('Deleted ✓','ok');}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+
+function toggleAMCCard(id){amcExpandedId=(amcExpandedId===id)?null:id;renderAMC();}
+
+// ── VISIT LOG ─────────────────────────────────────
+function canLogVisit(c){return CU.isAdmin||CU.isManager||c.assignedTo===CU.fullName;}
+
+function openVisitLog(id){
+  const c=amcData.find(x=>x.id===id);if(!c)return;
+  if(!canLogVisit(c)){toast('Only the assigned engineer or a manager can log visits','err');return;}
+  togAMCForm(false);
+  amcVisitForId=id;
+  el('amc-visit-panel').style.display='block';
+  el('amc-visit-ctx').textContent=c.contractName;
+  el('amc-visit-cid').value=id;
+  el('amc-visit-date').value=new Date().toISOString().split('T')[0];
+  el('amc-visit-by').value=CU.fullName||'';
+  el('amc-visit-remarks').value='';
+  // show projected next due = visit date + interval
+  const nd=addMonths(new Date(),freqMonths(c.frequency));
+  el('amc-visit-next').value=fmtDate(nd);
+  el('amc-visit-panel').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function closeVisitLog(){const p=el('amc-visit-panel');if(p)p.style.display='none';amcVisitForId=null;}
+
+async function saveVisit(){
+  const id=g('amc-visit-cid');const c=amcData.find(x=>x.id===id);if(!c)return;
+  if(!canLogVisit(c)){toast('Not permitted','err');return;}
+  const date=g('amc-visit-date');if(!date){toast('Select a visit date','err');return;}
+  const visit={date,doneBy:g('amc-visit-by')||CU.fullName,remarks:g('amc-visit-remarks'),loggedAt:new Date().toISOString()};
+  showLoad('Recording…');
+  try{
+    const visits=(c.visits||[]).concat([visit]);
+    await db.collection(AMC_COL).doc(id).update({visits,updatedAt:new Date().toISOString()});
+    toast('Visit recorded ✓','ok');closeVisitLog();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function deleteVisit(id,idx){
+  const c=amcData.find(x=>x.id===id);if(!c)return;
+  if(!(CU.isAdmin||CU.isManager)){toast('Only a manager or admin can remove a visit','err');return;}
+  if(!confirm('Remove this visit record?'))return;showLoad('Removing…');
+  try{
+    const visits=(c.visits||[]).slice();visits.splice(idx,1);
+    await db.collection(AMC_COL).doc(id).update({visits,updatedAt:new Date().toISOString()});
+    toast('Removed ✓','ok');
+  }catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+
+// ── AMC RENDER ────────────────────────────────────
+function renderAMC(){
+  const today=new Date();today.setHours(0,0,0,0);
+  // derive effective status (expired) for filtering/stats
+  const withStatus=amcData.map(c=>{const s=amcVisitStatus(c);return{c,s};});
+
+  // Stats
+  el('amc-st-total').textContent=amcData.length;
+  el('amc-st-active').textContent=amcData.filter(c=>c.status==='Active'&&!(c.endDate&&new Date(c.endDate)<today)).length;
+  const dueN=withStatus.filter(x=>x.s.state==='due').length;
+  const overN=withStatus.filter(x=>x.s.state==='overdue').length;
+  el('amc-st-due').textContent=dueN;el('amc-st-due').style.color=dueN>0?'#E65100':'';
+  el('amc-st-overdue').textContent=overN;el('amc-st-overdue').style.color=overN>0?'#B71C1C':'';
+
+  // Notification banner
+  const notify=el('amc-notify');
+  const alerts=withStatus.filter(x=>x.s.state==='overdue'||x.s.state==='due')
+    .sort((a,b)=>(a.s.days??9999)-(b.s.days??9999));
+  if(notify){
+    if(alerts.length){
+      notify.innerHTML=`<div class="card" style="border-left:3px solid ${overN>0?'#B71C1C':'#E65100'}">
+        <div class="cb" style="padding:12px 16px">
+          <div style="font-size:12px;font-weight:700;color:${overN>0?'#B71C1C':'#E65100'};margin-bottom:8px"><i class="ti ti-bell-ringing" style="font-size:14px;vertical-align:-2px"></i> ${overN>0?overN+' visit(s) overdue':''}${overN>0&&dueN>0?' · ':''}${dueN>0?dueN+' visit(s) due soon':''}</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            ${alerts.slice(0,6).map(x=>`<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;flex-wrap:wrap;cursor:pointer" onclick="amcExpandedId='${x.c.id}';renderAMC();document.getElementById('amc-card-${x.c.id}')?.scrollIntoView({behavior:'smooth',block:'center'})">
+              <span class="ld-chip" style="background:${x.s.bg};color:${x.s.color}"><i class="ti ${x.s.icon}"></i>${x.s.label}</span>
+              <b>${esc(x.c.contractName)}</b>
+              <span style="color:var(--t2)">${esc(x.c.client)} · ${esc(x.c.frequency)} · due ${fmtDate(x.s.due)} · ${esc(x.c.assignedTo)}</span>
+            </div>`).join('')}
+            ${alerts.length>6?`<div style="font-size:10.5px;color:var(--t2)">+ ${alerts.length-6} more…</div>`:''}
+          </div>
+        </div>
+      </div>`;
+    }else{
+      notify.innerHTML=amcData.length?`<div class="card"><div class="cb" style="padding:10px 16px;font-size:11.5px;color:#1B5E20"><i class="ti ti-circle-check" style="font-size:14px;vertical-align:-2px"></i> All AMC visits are on schedule.</div></div>`:'';
+    }
+  }
+
+  // Filters
+  const statusF=el('amc-ff-status')?.value||'';
+  const freqF=el('amc-ff-freq')?.value||'';
+  const dueF=el('amc-ff-due')?.value||'';
+  const q=(el('amc-search')?.value||'').toLowerCase().trim();
+  let list=withStatus.filter(({c,s})=>{
+    const effStatus=s.state==='expired'?'Expired':c.status;
+    if(statusF&&effStatus!==statusF)return false;
+    if(freqF&&c.frequency!==freqF)return false;
+    if(dueF==='overdue'&&s.state!=='overdue')return false;
+    if(dueF==='due'&&s.state!=='due')return false;
+    if(q&&![c.contractName,c.client,c.project,c.assignedTo,c.frequency].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+  // sort: overdue/due first
+  list.sort((a,b)=>{
+    const rank=s=>s.state==='overdue'?0:s.state==='due'?1:s.state==='ok'?2:3;
+    const ra=rank(a.s),rb=rank(b.s);if(ra!==rb)return ra-rb;
+    return (a.s.days??9999)-(b.s.days??9999);
+  });
+
+  el('amc-count').textContent=`${list.length} contract${list.length!==1?'s':''}`;
+  const wrap=el('amc-list');
+  if(!list.length){
+    wrap.innerHTML=`<div class="empty"><i class="ti ti-calendar-repeat eico"></i><div class="etit">${amcData.length?'No contracts match':'No AMC contracts yet'}</div><div class="edesc">${CU.canWrite?'Click "Add AMC Contract" to create one.':'No contracts to show.'}</div></div>`;
+    return;
+  }
+
+  wrap.innerHTML=list.map(({c,s})=>{
+    const isExp=(amcExpandedId===c.id);
+    const visits=(c.visits||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const lastVisit=visits.length?visits[0]:null;
+    const leftCol=s.state==='overdue'?'#B71C1C':s.state==='due'?'#E65100':s.state==='ok'?'#1A6FD4':'#90A4AE';
+    const canLog=canLogVisit(c);
+    const canEdit=CU.isAdmin||CU.isManager;
+
+    let detail='';
+    if(isExp){
+      const visitRows=visits.length?visits.map((v,i)=>{
+        // original index in c.visits for deletion
+        const origIdx=(c.visits||[]).indexOf(v);
+        return`<tr>
+          <td style="font-size:10px;color:var(--t2)">${i+1}</td>
+          <td style="white-space:nowrap;font-weight:500">${fmtDate(v.date)}</td>
+          <td>${esc(v.doneBy||'—')}</td>
+          <td style="font-size:11.5px;color:var(--t2)">${esc(v.remarks||'—')}</td>
+          <td>${canEdit?`<button class="btn sm danger" onclick="event.stopPropagation();deleteVisit('${c.id}',${origIdx})"><i class="ti ti-trash"></i></button>`:''}</td>
+        </tr>`;}).join(''):`<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--t2)">No visits logged yet</td></tr>`;
+      detail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Contract period</div><div style="font-size:12px;font-weight:600">${fmtDate(c.startDate)} → ${fmtDate(c.endDate)}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Contract value</div><div style="font-size:14px;font-weight:700;color:var(--p)">${c.contractValue?'₹ '+fmtAmt(c.contractValue):'—'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Last visit</div><div style="font-size:12px;font-weight:600">${lastVisit?fmtDate(lastVisit.date):'None yet'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Next visit due</div><div style="font-size:12px;font-weight:700;color:${s.color}">${s.due?fmtDate(s.due):'—'}</div></div>
+        </div>
+        ${c.scope?`<div style="font-size:11.5px;color:var(--t2);margin-bottom:12px"><b style="color:var(--t1)">Scope:</b> ${esc(c.scope)}</div>`:''}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:11px;font-weight:600;color:var(--p)"><i class="ti ti-history" style="font-size:13px"></i> Visit history (${visits.length})</span>
+          <div style="display:flex;gap:6px">
+            ${canLog?`<button class="btn sm pri" onclick="event.stopPropagation();openVisitLog('${c.id}')"><i class="ti ti-map-pin-plus"></i>Log visit</button>`:''}
+            ${canEdit?`<button class="btn sm" onclick="event.stopPropagation();togAMCForm(true,amcData.find(x=>x.id==='${c.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+            ${CU.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deleteAMC('${c.id}')"><i class="ti ti-trash"></i></button>`:''}
+          </div>
+        </div>
+        <div class="wtable-wrap"><table class="wtable"><thead><tr><th>#</th><th>Visit date</th><th>Attended by</th><th>Remarks</th><th></th></tr></thead><tbody>${visitRows}</tbody></table></div>
+      </div>`;
+    }
+
+    return`<div class="pmo-card" id="amc-card-${c.id}" style="border-left:3px solid ${leftCol}">
+      <div style="cursor:pointer;user-select:none" onclick="toggleAMCCard('${c.id}')">
+        <div class="pmo-hd">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+              <div class="pmo-title" style="min-width:0">${esc(c.contractName)}</div>
+              <span style="font-size:9.5px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600">${esc(c.frequency)}</span>
+              ${s.state==='hold'?'<span class="badge b-cls">On Hold</span>':s.state==='expired'?'<span class="badge b-cls">Expired</span>':''}
+            </div>
+            <div class="pmo-sub"><i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(c.client)} &nbsp;·&nbsp; <i class="ti ti-user" style="font-size:11px"></i> ${esc(c.assignedTo)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <span class="ld-chip" style="background:${s.bg};color:${s.color}"><i class="ti ${s.icon}"></i>${s.label}</span>
+            <i class="ti ${isExp?'ti-chevron-up':'ti-chevron-down'}" style="font-size:14px;color:var(--t2)"></i>
+          </div>
+        </div>
+      </div>
+      ${detail}
     </div>`;
   }).join('');
 }
