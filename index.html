@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_44
-const APP_VERSION="44";
+// DQAP_WIKI_VERSION_46
+const APP_VERSION="46";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -917,6 +917,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="fg"><label class="fl r">Username</label><input class="fi" id="u-un" placeholder="e.g. rajesh (lowercase)"></div>
           <div class="fg"><label class="fl r">Password</label><input class="fi" id="u-pw" placeholder="Set initial password"></div>
         </div>
+        <div class="g3" style="margin-bottom:12px">
+          <div class="fg" style="grid-column: span 2">
+            <label class="fl">Email address <span style="font-weight:400;color:#888">(for task notifications)</span></label>
+            <input class="fi" id="u-email" placeholder="e.g. rajesh.kumar@company.com" type="email">
+          </div>
+        </div>
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <div class="fg" style="min-width:180px"><label class="fl r">Access level</label>
             <select class="fs" id="u-role">
@@ -930,7 +936,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <div class="card">
       <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
-      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -1032,7 +1038,6 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
-  setTimeout(updateTaskNavBadge, 800); // Initial badge update after data loads
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -1658,86 +1663,6 @@ function sendNotification(e){
   try{emailjs.init(CFG.EJS_KEY);emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{to_email:CFG.NOTIFY_TO,engineer:e.engineer,title:e.title,project:e.project,category:e.category,severity:e.severity,entry_number:e.entryNumber,problem:e.problem,solution:e.solution});}catch(e){}
 }
 
-function sendTaskNotification(action, t){
-  if(!CFG.NOTIFY_ON || !CFG.EJS_KEY) {
-    console.log("Email notifications disabled or EmailJS key missing");
-    return;
-  }
-
-  const emails = new Set();
-
-  const getUserEmail = (name) => {
-    if (!name || !usersData || usersData.length === 0) return null;
-    const u = usersData.find(x => x.fullName === name);
-    return u && u.email ? u.email.trim() : null;
-  };
-
-  // Assignee
-  const aEmail = getUserEmail(t.assignedTo);
-  if (aEmail) emails.add(aEmail);
-
-  // Creator
-  const cEmail = getUserEmail(t.assignedBy);
-  if (cEmail) emails.add(cEmail);
-
-  // Supervisor
-  if (t.supervisor && t.supervisor !== t.assignedTo && t.supervisor !== t.assignedBy) {
-    const sEmail = getUserEmail(t.supervisor);
-    if (sEmail) emails.add(sEmail);
-  }
-
-  // Always include central email
-  if (CFG.NOTIFY_TO) {
-    CFG.NOTIFY_TO.split(',').forEach(e => {
-      const trimmed = e.trim();
-      if (trimmed) emails.add(trimmed);
-    });
-  }
-
-  if (emails.size === 0) {
-    console.log("No email addresses found to send notification");
-    return;
-  }
-
-  try {
-    emailjs.init(CFG.EJS_KEY);
-
-    const subject = `Task ${action.toUpperCase()}: ${t.title || ''}`;
-    const body = `Task: "${t.title || ''}"
-Action: ${action}
-Assigned to: ${t.assignedTo || '—'}
-Created by: ${t.assignedBy || '—'}
-Supervisor: ${t.supervisor || '—'}
-Deadline: ${t.deadline || 'N/A'}
-Project: ${t.project || 'N/A'}
-Status: ${t.status || 'Open'}
-
-Please check DQAP Wiki for details.`;
-
-    emails.forEach(to => {
-      emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {
-        to_email: to,
-        subject: subject,
-        message: body,
-        task_title: t.title || '',
-        task_action: action,
-        task_assigned_to: t.assignedTo || '—',
-        task_created_by: t.assignedBy || '—',
-        task_supervisor: t.supervisor || '—',
-        task_deadline: t.deadline || 'N/A',
-        task_project: t.project || 'N/A'
-      }).then(() => {
-        console.log("Email sent successfully to", to);
-      }).catch(err => {
-        console.error("EmailJS send failed for", to, err);
-      });
-    });
-
-  } catch (err) {
-    console.error("Task email notification error:", err);
-  }
-}
-
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
@@ -1839,8 +1764,20 @@ async function loadUsers(){
   try{
     const sn=await db.collection(USERS).orderBy('createdAt','asc').get();
     const users=sn.docs.map(d=>({id:d.id,...d.data()}));
-    el('u-list').innerHTML=users.length?users.map(u=>`<tr><td style="font-weight:500">${esc(u.fullName)}</td><td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td><td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td><td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td><td><div style="display:flex;gap:5px"><button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button><button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button><button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button></div></td></tr>`).join('')
-    :'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
+    el('u-list').innerHTML=users.length?users.map(u=>`<tr>
+      <td style="font-weight:500">${esc(u.fullName)}</td>
+      <td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td>
+      <td style="font-size:12px;color:var(--t2)">${u.email ? esc(u.email) : '<span style="color:#aaa">— not set —</span>'}</td>
+      <td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td>
+      <td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td>
+      <td><div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn sm" onclick="editUser('${u.id}', '${esc(u.fullName)}', '${esc(u.username)}', '${u.email||''}', '${u.role||(u.isAdmin?'admin':'user')}')"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button>
+        <button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button>
+        <button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button>
+      </div></td>
+    </tr>`).join('')
+    :'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function changeRole(id,currentRole,name){
@@ -1858,15 +1795,61 @@ async function changeRole(id,currentRole,name){
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
+function editUser(id, fullName, username, currentEmail, currentRole){
+  const newEmail = prompt(`Edit Email for ${fullName} (${username})\n\nCurrent: ${currentEmail || '(not set)'}`, currentEmail || '');
+  if(newEmail === null) return;
+
+  const roles = ['user','manager','admin'];
+  const labels = {'user':'User (read-only)', 'manager':'Manager', 'admin':'Admin'};
+  const currentLabel = labels[currentRole] || currentRole;
+
+  const newRoleInput = prompt(
+    `Change role for ${fullName} (${username})\n\nCurrent role: ${currentLabel}\n\nEnter new role:\nuser     → User (read-only)\nmanager → Manager\nadmin    → Admin`,
+    currentRole
+  );
+  if(newRoleInput === null) return;
+
+  const newRole = newRoleInput.trim().toLowerCase();
+  if(!roles.includes(newRole)){
+    toast('Invalid role entered','err');
+    return;
+  }
+
+  showLoad('Updating user...');
+  db.collection(USERS).doc(id).update({
+    email: newEmail.trim() || null,
+    role: newRole,
+    isAdmin: newRole === 'admin',
+    updatedAt: new Date().toISOString()
+  }).then(() => {
+    toast('User updated successfully ✓','ok');
+    loadUsers();
+  }).catch(err => {
+    toast('Failed to update user: ' + err.message, 'err');
+  }).finally(() => hideLoad());
+}
 
 async function addUser(){
   const fn=g('u-fn'),un=(g('u-un')||'').toLowerCase().replace(/\s+/g,''),pw=g('u-pw'),role=(el('u-role')?.value||'user');
+  const email = (el('u-email')?.value || '').trim();
+
   if(!fn||!un||!pw){toast('All fields required','err');return;}if(un.length<3){toast('Username min 3 chars','err');return;}
   showLoad('Adding…');
   try{
     const chk=await db.collection(USERS).where('username','==',un).get();if(!chk.empty){hideLoad();toast('Username taken','err');return;}
-    await db.collection(USERS).add({fullName:fn,username:un,password:pw,role,isAdmin:role==='admin',createdAt:new Date().toISOString()});
-    ['u-fn','u-un','u-pw'].forEach(id=>el(id).value='');el('u-role').value='user';toast('User added ✓','ok');await loadUsers();
+    await db.collection(USERS).add({
+      fullName:fn,
+      username:un,
+      password:pw,
+      role,
+      isAdmin:role==='admin',
+      email: email || null,
+      createdAt:new Date().toISOString()
+    });
+    ['u-fn','u-un','u-pw','u-email'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    el('u-role').value='user';
+    toast('User added ✓','ok');
+    await loadUsers();
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function delUser(id,username){if(!confirm('Delete "'+username+'"?'))return;showLoad('Deleting…');try{await db.collection(USERS).doc(id).delete();toast('Deleted','ok');await loadUsers();}catch(e){toast('Failed','err');}finally{hideLoad();}}
@@ -2322,7 +2305,6 @@ function startTaskListen(){
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-tasks')&&el('v-tasks').style.display!=='none')renderTasks();
-    updateTaskNavBadge();   // Update red badge on real-time task changes
   },err=>{});
 }
 function startUsersListen(){
@@ -2461,35 +2443,6 @@ async function deleteTask(id){
   if(!confirm('Delete this task?'))return;showLoad('Deleting…');
   try{await db.collection(TASK_COL).doc(id).delete();toast('Deleted ✓','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
-}
-
-// ── TASK BADGE ────────────────────────────────────
-function updateTaskNavBadge(){
-  const badge = el('task-nav-badge');
-  if(!badge) return;
-
-  let count = 0;
-  taskData.forEach(t => {
-    if(t.status === 'Completed') return;
-    const isRelevant = CU.isAdmin || 
-                       t.assignedTo === CU.fullName || 
-                       t.supervisor === CU.fullName || 
-                       t.assignedBy === CU.fullName;
-    if(isRelevant) count++;
-  });
-
-  if(count > 0){
-    badge.style.display = 'inline-block';
-    badge.textContent = count;
-    if('setAppBadge' in navigator){
-      navigator.setAppBadge(count).catch(() => {});
-    }
-  } else {
-    badge.style.display = 'none';
-    if('clearAppBadge' in navigator){
-      navigator.clearAppBadge().catch(() => {});
-    }
-  }
 }
 
 // ── TASK RENDER ───────────────────────────────────
