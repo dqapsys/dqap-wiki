@@ -20,8 +20,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_27
-const APP_VERSION="27";
+// DQAP_WIKI_VERSION_28
+const APP_VERSION="28";
+function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -1014,7 +1015,9 @@ function startApp(){
   el('sb-user').textContent=CU.fullName;
   const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki · v'+APP_VERSION;
   el('f-date').value=new Date().toISOString().split('T')[0];
-  if(CU.isAdmin){el('ni-users').style.display='flex';el('ni-projects').style.display='flex';el('admin-sec').style.display='block';}
+  // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
+  if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
+  if(CU.isAdmin){el('ni-projects').style.display='flex';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
   }
@@ -1847,6 +1850,8 @@ function doSearch(){
 
 // ── NAV ───────────────────────────────────────────
 function go(n){
+  if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
+  if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
   el('v-'+n).style.display='block';
@@ -2284,8 +2289,8 @@ function populateTaskAssignees(){
   // self + anyone strictly lower in rank than me
   const eligible=usersData.filter(u=>roleRank(u.role||'user')<myRank&&u.fullName!==CU.fullName);
   let html='<option value="">Select assignee</option>';
-  html+=`<option value="${esc(CU.fullName)}" data-role="${CU.role}"${CU.fullName===cur?' selected':''}>Myself — ${esc(CU.fullName)}</option>`;
-  html+=eligible.map(u=>`<option value="${esc(u.fullName)}" data-role="${u.role||'user'}"${u.fullName===cur?' selected':''}>${esc(u.fullName)} — ${roleLabel(u.role||'user')}</option>`).join('');
+  html+=`<option value="${esc(CU.fullName)}" data-role="${CU.role}"${CU.fullName===cur?' selected':''}>${esc(CU.fullName)}</option>`;
+  html+=eligible.map(u=>`<option value="${esc(u.fullName)}" data-role="${u.role||'user'}"${u.fullName===cur?' selected':''}>${esc(u.fullName)}</option>`).join('');
   sel.innerHTML=html;
 }
 function populateTaskProjects(){
