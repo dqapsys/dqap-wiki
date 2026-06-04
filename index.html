@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_39
-const APP_VERSION="39";
+// DQAP_WIKI_VERSION_41
+const APP_VERSION="41";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -917,6 +917,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="fg"><label class="fl r">Username</label><input class="fi" id="u-un" placeholder="e.g. rajesh (lowercase)"></div>
           <div class="fg"><label class="fl r">Password</label><input class="fi" id="u-pw" placeholder="Set initial password"></div>
         </div>
+        <div class="g3" style="margin-bottom:12px">
+          <div class="fg" style="grid-column: span 2">
+            <label class="fl">Email address <span style="font-weight:400;color:#888">(for task notifications)</span></label>
+            <input class="fi" id="u-email" placeholder="e.g. rajesh.kumar@company.com" type="email">
+          </div>
+        </div>
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <div class="fg" style="min-width:180px"><label class="fl r">Access level</label>
             <select class="fs" id="u-role">
@@ -930,7 +936,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <div class="card">
       <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
-      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -1758,8 +1764,20 @@ async function loadUsers(){
   try{
     const sn=await db.collection(USERS).orderBy('createdAt','asc').get();
     const users=sn.docs.map(d=>({id:d.id,...d.data()}));
-    el('u-list').innerHTML=users.length?users.map(u=>`<tr><td style="font-weight:500">${esc(u.fullName)}</td><td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td><td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td><td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td><td><div style="display:flex;gap:5px"><button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button><button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button><button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button></div></td></tr>`).join('')
-    :'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
+    el('u-list').innerHTML=users.length?users.map(u=>`<tr>
+      <td style="font-weight:500">${esc(u.fullName)}</td>
+      <td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td>
+      <td style="font-size:12px;color:var(--t2)">${u.email ? esc(u.email) : '<span style="color:#aaa">— not set —</span>'}</td>
+      <td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td>
+      <td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td>
+      <td><div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn sm" onclick="editUser('${u.id}', '${esc(u.fullName)}', '${esc(u.username)}', '${u.email||''}', '${u.role||(u.isAdmin?'admin':'user')}')"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button>
+        <button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button>
+        <button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button>
+      </div></td>
+    </tr>`).join('')
+    :'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function changeRole(id,currentRole,name){
@@ -1777,15 +1795,61 @@ async function changeRole(id,currentRole,name){
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
+function editUser(id, fullName, username, currentEmail, currentRole){
+  const newEmail = prompt(`Edit Email for ${fullName} (${username})\n\nCurrent: ${currentEmail || '(not set)'}`, currentEmail || '');
+  if(newEmail === null) return;
+
+  const roles = ['user','manager','admin'];
+  const labels = {'user':'User (read-only)', 'manager':'Manager', 'admin':'Admin'};
+  const currentLabel = labels[currentRole] || currentRole;
+
+  const newRoleInput = prompt(
+    `Change role for ${fullName} (${username})\n\nCurrent role: ${currentLabel}\n\nEnter new role:\nuser     → User (read-only)\nmanager → Manager\nadmin    → Admin`,
+    currentRole
+  );
+  if(newRoleInput === null) return;
+
+  const newRole = newRoleInput.trim().toLowerCase();
+  if(!roles.includes(newRole)){
+    toast('Invalid role entered','err');
+    return;
+  }
+
+  showLoad('Updating user...');
+  db.collection(USERS).doc(id).update({
+    email: newEmail.trim() || null,
+    role: newRole,
+    isAdmin: newRole === 'admin',
+    updatedAt: new Date().toISOString()
+  }).then(() => {
+    toast('User updated successfully ✓','ok');
+    loadUsers();
+  }).catch(err => {
+    toast('Failed to update user: ' + err.message, 'err');
+  }).finally(() => hideLoad());
+}
 
 async function addUser(){
   const fn=g('u-fn'),un=(g('u-un')||'').toLowerCase().replace(/\s+/g,''),pw=g('u-pw'),role=(el('u-role')?.value||'user');
+  const email = (el('u-email')?.value || '').trim();
+
   if(!fn||!un||!pw){toast('All fields required','err');return;}if(un.length<3){toast('Username min 3 chars','err');return;}
   showLoad('Adding…');
   try{
     const chk=await db.collection(USERS).where('username','==',un).get();if(!chk.empty){hideLoad();toast('Username taken','err');return;}
-    await db.collection(USERS).add({fullName:fn,username:un,password:pw,role,isAdmin:role==='admin',createdAt:new Date().toISOString()});
-    ['u-fn','u-un','u-pw'].forEach(id=>el(id).value='');el('u-role').value='user';toast('User added ✓','ok');await loadUsers();
+    await db.collection(USERS).add({
+      fullName:fn,
+      username:un,
+      password:pw,
+      role,
+      isAdmin:role==='admin',
+      email: email || null,
+      createdAt:new Date().toISOString()
+    });
+    ['u-fn','u-un','u-pw','u-email'].forEach(id=>{const e=el(id);if(e)e.value='';});
+    el('u-role').value='user';
+    toast('User added ✓','ok');
+    await loadUsers();
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function delUser(id,username){if(!confirm('Delete "'+username+'"?'))return;showLoad('Deleting…');try{await db.collection(USERS).doc(id).delete();toast('Deleted','ok');await loadUsers();}catch(e){toast('Failed','err');}finally{hideLoad();}}
