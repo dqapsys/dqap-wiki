@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_51
-const APP_VERSION="51";
+// DQAP_WIKI_VERSION_53
+const APP_VERSION="53";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -1674,21 +1674,17 @@ function sendTaskNotification(action, t){
     return u && u.email ? u.email.trim() : null;
   };
 
-  // Assignee
   const aEmail = getUserEmail(t.assignedTo);
   if (aEmail) emails.add(aEmail);
 
-  // Creator
   const cEmail = getUserEmail(t.assignedBy);
   if (cEmail) emails.add(cEmail);
 
-  // Supervisor (if different)
   if (t.supervisor && t.supervisor !== t.assignedTo && t.supervisor !== t.assignedBy) {
     const sEmail = getUserEmail(t.supervisor);
     if (sEmail) emails.add(sEmail);
   }
 
-  // Central backup
   if (CFG.NOTIFY_TO) {
     CFG.NOTIFY_TO.split(',').forEach(e => {
       const trimmed = e.trim();
