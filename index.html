@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_46
-const APP_VERSION="46";
+// DQAP_WIKI_VERSION_51
+const APP_VERSION="51";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -305,7 +305,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('search')"          id="ni-search"><i class="ti ti-search"></i>Search</div>
     <div class="ni" onclick="go('library')"         id="ni-library"><i class="ti ti-library"></i>Library</div>
     <div class="sb-sec">Operations</div>
-    <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management</div>
+    <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
@@ -1661,6 +1661,65 @@ function exportExcel(){
 function sendNotification(e){
   if(!CFG.NOTIFY_ON||!CFG.EJS_KEY)return;
   try{emailjs.init(CFG.EJS_KEY);emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{to_email:CFG.NOTIFY_TO,engineer:e.engineer,title:e.title,project:e.project,category:e.category,severity:e.severity,entry_number:e.entryNumber,problem:e.problem,solution:e.solution});}catch(e){}
+}
+
+function sendTaskNotification(action, t){
+  if(!CFG.NOTIFY_ON || !CFG.EJS_KEY) return;
+
+  const emails = new Set();
+
+  const getUserEmail = (name) => {
+    if (!name || !usersData || usersData.length === 0) return null;
+    const u = usersData.find(x => x.fullName === name);
+    return u && u.email ? u.email.trim() : null;
+  };
+
+  // Assignee
+  const aEmail = getUserEmail(t.assignedTo);
+  if (aEmail) emails.add(aEmail);
+
+  // Creator
+  const cEmail = getUserEmail(t.assignedBy);
+  if (cEmail) emails.add(cEmail);
+
+  // Supervisor (if different)
+  if (t.supervisor && t.supervisor !== t.assignedTo && t.supervisor !== t.assignedBy) {
+    const sEmail = getUserEmail(t.supervisor);
+    if (sEmail) emails.add(sEmail);
+  }
+
+  // Central backup
+  if (CFG.NOTIFY_TO) {
+    CFG.NOTIFY_TO.split(',').forEach(e => {
+      const trimmed = e.trim();
+      if (trimmed) emails.add(trimmed);
+    });
+  }
+
+  if (emails.size === 0) return;
+
+  try {
+    emailjs.init(CFG.EJS_KEY);
+    const subject = `Task ${action.toUpperCase()}: ${t.title || ''}`;
+    const body = `Task: "${t.title || ''}"
+Action: ${action}
+Assigned to: ${t.assignedTo || '—'}
+Created by: ${t.assignedBy || '—'}
+Supervisor: ${t.supervisor || '—'}
+Deadline: ${t.deadline || 'N/A'}
+Project: ${t.project || 'N/A'}
+Status: ${t.status || 'Open'}
+
+Please check DQAP Wiki for details.`;
+
+    emails.forEach(to => {
+      emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {
+        to_email: to,
+        subject: subject,
+        message: body
+      }).catch(() => {});
+    });
+  } catch (e) {}
 }
 
 // ── PROJECTS ──────────────────────────────────────
