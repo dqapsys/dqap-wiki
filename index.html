@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_28
-const APP_VERSION="28";
+// DQAP_WIKI_VERSION_29
+const APP_VERSION="29";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -731,7 +731,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="g2" style="margin-bottom:12px">
             <div class="fg" style="grid-column:span 2"><label class="fl r">Task title</label><input class="fi" id="task-title" placeholder="e.g. Submit material test certificates"></div>
             <div class="fg" style="grid-column:span 2"><label class="fl">Description</label><input class="fi" id="task-desc" placeholder="Details / scope of the task"></div>
-            <div class="fg"><label class="fl r">Assign to</label><select class="fs" id="task-assignee"><option value="">Select assignee</option></select></div>
+            <div class="fg"><label class="fl r">Assign to <span style="font-size:9px;color:var(--t2);font-weight:400">(does the task)</span></label><select class="fs" id="task-assignee"><option value="">Select assignee</option></select></div>
+            <div class="fg"><label class="fl">Supervision <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — oversees)</span></label><select class="fs" id="task-supervisor"><option value="">— None —</option></select></div>
             <div class="fg"><label class="fl r">Deadline <span style="font-size:9px;color:var(--t2);font-weight:400">(date &amp; time, 24h)</span></label><input type="datetime-local" class="fi" id="task-deadline"></div>
             <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Low</option></select></div>
             <div class="fg"><label class="fl">Link to project</label><select class="fs" id="task-project"><option value="">— None —</option></select></div>
@@ -746,6 +747,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="fbar">
       <select class="fsel" id="task-ff-view" onchange="renderTasks()">
         <option value="mine">My tasks</option>
+        <option value="supervising">Supervising</option>
         <option value="bymes">Assigned by me</option>
         <option value="all">All tasks</option>
       </select>
@@ -2292,6 +2294,9 @@ function populateTaskAssignees(){
   html+=`<option value="${esc(CU.fullName)}" data-role="${CU.role}"${CU.fullName===cur?' selected':''}>${esc(CU.fullName)}</option>`;
   html+=eligible.map(u=>`<option value="${esc(u.fullName)}" data-role="${u.role||'user'}"${u.fullName===cur?' selected':''}>${esc(u.fullName)}</option>`).join('');
   sel.innerHTML=html;
+  // Supervision dropdown — any user may supervise (optional)
+  const sup=el('task-supervisor');
+  if(sup){const cs=sup.value;sup.innerHTML='<option value="">— None —</option>'+usersData.map(u=>`<option${u.fullName===cs?' selected':''}>${esc(u.fullName)}</option>`).join('');}
 }
 function populateTaskProjects(){
   const sel=el('task-project');if(!sel)return;
@@ -2307,7 +2312,7 @@ function togTaskForm(show,data){
   if(!show){
     el('task-eid').value='';
     ['task-title','task-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
-    el('task-assignee').value='';el('task-deadline').value='';el('task-priority').value='Medium';el('task-project').value='';
+    el('task-assignee').value='';el('task-supervisor').value='';el('task-deadline').value='';el('task-priority').value='Medium';el('task-project').value='';
     el('task-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>Assign new task';
     el('task-save-btn').innerHTML='<i class="ti ti-send"></i>Assign task';
     return;
@@ -2317,6 +2322,7 @@ function togTaskForm(show,data){
     el('task-title').value=data.title||'';
     el('task-desc').value=data.description||'';
     el('task-assignee').value=data.assignedTo||'';
+    el('task-supervisor').value=data.supervisor||'';
     el('task-deadline').value=data.deadline?(data.deadline.includes('T')?data.deadline:data.deadline+'T00:00'):'';
     el('task-priority').value=data.priority||'Medium';
     el('task-project').value=data.project||'';
@@ -2328,7 +2334,7 @@ function togTaskForm(show,data){
 
 async function saveTask(){
   const title=g('task-title'),description=g('task-desc');
-  const assignedTo=g('task-assignee'),deadline=g('task-deadline');
+  const assignedTo=g('task-assignee'),deadline=g('task-deadline'),supervisor=g('task-supervisor');
   const priority=g('task-priority')||'Medium',project=g('task-project');
   if(!title){toast('Enter a task title','err');return;}
   if(!assignedTo){toast('Select an assignee','err');return;}
@@ -2346,12 +2352,12 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      await db.collection(TASK_COL).doc(eid).update({title,description,assignedTo,assignedToRole,deadline,priority,project,updatedAt:now});
+      await db.collection(TASK_COL).doc(eid).update({title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,updatedAt:now});
       toast('Task updated ✓','ok');
     }else{
       await db.collection(TASK_COL).add({title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
-        assignedTo,assignedToRole,deadline,priority,project,
+        assignedTo,assignedToRole,supervisor,deadline,priority,project,
         status:'Open',createdAt:now,updatedAt:now});
       toast('Task assigned ✓','ok');
     }
@@ -2382,7 +2388,7 @@ function renderTasks(){
   const q=(el('task-search')?.value||'').toLowerCase().trim();
 
   // Stats over the tasks relevant to this user (mine + by me; admin sees all)
-  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName);
+  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
   el('tk-st-total').textContent=scope.length;
   el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
   el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
@@ -2392,9 +2398,10 @@ function renderTasks(){
   el('tk-st-overdue').style.color=overdue>0?'#B71C1C':'';
 
   let list=taskData.filter(t=>{
-    if(view==='mine'&&t.assignedTo!==CU.fullName)return false;
+    if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
+    if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
     if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
-    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName))return false;
+    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
     if(statusF&&t.status!==statusF)return false;
     if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -2419,7 +2426,7 @@ function renderTasks(){
     const dchip=ds?`<span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span>`:'';
     const dl=t.deadline?new Date(t.deadline.includes('T')?t.deadline:t.deadline+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';
     const canEditTask=CU.isAdmin||t.assignedBy===CU.fullName;
-    const canStatus=CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName;
+    const canStatus=CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName;
     const leftBar=ds&&ds.days!==undefined&&ds.days<0&&t.status!=='Completed'?'#B71C1C':(ds&&ds.days!==undefined&&ds.days<=3&&t.status!=='Completed'?'#E65100':(t.status==='Completed'?'#1B5E20':'#1A6FD4'));
     return`<div class="pmo-card" style="border-left:3px solid ${leftBar}">
       <div style="padding:12px 16px">
@@ -2429,11 +2436,13 @@ function renderTasks(){
               <span style="font-size:13.5px;font-weight:600;color:var(--t1)">${esc(t.title)}</span>
               ${taskStatusBadge(t.status)}
               ${taskPriBadge(t.priority)}
+              ${(()=>{const r=t.assignedTo===CU.fullName?'Assignee':(t.supervisor===CU.fullName?'Supervisor':(t.assignedBy===CU.fullName?'Assigner':''));return r?`<span style="font-size:8.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:#EDE7F6;color:#311B92">YOU: ${r}</span>`:'';})()}
               ${t.project?`<span style="font-size:9.5px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600"><i class="ti ti-building" style="font-size:10px"></i> ${esc(t.project)}</span>`:''}
             </div>
             ${t.description?`<div style="font-size:11.5px;color:var(--t2);margin-bottom:6px">${esc(t.description)}</div>`:''}
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--t2)">
-              <span><i class="ti ti-user" style="font-size:11px"></i> To: <b style="color:var(--t1)">${esc(t.assignedTo)}</b> <span class="badge ${roleBadgeCls(t.assignedToRole)}" style="font-size:8.5px;padding:0 5px">${roleLabel(t.assignedToRole)}</span></span>
+              <span><i class="ti ti-user" style="font-size:11px"></i> Assignee: <b style="color:var(--t1)">${esc(t.assignedTo)}</b> <span class="badge ${roleBadgeCls(t.assignedToRole)}" style="font-size:8.5px;padding:0 5px">${roleLabel(t.assignedToRole)}</span></span>
+              ${t.supervisor?`<span><i class="ti ti-eye-check" style="font-size:11px"></i> Supervisor: <b style="color:var(--t1)">${esc(t.supervisor)}</b></span>`:''}
               <span><i class="ti ti-user-up" style="font-size:11px"></i> By: <b style="color:var(--t1)">${esc(t.assignedBy)}</b></span>
               ${dl?`<span><i class="ti ti-calendar-event" style="font-size:11px"></i> ${dl}</span>`:''}
             </div>
