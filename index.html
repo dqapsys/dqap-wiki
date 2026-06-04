@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_53
-const APP_VERSION="53";
+// DQAP_WIKI_VERSION_54
+const APP_VERSION="54";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -1984,7 +1984,7 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
-  if(n==='tasks'){togTaskForm(false);renderTasks();}
+  if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
@@ -2359,7 +2359,9 @@ function startTaskListen(){
   if(taskUnsub)taskUnsub();
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    if(el('v-tasks')&&el('v-tasks').style.display!=='none')renderTasks();
+    const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
+    if(onPage){setTaskSeen(new Date().toISOString());renderTasks();}
+    updateTaskNavBadge();
   },err=>{});
 }
 function startUsersListen(){
@@ -2367,6 +2369,26 @@ function startUsersListen(){
   usersUnsub=db.collection(USERS).orderBy('fullName','asc').onSnapshot(sn=>{
     usersData=sn.docs.map(d=>({id:d.id,...d.data()}));
   },err=>{});
+}
+
+// ── TASK NAV BADGE (new/updated count) ────────────
+function taskSeenKey(){return 'dqap_task_seen_'+((CU&&CU.username)||'x');}
+function getTaskSeen(){try{return localStorage.getItem(taskSeenKey())||'';}catch(e){return '';}}
+function setTaskSeen(ts){try{localStorage.setItem(taskSeenKey(),ts);}catch(e){}}
+function markTasksSeen(){setTaskSeen(new Date().toISOString());updateTaskNavBadge();}
+function updateTaskNavBadge(){
+  const badge=el('task-nav-badge');if(!badge||!CU)return;
+  const seen=getTaskSeen();
+  let n=0;
+  taskData.forEach(t=>{
+    if(t.status==='Completed')return;
+    const mine=(t.assignedTo===CU.fullName)||(t.supervisor===CU.fullName);
+    if(!mine)return;
+    const ts=t.updatedAt||t.createdAt||'';
+    if(!seen||ts>seen)n++;
+  });
+  if(n>0){badge.style.display='inline-block';badge.textContent=n;}
+  else badge.style.display='none';
 }
 
 // ── TASK HELPERS ──────────────────────────────────
@@ -2471,14 +2493,19 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      await db.collection(TASK_COL).doc(eid).update({title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,updatedAt:now});
+      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,updatedAt:now};
+      await db.collection(TASK_COL).doc(eid).update(upd);
       toast('Task updated ✓','ok');
+      const existing=taskData.find(x=>x.id===eid)||{};
+      sendTaskNotification('updated',{...existing,...upd});
     }else{
-      await db.collection(TASK_COL).add({title,description,
+      const tObj={title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
         assignedTo,assignedToRole,supervisor,deadline,priority,project,
-        status:'Open',createdAt:now,updatedAt:now});
+        status:'Open',createdAt:now,updatedAt:now};
+      await db.collection(TASK_COL).add(tObj);
       toast('Task assigned ✓','ok');
+      sendTaskNotification('created',tObj);
     }
     togTaskForm(false);
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
@@ -2491,6 +2518,8 @@ async function updateTaskStatus(id,status){
     if(status==='Completed')d.completedAt=new Date().toISOString();
     await db.collection(TASK_COL).doc(id).update(d);
     toast('Status updated ✓','ok');
+    const existing=taskData.find(x=>x.id===id)||{};
+    sendTaskNotification('status changed to '+status,{...existing,...d});
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
