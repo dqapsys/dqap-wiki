@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_54
-const APP_VERSION="54";
+// DQAP_WIKI_VERSION_55
+const APP_VERSION="55";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -1694,26 +1694,26 @@ function sendTaskNotification(action, t){
 
   if (emails.size === 0) return;
 
+  const fmtDL=(d)=>{if(!d)return 'Not set';try{return new Date(d.includes('T')?d:d+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});}catch(e){return d;}};
+  const stCol={'Open':{c:'#E65100',bg:'#FFF3E0'},'In Progress':{c:'#1565C0',bg:'#E3F2FD'},'Completed':{c:'#2E7D32',bg:'#E8F5E9'}};
+  const sc=stCol[t.status||'Open']||stCol['Open'];
   try {
     emailjs.init(CFG.EJS_KEY);
-    const subject = `Task ${action.toUpperCase()}: ${t.title || ''}`;
-    const body = `Task: "${t.title || ''}"
-Action: ${action}
-Assigned to: ${t.assignedTo || '—'}
-Created by: ${t.assignedBy || '—'}
-Supervisor: ${t.supervisor || '—'}
-Deadline: ${t.deadline || 'N/A'}
-Project: ${t.project || 'N/A'}
-Status: ${t.status || 'Open'}
-
-Please check DQAP Wiki for details.`;
-
+    const params = {
+      task_action: action,
+      task_title: t.title || '—',
+      task_assigned_to: t.assignedTo || '—',
+      task_created_by: t.assignedBy || '—',
+      task_supervisor: t.supervisor || '—',
+      task_deadline: fmtDL(t.deadline),
+      task_project: t.project || '—',
+      task_status: t.status || 'Open',
+      task_priority: t.priority || 'Medium',
+      status_color: sc.c,
+      status_bg: sc.bg
+    };
     emails.forEach(to => {
-      emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {
-        to_email: to,
-        subject: subject,
-        message: body
-      }).catch(() => {});
+      emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {...params, to_email: to}).catch(() => {});
     });
   } catch (e) {}
 }
