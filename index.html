@@ -874,7 +874,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="g3" style="margin-bottom:14px">
             <div class="fg"><label class="fl">PO Number</label><input class="fi" id="np-po-num" placeholder="e.g. PO/BPCL/2025/001"></div>
             <div class="fg"><label class="fl">PO Date</label><input type="date" class="fi" id="np-po-date"></div>
-            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages - optional)</span></label><input type="date" class="fi" id="np-ld-date"></div>
+            <div class="fg"><label class="fl r">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages)</span></label><input type="date" class="fi" id="np-ld-date"></div>
           </div>
 
           <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
@@ -1752,7 +1752,7 @@ async function saveNewProject(){
   const poAmount=parseFloat(el('np-po-amt').value)||0;
   const budgetAllocated=parseFloat(el('np-budget-alloc').value)||0;
   const projectManager=(el('np-pm').value||'').trim();
-  // LD Date is now optional
+  if(!ldDate){toast('LD Date is required','err');return;}
   if(!poAmount){toast('PO Amount is required','err');return;}
   if(!budgetAllocated){toast('Budget Allocated is required','err');return;}
   if(!projectManager){toast('Select a Project Manager','err');return;}
@@ -1827,21 +1827,18 @@ function renderProjectsPage(){
     ].filter(Boolean).join('');
     const nClients=(p.clients||[]).length,nSites=(p.sites||[]).length;
 
-    // ── Expanded detail ──
+    // ── Expanded detail: ALL heads, editable ──
     let detail='';
-    const isEditing = (projEditingId === p.id);
     if(isExp){
       const cfg=budgetCfgData.find(c=>c.projectName===p.name)||{};
-
-      if(isEditing){
-        // EDIT MODE - only shown after clicking Edit button
-        const dis = '';
-        const scopeOpts=(cur)=>{
-          const groups=[['Project (appears in PMO)',['SITC','S&C','Services','ITC','Supply Only']],['Maintenance (appears in AMC)',['CAMC','N-CAMC']]];
-          return `<option value="">Select scope</option>`+groups.map(([lbl,arr])=>`<optgroup label="${lbl}">`+arr.map(o=>`<option${o===cur?' selected':''}>${esc(o)}</option>`).join('')+`</optgroup>`).join('');
-        };
-        const pmNames=[...new Set((usersData||[]).map(u=>u.fullName).filter(Boolean))].sort();
-        const pmOpts=(cur)=>`<option value="">Select PM</option>`+pmNames.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+      const isEditing = (projEditingId === p.id);
+      const dis = isEditing ? '' : 'disabled';
+      const scopeOpts=(cur)=>{
+        const groups=[['Project (appears in PMO)',['SITC','S&C','Services','ITC','Supply Only']],['Maintenance (appears in AMC)',['CAMC','N-CAMC']]];
+        return `<option value="">Select scope</option>`+groups.map(([lbl,arr])=>`<optgroup label="${lbl}">`+arr.map(o=>`<option${o===cur?' selected':''}>${esc(o)}</option>`).join('')+`</optgroup>`).join('');
+      };
+      const pmNames=[...new Set((usersData||[]).map(u=>u.fullName).filter(Boolean))].sort();
+      const pmOpts=(cur)=>`<option value="">Select PM</option>`+pmNames.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
       detail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
 
         <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
@@ -1855,7 +1852,7 @@ function renderProjectsPage(){
         <div class="g3" style="margin-bottom:14px">
           <div class="fg"><label class="fl">PO Number</label><input class="fi" id="pe-ponum-${p.id}" value="${esc(p.poNumber||'')}" ${dis}></div>
           <div class="fg"><label class="fl">PO Date</label><input type="date" class="fi" id="pe-podate-${p.id}" value="${p.poDate||''}" ${dis}></div>
-          <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages - optional)</span></label><input type="date" class="fi" id="pe-lddate-${p.id}" value="${p.ldDate||''}" ${dis}></div>
+          <div class="fg"><label class="fl r">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages)</span></label><input type="date" class="fi" id="pe-lddate-${p.id}" value="${p.ldDate||''}" ${dis}></div>
         </div>
 
         <div class="fsec-t"><i class="ti ti-report-money"></i>Budget configuration</div>
@@ -1864,7 +1861,16 @@ function renderProjectsPage(){
           <div class="fg"><label class="fl r">Budget Allocated (&#8377;)</label><input class="fi" type="number" min="0" id="pe-alloc-${p.id}" value="${cfg.budgetAllocated||''}" ${dis}></div>
           <div class="fg"><label class="fl r">Project Manager</label><select class="fs" id="pe-pm-${p.id}" ${dis}>${pmOpts(cfg.projectManager||'')}</select></div>
         </div>
-        ${canEdit?`<div style="margin-bottom:18px"><button class="btn pri" onclick="saveProjectInline('${p.id}')"><i class="ti ti-device-floppy"></i>Save changes</button></div>`:''}
+        ${isEditing ? `
+          <div style="margin-bottom:18px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn pri" onclick="saveProjectInline('${p.id}')"><i class="ti ti-device-floppy"></i>Save changes</button>
+            <button class="btn" onclick="projEditingId=null; renderProjectsPage();"><i class="ti ti-x"></i>Cancel</button>
+          </div>
+        ` : `
+          <div style="margin:10px 0; font-size:12px; color:#666;">
+            <i class="ti ti-info-circle"></i> Click the <b>Edit</b> button to modify this project.
+          </div>
+        `}
 
         <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
         <div class="g2" style="margin-bottom:2px">
@@ -1880,19 +1886,6 @@ function renderProjectsPage(){
           </div>
         </div>
       </div>`;
-      } else {
-        // VIEW MODE - default when expanding via card click
-        detail = `<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:12px">
-            <div><div style="font-size:10px;color:var(--t2);margin-bottom:2px">Project Number</div><div style="font-weight:600">${esc(p.number||'—')}</div></div>
-            <div><div style="font-size:10px;color:var(--t2);margin-bottom:2px">Scope</div><div style="font-weight:600">${esc(p.scope||'—')}</div></div>
-            <div><div style="font-size:10px;color:var(--t2);margin-bottom:2px">PO Number</div><div style="font-weight:600">${esc(p.poNumber||'—')}</div></div>
-            <div><div style="font-size:10px;color:var(--t2);margin-bottom:2px">PO Date</div><div style="font-weight:600">${p.poDate||'—'}</div></div>
-            <div><div style="font-size:10px;color:var(--t2);margin-bottom:2px">LD Date</div><div style="font-weight:600">${p.ldDate||'—'}</div></div>
-          </div>
-          <div style="font-size:12px;color:#666;margin-top:8px"><i class="ti ti-info-circle"></i> Click the <b>Edit</b> button to modify this project.</div>
-        </div>`;
-      }
     }
 
     return`<div class="proj-card" id="pjc-${p.id}">
@@ -1907,6 +1900,7 @@ function renderProjectsPage(){
           ${metaChips}
           <span class="chip"><i class="ti ti-briefcase" style="font-size:11px"></i>${nClients} client${nClients!==1?'s':''}</span>
           <span class="chip"><i class="ti ti-map-pin" style="font-size:11px"></i>${nSites} site${nSites!==1?'s':''}</span>
+          ${isPrivilegedEditor(CU?.username) ? `<button class="btn sm" onclick="event.stopPropagation(); projEditingId='${p.id}'; toggleProjCard('${p.id}');"><i class="ti ti-edit"></i>Edit</button>` : ''}
           ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deleteProject('${p.id}','${esc(p.name)}')"><i class="ti ti-trash"></i>Delete</button>`:''}
           <i class="ti ${isExp?'ti-chevron-up':'ti-chevron-down'}" style="font-size:15px;color:var(--t2);transition:transform .2s"></i>
         </div>
