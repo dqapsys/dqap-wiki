@@ -871,10 +871,15 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           </div>
 
           <div class="fsec-t"><i class="ti ti-file-invoice"></i>Contract details</div>
+          <div style="margin-bottom:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <label class="fl" style="margin:0">PO Entries (multiple allowed)</label>
+              <button class="btn sm pri" onclick="addNewProjectPO()"><i class="ti ti-plus"></i> Add PO</button>
+            </div>
+            <div id="np-po-list" style="max-height:160px;overflow:auto;border:.5px solid var(--bd);border-radius:6px;padding:6px;background:#fafafa"></div>
+          </div>
           <div class="g3" style="margin-bottom:14px">
-            <div class="fg"><label class="fl">PO Number</label><input class="fi" id="np-po-num" placeholder="e.g. PO/BPCL/2025/001"></div>
-            <div class="fg"><label class="fl">PO Date</label><input type="date" class="fi" id="np-po-date"></div>
-            <div class="fg"><label class="fl r">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(Liquidated Damages)</span></label><input type="date" class="fi" id="np-ld-date"></div>
+            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional)</span></label><input type="date" class="fi" id="np-ld-date"></div>
           </div>
 
           <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
@@ -953,7 +958,7 @@ let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rma
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null;
-let npClients=[],npSites=[];
+let npClients=[],npSites=[],npPOEntries=[];
 const MAX_PDF=5*1024*1024;
 
 // ── THEME ──────────────────────────────────────────
@@ -1734,12 +1739,32 @@ function sendTaskNotification(action, t){
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-po-num').value='';el('np-po-date').value='';el('np-ld-date').value='';el('np-po-amt').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();}
+  if(p.style.display==='block'){npClients=[];npSites=[];npPOEntries=[];el('np-num').value='';el('np-name').value='';el('np-ld-date').value='';el('np-po-amt').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';renderNpItems();renderNpPOEntries();}
 }
 function addNpItem(type){const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();if(!val)return;if(type==='cli'){if(!npClients.includes(val))npClients.push(val);}else{if(!npSites.includes(val))npSites.push(val);}inp.value='';renderNpItems();inp.focus();}
 function removeNpItem(type,val){if(type==='cli')npClients=npClients.filter(v=>v!==val);else npSites=npSites.filter(v=>v!==val);renderNpItems();}
 function renderNpItems(){
   ['cli','site'].forEach(type=>{const arr=type==='cli'?npClients:npSites;el(`np-${type}-list`).innerHTML=arr.map(v=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px"><span>${esc(v)}</span><button class="btn sm danger" onclick="removeNpItem('${type}','${v.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button></div>`).join('');});
+}
+
+function renderNpPOEntries(){
+  const c=el('np-po-list');if(!c)return;
+  c.innerHTML = npPOEntries.length ? npPOEntries.map((po,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+      <input class="fi" style="flex:1" placeholder="PO Number" value="${esc(po.poNumber||'')}" onchange="npPOEntries[${i}].poNumber = this.value">
+      <input type="date" class="fi" style="flex:1" value="${po.poDate||''}" onchange="npPOEntries[${i}].poDate = this.value">
+      <button class="btn sm danger" onclick="removeNewProjectPO(${i})"><i class="ti ti-x"></i></button>
+    </div>`).join('') : '<div style="font-size:12px;color:#888;padding:4px">No PO entries yet. Click "Add PO".</div>';
+}
+
+function addNewProjectPO(){
+  npPOEntries.push({poNumber:'', poDate:''});
+  renderNpPOEntries();
+}
+
+function removeNewProjectPO(i){
+  npPOEntries.splice(i,1);
+  renderNpPOEntries();
 }
 async function saveNewProject(){
   const num=(el('np-num').value||'').trim(),name=(el('np-name').value||'').trim();
@@ -1752,14 +1777,19 @@ async function saveNewProject(){
   const poAmount=parseFloat(el('np-po-amt').value)||0;
   const budgetAllocated=parseFloat(el('np-budget-alloc').value)||0;
   const projectManager=(el('np-pm').value||'').trim();
-  // LD Date is optional
   if(!poAmount){toast('PO Amount is required','err');return;}
   if(!budgetAllocated){toast('Budget Allocated is required','err');return;}
   if(!projectManager){toast('Select a Project Manager','err');return;}
   showLoad('Saving…');
-  const poNumber=(el('np-po-num').value||'').trim(),poDate=(el('np-po-date').value||'').trim();
+  // Collect multiple PO entries
+  const poEntries = npPOEntries.filter(p => p.poNumber || p.poDate);
   try{
-    await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,poNumber,poDate,ldDate,createdAt:new Date().toISOString()});
+    await db.collection(PROJ).add({
+      number:num, name, scope,
+      clients:npClients, sites:npSites,
+      poEntries, ldDate,
+      createdAt: new Date().toISOString()
+    });
     const now=new Date().toISOString();
     await db.collection(BUDGET_CFG_COL).add({projectName:name,poAmount,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
     toast('Project added ✓','ok');togNewProj();
@@ -1795,17 +1825,15 @@ function toggleProjCard(id){
 }
 
 function addPOEntryToProject(projId){
-  const p = projectsData.find(x => x.id === projId);
-  if (!p) return;
-  if (!p.poEntries) p.poEntries = [];
-  p.poEntries.push({ poNumber: '', poDate: '' });
+  const p = projectsData.find(x=>x.id===projId); if(!p) return;
+  if(!p.poEntries) p.poEntries = [];
+  p.poEntries.push({poNumber:'', poDate:''});
   renderProjectsPage();
 }
 
 function removePOEntryFromProject(projId, index){
-  const p = projectsData.find(x => x.id === projId);
-  if (!p || !p.poEntries) return;
-  p.poEntries.splice(index, 1);
+  const p = projectsData.find(x=>x.id===projId); if(!p || !p.poEntries) return;
+  p.poEntries.splice(index,1);
   renderProjectsPage();
 }
 async function saveProjectInline(projId){
@@ -1823,13 +1851,11 @@ async function saveProjectInline(projId){
   showLoad('Saving…');
   try{
     const now=new Date().toISOString();
-
-    // Collect multiple PO entries when in editing mode
-    let poEntries = p.poEntries || [];
+    // Collect multiple PO entries from the edit form
+    let poEntries = [];
     if (projEditingId === projId) {
       const container = el('pe-po-list-' + projId);
       if (container) {
-        poEntries = [];
         const rows = container.querySelectorAll('div[style*="display:flex"]');
         rows.forEach(row => {
           const numInput = row.querySelector('input[id^="pe-po-num-"]');
@@ -1837,13 +1863,14 @@ async function saveProjectInline(projId){
           if (numInput || dateInput) {
             const num = numInput ? numInput.value.trim() : '';
             const dat = dateInput ? dateInput.value : '';
-            if (num || dat) poEntries.push({ poNumber: num, poDate: dat });
+            if (num || dat) poEntries.push({poNumber: num, poDate: dat});
           }
         });
       }
+    } else {
+      poEntries = p.poEntries || [];
     }
-
-    await db.collection(PROJ).doc(projId).update({number, scope, poEntries, ldDate, updatedAt: now});
+    await db.collection(PROJ).doc(projId).update({number,scope,poEntries,ldDate,updatedAt:now});
     // Budget config lives in a separate collection keyed by project name — upsert it.
     const cfg=budgetCfgData.find(c=>c.projectName===p.name);
     if(cfg&&cfg.id){
@@ -1861,13 +1888,10 @@ function renderProjectsPage(){
   list.innerHTML=projectsData.map(p=>{
     const isExp=(projExpandedId===p.id);
     const ldChip=p.ldDate?`<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">${renderLdChip(p.ldDate)}</span>`:'';
-    const poCount = (p.poEntries && p.poEntries.length) || (p.poNumber ? 1 : 0);
-    const cfg = budgetCfgData.find(c => c.projectName === p.name) || {};
-    const totalPOValue = cfg.poAmount || 0;
     const metaChips=[
       p.scope?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:600"><i class="ti ti-category" style="font-size:11px"></i>${esc(p.scope)}</span>`:'',
-      poCount ? `<span class="chip"><i class="ti ti-file-invoice" style="font-size:11px"></i>${poCount} PO${poCount !== 1 ? 's' : ''}</span>` : '',
-      totalPOValue ? `<span class="chip" style="background:#e6f4ea;color:#137333;font-weight:600"><i class="ti ti-currency-rupee" style="font-size:11px"></i>₹${Number(totalPOValue).toLocaleString('en-IN')}</span>` : '',
+      p.poNumber?`<span class="chip"><i class="ti ti-file-invoice" style="font-size:11px"></i>${esc(p.poNumber)}</span>`:'',
+      p.poDate?`<span class="chip"><i class="ti ti-calendar" style="font-size:11px"></i>PO: ${p.poDate}</span>`:'',
     ].filter(Boolean).join('');
     const nClients=(p.clients||[]).length,nSites=(p.sites||[]).length;
 
@@ -1877,7 +1901,7 @@ function renderProjectsPage(){
       const cfg=budgetCfgData.find(c=>c.projectName===p.name)||{};
       const dis=canEdit?'':'disabled';
       const scopeOpts=(cur)=>{
-        const groups=[['Project (appears in PMO)',['SITC','S&C','Services','ITC','Supply Only']],['Maintenance (appears in AMC)',['CAMC','N-CAMC']]];
+        const groups=[['Project (appears in PMO)',['SITC','S&C','Services','ITC']],['Maintenance (appears in AMC)',['CAMC','N-CAMC']]];
         return `<option value="">Select scope</option>`+groups.map(([lbl,arr])=>`<optgroup label="${lbl}">`+arr.map(o=>`<option${o===cur?' selected':''}>${esc(o)}</option>`).join('')+`</optgroup>`).join('');
       };
       const pmNames=[...new Set((usersData||[]).map(u=>u.fullName).filter(Boolean))].sort();
@@ -1899,17 +1923,17 @@ function renderProjectsPage(){
               <button class="btn sm pri" onclick="addPOEntryToProject('${p.id}')"><i class="ti ti-plus"></i> Add PO</button>
             </div>
             <div id="pe-po-list-${p.id}" style="max-height:140px;overflow:auto;border:.5px solid var(--bd);border-radius:6px;padding:6px;background:#fafafa;margin-bottom:8px">
-              ${(p.poEntries||[]).length ? (p.poEntries||[]).map((po, idx) => `
+              ${(p.poEntries||[]).length ? (p.poEntries||[]).map((po,idx)=>`
                 <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
                   <input class="fi" style="flex:1" id="pe-po-num-${p.id}-${idx}" value="${esc(po.poNumber||'')}" placeholder="PO Number">
                   <input type="date" class="fi" style="flex:1" id="pe-po-date-${p.id}-${idx}" value="${po.poDate||''}">
-                  <button class="btn sm danger" onclick="removePOEntryFromProject('${p.id}', ${idx})"><i class="ti ti-x"></i></button>
-                </div>`).join('') : '<div style="font-size:12px;color:#888">No PO entries. Click "Add PO".</div>'}
+                  <button class="btn sm danger" onclick="removePOEntryFromProject('${p.id}',${idx})"><i class="ti ti-x"></i></button>
+                </div>`).join('') : '<div style="font-size:12px;color:#888">No PO entries. Add using button above.</div>'}
             </div>
           ` : `
             <div style="font-size:12px">
-              ${(p.poEntries||[]).length ? (p.poEntries||[]).map(po => `<div style="margin-bottom:4px"><b>PO:</b> ${esc(po.poNumber||'')} ${po.poDate ? ' · ' + po.poDate : ''}</div>`).join('') :
-                (p.poNumber ? `<div><b>PO:</b> ${esc(p.poNumber)} ${p.poDate ? ' · ' + p.poDate : ''}</div>` : '<span style="color:#888">No PO entries</span>')}
+              ${(p.poEntries||[]).length ? (p.poEntries||[]).map(po => `<div style="margin-bottom:4px"><b>PO:</b> ${esc(po.poNumber||'')} ${po.poDate ? '· ' + po.poDate : ''}</div>`).join('') : 
+                (p.poNumber ? `<div><b>PO:</b> ${esc(p.poNumber)} ${p.poDate ? '· ' + p.poDate : ''}</div>` : '<span style="color:#888">No PO entries</span>')}
             </div>
           `}
         </div>
