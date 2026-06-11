@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_71
-const APP_VERSION="71";
+// DQAP_WIKI_VERSION_72_ATTENDANCE_INTEGRATED
+const APP_VERSION="72";
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 // Named users granted edit rights across all modules regardless of their role.
 const EDIT_USERS=["updesh","pratim"];
@@ -41,6 +41,7 @@ const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
 const AMC_SCOPES=["CAMC","N-CAMC"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Warranty Cost","Other Expenses"];
+const ATTENDANCE_COL="dqap_attendance";
 const CFG={NOTIFY_ON:true,EJS_KEY:"5HDT4B76AYxVxx0hw",EJS_SERVICE:"service_hbeq0no",EJS_TEMPLATE:"template_ew30odk",NOTIFY_TO:"uv@dqap.in"};
 const THEMES={
   blue:{sb1:"#0070C0",sb2:"#0070C0",p:"#0070C0",pd:"#0070C0",pl:"#EAF3FB",bg:"#F4F6FA"},
@@ -315,6 +316,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
+    <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
@@ -546,6 +548,73 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div id="pmo-stages-form"></div>
     <input type="hidden" id="pmo-eid">
   </div></div></div>
+</div>
+
+<!-- ══ ATTENDANCE ══ -->
+<div id="v-attendance" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-user-check" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Attendance System</div><div class="pg-s">Check-in tracking, OOO management, and team rankings</div></div>
+    <div class="tr"></div>
+  </div>
+  <div class="content">
+    <!-- Attendance Tabs -->
+    <div class="stats" style="margin-bottom:14px;grid-template-columns:repeat(3,1fr)">
+      <button class="sc" onclick="switchAttendanceTab('employee')" id="att-tab-emp" style="border:2px solid var(--p);cursor:pointer"><div style="flex:1;text-align:left"><div class="sv" style="font-size:16px">👤</div><div class="sl">Check In</div></div></button>
+      <button class="sc" onclick="switchAttendanceTab('admin')" id="att-tab-adm" style="cursor:pointer;opacity:.6"><div style="flex:1;text-align:left"><div class="sv" style="font-size:16px">⚙️</div><div class="sl">Admin</div></div></button>
+      <button class="sc" onclick="switchAttendanceTab('ranking')" id="att-tab-rank" style="cursor:pointer;opacity:.6"><div style="flex:1;text-align:left"><div class="sv" style="font-size:16px">🏆</div><div class="sl">Rankings</div></div></button>
+    </div>
+    
+    <!-- Employee Tab -->
+    <div id="att-emp-view">
+      <div class="card" style="margin-bottom:12px">
+        <select id="att-user-select" class="fs" style="width:100%;margin-bottom:10px">
+          <option value="u001">👤 Updesh</option>
+          <option value="u002">👤 Pratim</option>
+          <option value="u003">👤 Keshav</option>
+          <option value="u004">👤 Jawed</option>
+          <option value="u005">👤 Dev</option>
+          <option value="u006">👤 Ravi</option>
+        </select>
+      </div>
+      
+      <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none">
+        <div style="font-size:11px;opacity:.9">Today's Status</div>
+        <div style="font-size:24px;font-weight:700;margin-top:4px" id="att-today-status">—</div>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <button class="btn pri" onclick="attSubmitCheckIn()"><i class="ti ti-check"></i>Check In</button>
+        <button class="btn" onclick="attShowOOOModal()" style="background:var(--pl);color:var(--p)"><i class="ti ti-map-pin"></i>Mark OOO</button>
+      </div>
+      
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">10-Day Timeline</div>
+      <div id="att-timeline" style="display:grid;gap:6px"></div>
+    </div>
+    
+    <!-- Admin Tab -->
+    <div id="att-admin-view" style="display:none">
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Today's Check-Ins</div>
+      <div id="att-admin-grid" style="display:grid;gap:6px"></div>
+    </div>
+    
+    <!-- Ranking Tab -->
+    <div id="att-ranking-view" style="display:none">
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Team Rankings</div>
+      <div id="att-ranking-list" style="display:grid;gap:4px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OOO MODAL ══ -->
+<div id="att-ooo-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;padding:12px;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:12px 12px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:14px;font-weight:600;margin-bottom:14px">📍 Mark as Out of Office</div>
+    <div style="display:grid;gap:6px;margin-bottom:16px" id="att-ooo-options"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn pri" onclick="attSubmitOOO()">Save</button>
+      <button class="btn" onclick="attCloseOOOModal()">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ PAYMENT TRACKER ══ -->
@@ -2287,6 +2356,7 @@ function go(n){
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
+  if(n==='attendance'){attRenderEmployee();switchAttendanceTab('employee');}
   if(n==='payments'){
     const pu=el('pay-unauth');
     if(CU?.isUser){
@@ -3297,6 +3367,181 @@ if('serviceWorker' in navigator){
     });
   });
 }
+
+// ══════════════════════════════════════════════════════════════════
+// ATTENDANCE MODULE
+// ══════════════════════════════════════════════════════════════════
+
+const attEmployees={'u001':'Updesh','u002':'Pratim','u003':'Keshav','u004':'Jawed','u005':'Dev','u006':'Ravi'};
+let attCurrentUser='u001';
+let attSelectedOOO=null;
+
+function switchAttendanceTab(tab){
+  ['employee','admin','ranking'].forEach(t=>{
+    el(`att-${t}-view`).style.display=(t===tab?'block':'none');
+    el(`att-tab-${t[0]+t.slice(-2)}`).style.opacity=(t===tab?'1':'0.6');
+    el(`att-tab-${t[0]+t.slice(-2)}`).style.borderColor=(t===tab?'var(--p)':'transparent');
+  });
+  if(tab==='admin')attRenderAdmin();
+  if(tab==='ranking')attRenderRanking();
+}
+
+async function attRenderEmployee(){
+  attCurrentUser=el('att-user-select')?.value||'u001';
+  el('att-user-select').value=attCurrentUser;
+  el('att-user-select').onchange=()=>{attCurrentUser=el('att-user-select').value;attRenderEmployee();};
+  
+  const now=new Date();
+  const dateStr=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  const todayRec=await attGetRecord(attCurrentUser,dateStr);
+  
+  if(todayRec){
+    el('att-today-status').textContent=todayRec.status==='present'?`✓ ${todayRec.checkin_time}`:`📍 ${todayRec.oof_reason}`;
+  }else{
+    el('att-today-status').textContent='⏳ Pending';
+  }
+  
+  let html='';
+  const dates=['06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17','06-18','06-19'];
+  for(const dateStr of dates){
+    const rec=await attGetRecord(attCurrentUser,dateStr);
+    const [m,d]=dateStr.split('-');
+    if(rec){
+      const icon=rec.status==='present'?'✓':'📍';
+      const cls=rec.status==='present'?'present':'ooo';
+      const bg=rec.status==='present'?'#E8F5E9':'#E3F2FD';
+      const text=rec.checkin_time||rec.oof_reason;
+      html+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;font-weight:500">${icon} ${text}</div></div>`;
+    }else{
+      html+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;color:var(--t2)">—</div></div>`;
+    }
+  }
+  el('att-timeline').innerHTML=html;
+}
+
+async function attRenderAdmin(){
+  let html='';
+  for(const uid of Object.keys(attEmployees)){
+    const now=new Date();
+    const dateStr=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+    const rec=await attGetRecord(uid,dateStr);
+    let status='⏳ —';
+    if(rec){
+      status=rec.status==='present'?`✓ ${rec.checkin_time}`:`📍 ${rec.oof_reason}`;
+    }
+    html+=`<div class="card" style="display:grid;grid-template-columns:1fr 80px;gap:10px;align-items:center;padding:10px"><div style="font-weight:500">${attEmployees[uid]}</div><div style="font-size:11px;text-align:right;color:var(--t2)">${status}</div></div>`;
+  }
+  el('att-admin-grid').innerHTML=html;
+}
+
+async function attRenderRanking(){
+  const scores=[];
+  for(const uid of Object.keys(attEmployees)){
+    let count=0;
+    const dates=['06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17','06-18','06-19'];
+    for(const dateStr of dates){
+      const rec=await attGetRecord(uid,dateStr);
+      if(rec&&rec.status==='present')count++;
+    }
+    scores.push({uid,name:attEmployees[uid],score:count*10});
+  }
+  scores.sort((a,b)=>b.score-a.score);
+  let html='';
+  const medals=['🥇','🥈','🥉'];
+  scores.forEach((item,idx)=>{
+    const medal=idx<3?medals[idx]:'  ';
+    html+=`<div class="card" style="display:grid;grid-template-columns:30px 1fr 50px;gap:10px;align-items:center;padding:10px"><div style="text-align:center">${medal}</div><div style="font-weight:500">${item.name}</div><div style="text-align:right;font-weight:600;color:var(--p)">${item.score}%</div></div>`;
+  });
+  el('att-ranking-list').innerHTML=html;
+}
+
+async function attGetRecord(userId,dateStr){
+  try{
+    const doc=await db.collection(ATTENDANCE_COL).doc(`${userId}_${dateStr}`).get();
+    return doc.exists?doc.data():null;
+  }catch(e){
+    return null;
+  }
+}
+
+async function attSubmitCheckIn(){
+  const now=new Date();
+  const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const dateStr=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  
+  try{
+    await db.collection(ATTENDANCE_COL).doc(`${attCurrentUser}_${dateStr}`).set({
+      userId:attCurrentUser,
+      date:dateStr,
+      checkin_time:time,
+      status:'present',
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(`✓ Checked in at ${time}`,'ok');
+    setTimeout(()=>attRenderEmployee(),500);
+  }catch(e){
+    toast(`Error: ${e.message}`,'err');
+  }
+}
+
+function attShowOOOModal(){
+  const opts=['wfh','meeting','travel','leave','training','other'];
+  const labels={'wfh':'🏠 Working from Home','meeting':'🤝 Meeting','travel':'✈️ Travel','leave':'📅 Leave','training':'🏆 Training','other':'📝 Other'};
+  let html='';
+  opts.forEach(opt=>{
+    html+=`<button class="card" onclick="attSelectOOO('${opt}')" id="att-ooo-${opt}" style="padding:10px;text-align:left;cursor:pointer;border:1.5px solid var(--bd);background:transparent;font-weight:500">${labels[opt]}</button>`;
+  });
+  el('att-ooo-options').innerHTML=html;
+  el('att-ooo-modal').style.display='flex';
+}
+
+function attSelectOOO(type){
+  attSelectedOOO=type;
+  ['wfh','meeting','travel','leave','training','other'].forEach(t=>{
+    const btn=el(`att-ooo-${t}`);
+    if(t===type){
+      btn.style.borderColor='var(--p)';
+      btn.style.background='var(--pl)';
+      btn.style.color='var(--p)';
+    }else{
+      btn.style.borderColor='var(--bd)';
+      btn.style.background='transparent';
+      btn.style.color='var(--t1)';
+    }
+  });
+}
+
+async function attSubmitOOO(){
+  if(!attSelectedOOO){
+    toast('Select reason','err');
+    return;
+  }
+  const now=new Date();
+  const dateStr=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  const labels={'wfh':'WFH','meeting':'Meeting','travel':'Travel','leave':'Leave','training':'Training','other':'Other'};
+  
+  try{
+    await db.collection(ATTENDANCE_COL).doc(`${attCurrentUser}_${dateStr}`).set({
+      userId:attCurrentUser,
+      date:dateStr,
+      status:'ooo',
+      oof_type:attSelectedOOO,
+      oof_reason:labels[attSelectedOOO],
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(`✓ Marked as ${labels[attSelectedOOO]}`,'ok');
+    attSelectedOOO=null;
+    attCloseOOOModal();
+    setTimeout(()=>attRenderEmployee(),500);
+  }catch(e){
+    toast(`Error: ${e.message}`,'err');
+  }
+}
+
+function attCloseOOOModal(){
+  el('att-ooo-modal').style.display='none';
+}
+
 </script>
 </body>
 </html>
