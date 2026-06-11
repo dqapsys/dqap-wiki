@@ -1,6 +1,7 @@
 // DQAP Wiki Service Worker
+// Version 72 — Attendance module integrated
 // Bump CACHE_VERSION on every deploy to invalidate old caches.
-const CACHE_VERSION = 'dqap-v71';
+const CACHE_VERSION = 'dqap-v72';
 const CACHE_NAME = CACHE_VERSION;
 
 // Install: activate immediately, don't wait for old tabs to close.
