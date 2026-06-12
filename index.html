@@ -3631,9 +3631,8 @@ async function attRenderCalendar(){
       dayOOOs.forEach(ooo=>{
         const color=attUserColors[ooo.uid];
         dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:500;margin-bottom:4px;word-break:break-word;line-height:1.3">`;
-        dayHtml+=`<div style="font-weight:600;margin-bottom:2px">${ooo.name}</div>`;
-        dayHtml+=`<div style="font-size:9px;opacity:.9">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,30)+(ooo.remarks.length>30?'...':''):''}</div>`;
-        dayHtml+=`</div>`;
+dayHtml+=`<div style="font-size:9px;opacity:.9">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,30)+(ooo.remarks.length>30?'...':''):''}</div>`;
+dayHtml+=`</div>`;
       });
     }
     dayHtml+=`</div>`;
