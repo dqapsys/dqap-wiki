@@ -573,11 +573,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-emp" style="display:block">
-      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px" onchange="attRenderEmpCalendar()"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
+      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">—</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" onclick="attCheckIn()">✓ Check In</button><button class="btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">📍 Mark OOO</button></div>
-     <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">My Calendar</div>
-      <div id="att-emp-calendar" style="display:grid;gap:12px"></div>
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">10-Day Timeline</div>
+      <div id="att-timeline" style="display:grid;gap:4px"></div>
     </div>
     
     <div id="att-adm" style="display:none">
@@ -660,7 +660,36 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         <div class="ch"><div class="ct" id="pay-form-t"><i class="ti ti-cash" style="font-size:14px"></i>New payment entry</div><button class="btn sm" onclick="togPayForm(false)"><i class="ti ti-x"></i>Cancel</button></div>
         <div class="cb">
           <div class="g3" style="margin-bottom:12px">
-            <div class="fg"><label class="fl r">Customer</label><select class="fs" id="pay-customer"><option value="">Select customer</option></select></div>
+            <div class="fg"><label class="fl r">Customer</label>
+              <select class="fs" id="pay-customer" onchange="onPaymentCustomerChange()">
+                <option value="">Select customer</option>
+                <option value="__other__">Other (Non-customer)</option>
+              </select>
+            </div>
+            
+            <div class="fg" id="pay-other-wrap" style="display:none">
+              <label class="fl r">Entity name</label>
+              <input class="fi" id="pay-other-entity" placeholder="Enter entity name (e.g. Vendor, Supplier)">
+            </div>
+            
+            <div class="fg"><label class="fl r">Project Number</label>
+              <select class="fs" id="pay-project-num" onchange="onPaymentProjectChange()">
+                <option value="">Select project</option>
+              </select>
+            </div>
+            
+            <div class="fg"><label class="fl r">Project Name</label>
+              <select class="fs" id="pay-project-name" onchange="onPaymentProjectChange()">
+                <option value="">Select project</option>
+              </select>
+            </div>
+            
+            <div class="fg"><label class="fl r">PO Number</label>
+              <select class="fs" id="pay-po-number" onchange="onPaymentPOChange()">
+                <option value="">Select PO</option>
+              </select>
+            </div>
+            
             <div class="fg"><label class="fl r">Forecast amount (₹)</label><input class="fi" id="pay-amount" type="number" placeholder="e.g. 500000"></div>
             <div class="fg"><label class="fl r">Forecast date</label><input type="date" class="fi" id="pay-date"></div>
             <div class="fg"><label class="fl r">Current status</label>
@@ -674,10 +703,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       </div>
     </div>
     <!-- Summary -->
-    <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-file-invoice" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pay-st-total">—</div><div class="sl">Total entries</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-hourglass" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="pay-st-pending">₹ —</div><div class="sl">Total forecast</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pay-st-received">₹ —</div><div class="sl">Received</div></div></div>
+    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-alert-circle" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="pay-st-due">₹ —</div><div class="sl">Total Payment Due</div></div></div>
+      <div class="sc"><div class="si" style="background:#E1F5FE"><i class="ti ti-calendar" style="color:#0277BD;font-size:18px"></i></div><div><div class="sv" id="pay-st-forecast">₹ —</div><div class="sl">Current Month Forecast</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pay-st-collected">₹ —</div><div class="sl">Amount Collected</div></div></div>
+      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-trending-up" style="color:#C2185B;font-size:18px"></i></div><div><div class="sv" id="pay-st-variance">₹ —</div><div class="sl">Excess / Shortfall</div></div></div>
     </div>
     <div class="fbar">
       <select class="fsel" id="pay-ff-status" onchange="renderPayments()"><option value="">All statuses</option><option>Pending</option><option>Partial</option><option>Received</option></select>
@@ -1228,8 +1258,77 @@ function populatePayCustomers(){
   const s=el('pay-customer');if(!s)return;
   const cur=s.value;
   const clients=[...new Set(projectsData.flatMap(p=>p.clients||[]))].filter(Boolean).sort();
-  s.innerHTML='<option value="">Select customer</option>'+clients.map(c=>`<option${c===cur?' selected':''}>${esc(c)}</option>`).join('');
+  s.innerHTML='<option value="">Select customer</option>'+clients.map(c=>`<option${c===cur?' selected':''}>${esc(c)}</option>`).join('')+'<option value="__other__"'+(cur==='__other__'?' selected':'')+'>Other (Non-customer)</option>';
 }
+
+function onPaymentCustomerChange(){
+  const customer=el('pay-customer').value;
+  const otherWrap=el('pay-other-wrap');
+  const projNum=el('pay-project-num');
+  const projName=el('pay-project-name');
+  const poNum=el('pay-po-number');
+  
+  projNum.innerHTML='<option value="">Select project</option>';
+  projName.innerHTML='<option value="">Select project</option>';
+  poNum.innerHTML='<option value="">Select PO</option>';
+  
+  if(customer==='__other__'){
+    otherWrap.style.display='block';
+    projNum.disabled=true;
+    projName.disabled=true;
+    poNum.disabled=true;
+  }else{
+    otherWrap.style.display='none';
+    el('pay-other-entity').value='';
+    projNum.disabled=false;
+    projName.disabled=false;
+    poNum.disabled=false;
+    
+    if(customer){
+      const customerProjects=projectsData.filter(p=>{
+        const clients=p.clients||[];
+        return clients.includes(customer);
+      });
+      
+      const projOptions=customerProjects.map(p=>`<option value="${p.number||''}">${esc(p.number||'')}</option>`).join('');
+      const projNameOptions=customerProjects.map(p=>`<option value="${p.name||''}">${esc(p.name||'')}</option>`).join('');
+      const poOptions=customerProjects.flatMap(p=>p.poNumbers||[]).filter(Boolean).map(po=>`<option value="${po}">${esc(po)}</option>`).join('');
+      
+      projNum.innerHTML='<option value="">Select project</option>'+projOptions;
+      projName.innerHTML='<option value="">Select project</option>'+projNameOptions;
+      poNum.innerHTML='<option value="">Select PO</option>'+poOptions;
+    }
+  }
+}
+
+function onPaymentProjectChange(){
+  const projNum=el('pay-project-num').value;
+  const projName=el('pay-project-name').value;
+  
+  const proj=projectsData.find(p=>(projNum && p.number===projNum) || (projName && p.name===projName));
+  if(!proj)return;
+  
+  if(projNum && !projName){
+    el('pay-project-name').value=proj.name||'';
+  }else if(projName && !projNum){
+    el('pay-project-num').value=proj.number||'';
+  }
+  
+  const poNum=el('pay-po-number');
+  const poOptions=projectsData
+    .filter(p=>p.name===proj.name)
+    .flatMap(p=>p.poNumbers||[])
+    .filter(Boolean)
+    .map(po=>`<option value="${po}">${esc(po)}</option>`)
+    .join('');
+  
+  poNum.innerHTML='<option value="">Select PO</option>'+poOptions;
+}
+
+function onPaymentPOChange(){
+  // PO selection handler
+}
+
 function populateRMAProjects(){
   const s=el('rma-proj');if(!s)return;
   const cur=s.value;
@@ -1671,11 +1770,32 @@ async function savePMOInline(id){
 // ── PAYMENT CRUD ───────────────────────────────────
 function togPayForm(show,data){
   el('pay-form-panel').style.display=show?'block':'none';
-  if(!show){el('pay-eid').value='';['pay-customer','pay-owner','pay-status'].forEach(id=>el(id).value='');['pay-amount','pay-remarks'].forEach(id=>el(id).value='');el('pay-date').value='';el('pay-form-t').innerHTML='<i class="ti ti-cash" style="font-size:14px"></i>New payment entry';el('pay-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save';return;}
+  if(!show){
+    el('pay-eid').value='';
+    ['pay-customer','pay-owner','pay-status','pay-project-num','pay-project-name','pay-po-number'].forEach(id=>el(id).value='');
+    ['pay-amount','pay-remarks','pay-other-entity'].forEach(id=>el(id).value='');
+    el('pay-date').value='';
+    el('pay-other-wrap').style.display='none';
+    el('pay-form-t').innerHTML='<i class="ti ti-cash" style="font-size:14px"></i>New payment entry';
+    el('pay-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save';
+    return;
+  }
   if(data){
-    el('pay-customer').value=data.customer||'';el('pay-amount').value=data.amount||'';el('pay-date').value=data.date||'';
-    el('pay-status').value=data.status||'Pending';el('pay-owner').value=data.owner||'';el('pay-remarks').value=data.remarks||'';
+    el('pay-customer').value=data.customer||'';
+    el('pay-project-num').value=data.projectNumber||'';
+    el('pay-project-name').value=data.projectName||'';
+    el('pay-po-number').value=data.poNumber||'';
+    el('pay-amount').value=data.amount||'';
+    el('pay-date').value=data.date||'';
+    el('pay-status').value=data.status||'Pending';
+    el('pay-owner').value=data.owner||'';
+    el('pay-remarks').value=data.remarks||'';
     el('pay-eid').value=data.id;
+    if(data.customerType==='other'){
+      el('pay-customer').value='__other__';
+      el('pay-other-entity').value=data.customer;
+      el('pay-other-wrap').style.display='block';
+    }
     el('pay-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit payment entry';
     el('pay-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update';
   }
@@ -1683,17 +1803,51 @@ function togPayForm(show,data){
 }
 
 async function savePayment(){
-  const customer=g('pay-customer'),amount=parseFloat(el('pay-amount')?.value)||0,date=g('pay-date'),status=g('pay-status'),owner=g('pay-owner'),remarks=g('pay-remarks');
-  if(!customer){toast('Select a customer','err');return;}
+  const customerVal=el('pay-customer').value;
+  let customer=customerVal;
+  let customerType='customer';
+  
+  if(customerVal==='__other__'){
+    customer=el('pay-other-entity').value;
+    customerType='other';
+    if(!customer){toast('Enter entity name','err');return;}
+  }else if(!customerVal){
+    toast('Select a customer','err');
+    return;
+  }
+  
+  const amount=parseFloat(el('pay-amount')?.value)||0;
+  const date=g('pay-date');
+  const status=g('pay-status');
+  const owner=g('pay-owner');
+  const remarks=g('pay-remarks');
+  const projectNumber=g('pay-project-num');
+  const projectName=g('pay-project-name');
+  const poNumber=g('pay-po-number');
+  
   if(!amount){toast('Enter forecast amount','err');return;}
   if(!date){toast('Enter forecast date','err');return;}
+  
   showLoad('Saving…');
   try{
     const now=new Date().toISOString(),eid=g('pay-eid');
-    const d={customer,amount,date,status,owner,remarks,updatedAt:now};
+    const d={
+      customer,
+      customerType,
+      projectNumber,
+      projectName,
+      poNumber,
+      amount,
+      date,
+      status,
+      owner,
+      remarks,
+      updatedAt:now
+    };
     if(eid){await db.collection(PAY_COL).doc(eid).update(d);toast('Payment updated ✓','ok');}
     else{d.createdAt=now;await db.collection(PAY_COL).add(d);toast('Payment added ✓','ok');}
     togPayForm(false);
+    setTimeout(renderPayments,300);
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
@@ -1711,23 +1865,45 @@ function renderPayments(){if(CU?.isUser)return;
     if(q&&!p.customer?.toLowerCase().includes(q))return false;
     return true;
   });
-  const total=payData.length;
-  const forecast=payData.reduce((s,p)=>s+(p.amount||0),0);
-  const received=payData.filter(p=>p.status==='Received').reduce((s,p)=>s+(p.amount||0),0);
-  el('pay-st-total').textContent=total;
-  el('pay-st-pending').textContent='₹ '+fmtAmt(forecast);
-  el('pay-st-received').textContent='₹ '+fmtAmt(received);
+  
+  // Calculate summary metrics
+  let totalDue=0, thisMonthForecast=0, totalCollected=0;
+  const now=new Date();
+  const currentMonth=now.getMonth();
+  const currentYear=now.getFullYear();
+  
+  payData.forEach(p=>{
+    totalDue+=(p.amount||0);
+    const pDate=new Date(p.date);
+    if(pDate.getMonth()===currentMonth && pDate.getFullYear()===currentYear){
+      thisMonthForecast+=(p.amount||0);
+    }
+    if(p.status==='Received'){
+      totalCollected+=(p.amount||0);
+    }
+  });
+  
+  const variance=thisMonthForecast-totalCollected;
+  const varianceClass=variance>0?'color:#C2185B':'color:#2E7D32';
+  
+  el('pay-st-due').textContent='₹ '+fmtAmt(totalDue);
+  el('pay-st-forecast').textContent='₹ '+fmtAmt(thisMonthForecast);
+  el('pay-st-collected').textContent='₹ '+fmtAmt(totalCollected);
+  el('pay-st-variance').innerHTML=`<span style="${varianceClass}">₹ ${fmtAmt(Math.abs(variance))}</span>`;
+  
   el('pay-count').textContent=`${list.length} of ${payData.length} entries`;
   const tb=el('pay-tbody');
   if(!list.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t2)">${payData.length?'No entries match':'No payment entries yet'}</td></tr>`;return;}
   tb.innerHTML=list.map((p,i)=>`<tr>
     <td style="font-size:10px;font-weight:600;color:var(--t2)">${i+1}</td>
     <td style="font-weight:500">${esc(p.customer)}</td>
+    <td style="font-size:11px;color:var(--t2)">${esc(p.projectName||'—')}<br>${esc(p.projectNumber||'—')}</td>
+    <td style="font-size:11px;color:var(--t2)">${esc(p.poNumber||'—')}</td>
     <td style="font-weight:600">₹ ${fmtAmt(p.amount)}</td>
     <td style="white-space:nowrap">${p.date||'—'}</td>
     <td>${bpayStatus(p.status)}</td>
     <td>${esc(p.owner||'—')}</td>
-    <td style="font-size:11.5px;color:var(--t2);max-width:140px">${esc(p.remarks||'—')}</td>
+    <td style="font-size:11.5px;color:var(--t2);max-width:100px">${esc(p.remarks||'—')}</td>
     <td><div style="display:flex;gap:3px">
       ${CU?.canWrite?`<button class="btn sm" onclick="togPayForm(true,payData.find(x=>x.id==='${p.id}'))"><i class="ti ti-edit"></i></button>
       <button class="btn sm danger" onclick="deletePayment('${p.id}')"><i class="ti ti-trash"></i></button>`:'—'}
@@ -3408,20 +3584,17 @@ function attSwitchTab(t){
     }
   });
   attRender();
-  if(t==='emp') setTimeout(()=>attRenderEmpCalendar(),100);
 }
 
 async function attRender(){
   const sel=el('att-user');
   if(sel)attCurrentUser=sel.value;
   
-  if(attCurrentTab==='emp'){
-    attRenderEmp();
-    attRenderEmpCalendar();
-  }
-  if(attCurrentTab==='adm')attRenderAdm();
-  if(attCurrentTab==='rank')attRenderRank();
+  if(attCurrentTab==='emp')await attRenderEmp();
+  else if(attCurrentTab==='adm')await attRenderAdm();
+  else if(attCurrentTab==='rank')await attRenderRank();
 }
+
 async function attRenderEmp(){
   const now=new Date();
   const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
@@ -3709,94 +3882,7 @@ async function attRenderCalendar(){
   if(legendSide)legendSide.innerHTML=legendHtml;
 }
 
-async function attRenderEmpCalendar(){
-  const uid=attCurrentUser;
-  const now=new Date();
-  const year=now.getFullYear();
-  const month=now.getMonth();
-  const firstDay=new Date(year,month,1);
-  const lastDay=new Date(year,month+1,0);
-  const daysInMonth=lastDay.getDate();
-  const startingDayOfWeek=firstDay.getDay();
-  
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthYear=`${monthNames[month]} ${year}`;
-  
-  // Fetch OOO data for this employee for the month
-  const oooData={};
-  const promises=[];
-  
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
-    promises.push(
-      attGet(uid,ds).then(rec=>{
-        if(rec&&rec.status==='ooo'){
-          oooData[ds]={
-            type:rec.oof_reason,
-            remarks:rec.remarks||''
-          };
-        }
-      }).catch(()=>{})
-    );
-  }
-  
-  await Promise.all(promises);
-  
-  // Build calendar
-  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
-  
-  // Weekday headers
-  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
-  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  dayNames.forEach(d=>{
-    calendarHtml+=`<div style="padding:8px;text-align:center;font-weight:600;font-size:11px;color:var(--p)">${d}</div>`;
-  });
-  calendarHtml+=`</div>`;
-  
-  // Calendar grid
-  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
-  
-  // Empty cells before month
-  for(let i=0;i<startingDayOfWeek;i++){
-    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px"></div>`;
-  }
-  
-  // Days with OOO
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
-    const ooo=oooData[ds];
-    const isToday=d===now.getDate();
-    
-    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
-    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
-    
-    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
-    if(ooo){
-      const color=attUserColors[uid];
-      dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
-      dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'…':''):''}</div>`;
-      dayHtml+=`</div>`;
-    }
-    dayHtml+=`</div></div>`;
-    
-    calendarHtml+=dayHtml;
-  }
-  
-  // Empty cells after month
-  const totalCells=startingDayOfWeek+daysInMonth;
-  const remainingCells=7-((totalCells)%7);
-  if(remainingCells<7){
-    for(let i=0;i<remainingCells;i++){
-      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px;border:.5px solid var(--bd)"></div>`;
-    }
-  }
-  
-  calendarHtml+=`</div></div>`;
-  
-  // Render to DOM
-  const empCal=el('att-emp-calendar');
-  if(empCal)empCal.innerHTML=calendarHtml;
-}
+
 function attCloseOOO(){
   const m=el('att-modal');
   if(m)m.style.display='none';
