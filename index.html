@@ -573,11 +573,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-emp" style="display:block">
-      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
+      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px" onchange="attRenderEmpCalendar()"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">—</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" onclick="attCheckIn()">✓ Check In</button><button class="btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">📍 Mark OOO</button></div>
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">10-Day Timeline</div>
-      <div id="att-timeline" style="display:grid;gap:4px"></div>
+     <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">My Calendar</div>
+      <div id="att-emp-calendar" style="display:grid;gap:12px"></div>
     </div>
     
     <div id="att-adm" style="display:none">
@@ -3408,17 +3408,20 @@ function attSwitchTab(t){
     }
   });
   attRender();
+  if(t==='emp') setTimeout(()=>attRenderEmpCalendar(),100);
 }
 
 async function attRender(){
   const sel=el('att-user');
   if(sel)attCurrentUser=sel.value;
   
-  if(attCurrentTab==='emp')await attRenderEmp();
-  else if(attCurrentTab==='adm')await attRenderAdm();
-  else if(attCurrentTab==='rank')await attRenderRank();
+  if(attCurrentTab==='emp'){
+    attRenderEmp();
+    attRenderEmpCalendar();
+  }
+  if(attCurrentTab==='adm')attRenderAdm();
+  if(attCurrentTab==='rank')attRenderRank();
 }
-
 async function attRenderEmp(){
   const now=new Date();
   const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
@@ -3706,7 +3709,94 @@ async function attRenderCalendar(){
   if(legendSide)legendSide.innerHTML=legendHtml;
 }
 
-
+async function attRenderEmpCalendar(){
+  const uid=attCurrentUser;
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth();
+  const firstDay=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0);
+  const daysInMonth=lastDay.getDate();
+  const startingDayOfWeek=firstDay.getDay();
+  
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthYear=`${monthNames[month]} ${year}`;
+  
+  // Fetch OOO data for this employee for the month
+  const oooData={};
+  const promises=[];
+  
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
+    promises.push(
+      attGet(uid,ds).then(rec=>{
+        if(rec&&rec.status==='ooo'){
+          oooData[ds]={
+            type:rec.oof_reason,
+            remarks:rec.remarks||''
+          };
+        }
+      }).catch(()=>{})
+    );
+  }
+  
+  await Promise.all(promises);
+  
+  // Build calendar
+  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
+  
+  // Weekday headers
+  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayNames.forEach(d=>{
+    calendarHtml+=`<div style="padding:8px;text-align:center;font-weight:600;font-size:11px;color:var(--p)">${d}</div>`;
+  });
+  calendarHtml+=`</div>`;
+  
+  // Calendar grid
+  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
+  
+  // Empty cells before month
+  for(let i=0;i<startingDayOfWeek;i++){
+    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px"></div>`;
+  }
+  
+  // Days with OOO
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
+    const ooo=oooData[ds];
+    const isToday=d===now.getDate();
+    
+    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
+    
+    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    if(ooo){
+      const color=attUserColors[uid];
+      dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
+      dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'…':''):''}</div>`;
+      dayHtml+=`</div>`;
+    }
+    dayHtml+=`</div></div>`;
+    
+    calendarHtml+=dayHtml;
+  }
+  
+  // Empty cells after month
+  const totalCells=startingDayOfWeek+daysInMonth;
+  const remainingCells=7-((totalCells)%7);
+  if(remainingCells<7){
+    for(let i=0;i<remainingCells;i++){
+      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px;border:.5px solid var(--bd)"></div>`;
+    }
+  }
+  
+  calendarHtml+=`</div></div>`;
+  
+  // Render to DOM
+  const empCal=el('att-emp-calendar');
+  if(empCal)empCal.innerHTML=calendarHtml;
+}
 function attCloseOOO(){
   const m=el('att-modal');
   if(m)m.style.display='none';
