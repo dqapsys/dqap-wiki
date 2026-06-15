@@ -715,7 +715,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <span id="pay-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
     <div class="card"><div class="wtable-wrap"><table class="wtable" id="pay-table">
-      <thead><tr><th>#</th><th>Customer</th><th>Forecast Amount</th><th>Forecast Date</th><th>Status</th><th>Owner</th><th>Remarks</th><th>Actions</th></tr></thead>
+      <thead><tr><th>#</th><th>Customer</th><th>PO Number</th><th>Forecast Amount</th><th>Forecast Date</th><th>Status</th><th>Owner</th><th>Remarks</th><th>Actions</th></tr></thead>
       <tbody id="pay-tbody"></tbody>
     </table></div></div>
   </div>
@@ -1925,10 +1925,10 @@ function renderPayments(){if(CU?.isUser)return;
   const tb=el('pay-tbody');
   if(!list.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t2)">${payData.length?'No entries match':'No payment entries yet'}</td></tr>`;return;}
   tb.innerHTML=list.map((p,i)=>{
-    const custDisplay=`${esc(p.customer||'—')} • ${esc(p.projectNumber||'—')} • ${esc(p.projectName||'—')}`;
+    const custDisplay=`${esc(p.customer||'—')}<br><span style="font-size:10px;color:var(--t2)">${esc(p.projectNumber||'—')} • ${esc(p.projectName||'—')}</span>`;
     return `<tr>
     <td style="font-size:10px;font-weight:600;color:var(--t2)">${i+1}</td>
-    <td style="font-weight:500;font-size:11px">${custDisplay}</td>
+    <td style="font-weight:500;font-size:11px;word-wrap:break-word;max-width:200px">${custDisplay}</td>
     <td style="font-size:11px;color:var(--t2)">${esc(p.poNumber||'—')}</td>
     <td style="font-weight:600">₹ ${fmtAmt(p.amount)}</td>
     <td style="white-space:nowrap">${p.date||'—'}</td>
