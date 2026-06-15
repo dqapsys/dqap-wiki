@@ -672,14 +672,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
               <input class="fi" id="pay-other-entity" placeholder="Enter entity name (e.g. Vendor, Supplier)">
             </div>
             
-            <div class="fg"><label class="fl r">Project Number</label>
-              <select class="fs" id="pay-project-num" onchange="onPaymentProjectChange()">
+            <div class="fg"><label class="fl r">Project Name</label>
+              <select class="fs" id="pay-project-name" onchange="onPaymentProjectChange()">
                 <option value="">Select project</option>
               </select>
             </div>
             
-            <div class="fg"><label class="fl r">Project Name</label>
-              <select class="fs" id="pay-project-name" onchange="onPaymentProjectChange()">
+            <div class="fg"><label class="fl r">Project Number</label>
+              <select class="fs" id="pay-project-num" onchange="onPaymentProjectChange()">
                 <option value="">Select project</option>
               </select>
             </div>
@@ -1292,7 +1292,24 @@ function onPaymentCustomerChange(){
       
       const projOptions=customerProjects.map(p=>`<option value="${p.number||''}">${esc(p.number||'')}</option>`).join('');
       const projNameOptions=customerProjects.map(p=>`<option value="${p.name||''}">${esc(p.name||'')}</option>`).join('');
-      const poOptions=customerProjects.flatMap(p=>p.poNumbers||[]).filter(Boolean).map(po=>`<option value="${po}">${esc(po)}</option>`).join('');
+      
+      // Get all POs from customer projects - check multiple field names
+      let allPOs=[];
+      customerProjects.forEach(p=>{
+        if(p.poNumbers && Array.isArray(p.poNumbers)){
+          allPOs.push(...p.poNumbers);
+        }else if(p.po && Array.isArray(p.po)){
+          allPOs.push(...p.po);
+        }else if(p.poNumber){
+          allPOs.push(p.poNumber);
+        }
+      });
+      
+      const poOptions=allPOs
+        .filter(Boolean)
+        .filter((v,i,a)=>a.indexOf(v)===i) // Remove duplicates
+        .map(po=>`<option value="${po}">${esc(po)}</option>`)
+        .join('');
       
       projNum.innerHTML='<option value="">Select project</option>'+projOptions;
       projName.innerHTML='<option value="">Select project</option>'+projNameOptions;
@@ -1308,17 +1325,30 @@ function onPaymentProjectChange(){
   const proj=projectsData.find(p=>(projNum && p.number===projNum) || (projName && p.name===projName));
   if(!proj)return;
   
+  // Sync project name and number
   if(projNum && !projName){
     el('pay-project-name').value=proj.name||'';
   }else if(projName && !projNum){
     el('pay-project-num').value=proj.number||'';
   }
   
+  // Populate PO numbers - check multiple possible field names
   const poNum=el('pay-po-number');
-  const poOptions=projectsData
-    .filter(p=>p.name===proj.name)
-    .flatMap(p=>p.poNumbers||[])
+  let poList=[];
+  
+  // Try different field names for PO numbers
+  if(proj.poNumbers && Array.isArray(proj.poNumbers)){
+    poList=proj.poNumbers;
+  }else if(proj.po && Array.isArray(proj.po)){
+    poList=proj.po;
+  }else if(proj.poNumber){
+    poList=[proj.poNumber];
+  }
+  
+  // Filter and create options
+  const poOptions=poList
     .filter(Boolean)
+    .filter((v,i,a)=>a.indexOf(v)===i) // Remove duplicates
     .map(po=>`<option value="${po}">${esc(po)}</option>`)
     .join('');
   
@@ -1894,10 +1924,11 @@ function renderPayments(){if(CU?.isUser)return;
   el('pay-count').textContent=`${list.length} of ${payData.length} entries`;
   const tb=el('pay-tbody');
   if(!list.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t2)">${payData.length?'No entries match':'No payment entries yet'}</td></tr>`;return;}
-  tb.innerHTML=list.map((p,i)=>`<tr>
+  tb.innerHTML=list.map((p,i)=>{
+    const custDisplay=`${esc(p.customer||'—')} • ${esc(p.projectNumber||'—')} • ${esc(p.projectName||'—')}`;
+    return `<tr>
     <td style="font-size:10px;font-weight:600;color:var(--t2)">${i+1}</td>
-    <td style="font-weight:500">${esc(p.customer)}</td>
-    <td style="font-size:11px;color:var(--t2)">${esc(p.projectName||'—')}<br>${esc(p.projectNumber||'—')}</td>
+    <td style="font-weight:500;font-size:11px">${custDisplay}</td>
     <td style="font-size:11px;color:var(--t2)">${esc(p.poNumber||'—')}</td>
     <td style="font-weight:600">₹ ${fmtAmt(p.amount)}</td>
     <td style="white-space:nowrap">${p.date||'—'}</td>
@@ -1907,7 +1938,8 @@ function renderPayments(){if(CU?.isUser)return;
     <td><div style="display:flex;gap:3px">
       ${CU?.canWrite?`<button class="btn sm" onclick="togPayForm(true,payData.find(x=>x.id==='${p.id}'))"><i class="ti ti-edit"></i></button>
       <button class="btn sm danger" onclick="deletePayment('${p.id}')"><i class="ti ti-trash"></i></button>`:'—'}
-    </div></td></tr>`).join('');
+    </div></td></tr>`;
+  }).join('');
 }
 
 // ── RMA CRUD ───────────────────────────────────────
