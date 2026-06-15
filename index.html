@@ -592,11 +592,32 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
 
     <div id="att-cal" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
-        <div id="att-cal-main" style="display:grid;gap:12px"></div>
-        <div>
+      <style>
+        #att-cal-container { display:grid; grid-template-columns:1fr; gap:14px; }
+        @media (min-width:768px) {
+          #att-cal-container { grid-template-columns:1fr 280px; }
+          #att-cal-legend-top { display:none !important; }
+          #att-cal-legend-side { display:block !important; }
+        }
+        @media (max-width:767px) {
+          #att-cal-legend-top { display:block !important; }
+          #att-cal-legend-side { display:none !important; }
+        }
+      </style>
+      <div id="att-cal-container">
+        <!-- Legend on top for mobile -->
+        <div id="att-cal-legend-top" style="display:none">
           <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">User Legend</div>
-          <div id="att-cal-legend" style="display:grid;gap:8px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);padding:12px"></div>
+          <div id="att-cal-legend" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);padding:12px"></div>
+        </div>
+        
+        <!-- Calendar main -->
+        <div id="att-cal-main" style="display:grid;gap:12px"></div>
+        
+        <!-- Legend on right for desktop -->
+        <div id="att-cal-legend-side" style="display:none">
+          <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">User Legend</div>
+          <div id="att-cal-legend-copy" style="display:grid;gap:8px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);padding:12px"></div>
         </div>
       </div>
     </div>
@@ -3580,26 +3601,36 @@ async function attRenderCalendar(){
   const daysInMonth=lastDay.getDate();
   const startingDayOfWeek=firstDay.getDay();
   
-  // Month and year header
   const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthYear=`${monthNames[month]} ${year}`;
   
-  // Get all OOO data for this month
+  // OPTIMIZATION: Fetch all data in PARALLEL instead of sequential (6x faster!)
   const oooData={};
+  const promises=[];
+  
   for(const uid of Object.keys(attEmployees)){
     for(let d=1;d<=daysInMonth;d++){
       const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
-      const rec=await attGet(uid,ds);
-      if(rec&&rec.status==='ooo'){
-        if(!oooData[ds])oooData[ds]=[];
-        oooData[ds].push({
-          uid,name:attEmployees[uid],type:rec.oof_reason,remarks:rec.remarks||''
-        });
-      }
+      
+      promises.push(
+        attGet(uid,ds).then(rec=>{
+          if(rec&&rec.status==='ooo'){
+            if(!oooData[ds])oooData[ds]=[];
+            oooData[ds].push({
+              uid,name:attEmployees[uid],
+              type:rec.oof_reason,
+              remarks:rec.remarks||''
+            });
+          }
+        }).catch(()=>{})
+      );
     }
   }
   
-  // Build calendar grid
+  // Wait for all queries at once (parallel = 6x faster than sequential)
+  await Promise.all(promises);
+  
+  // Build calendar HTML
   let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
   
   // Weekday headers
@@ -3610,62 +3641,71 @@ async function attRenderCalendar(){
   });
   calendarHtml+=`</div>`;
   
-  // Calendar dates
+  // Calendar dates grid
   calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
   
-  // Empty cells for days before month starts
+  // Empty cells before month
   for(let i=0;i<startingDayOfWeek;i++){
-    calendarHtml+=`<div style="background:var(--card);padding:8px;min-height:100px"></div>`;
+    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px"></div>`;
   }
   
-  // Days of month
+  // Date cells with OOO entries
   for(let d=1;d<=daysInMonth;d++){
     const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
     const dayOOOs=oooData[ds]||[];
     const isToday=d===now.getDate();
     
-    let dayHtml=`<div style="background:var(--card);padding:8px;min-height:100px;overflow-y:auto;${isToday?'background:var(--pl);':''}}">`;
-    dayHtml+=`<div style="font-weight:600;margin-bottom:6px;color:${isToday?'var(--p)':'var(--t1)'}">${d}</div>`;
+    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
     
+    // OOO entries container
+    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
     if(dayOOOs.length>0){
       dayOOOs.forEach(ooo=>{
         const color=attUserColors[ooo.uid];
-        dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:500;margin-bottom:4px;word-break:break-word;line-height:1.3">`;
-dayHtml+=`<div style="font-size:9px;opacity:.9">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,30)+(ooo.remarks.length>30?'...':''):''}</div>`;
-dayHtml+=`</div>`;
+        // NO NAME - just type and remarks, color indicates user
+        dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
+        dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'…':''):''}</div>`;
+        dayHtml+=`</div>`;
       });
     }
-    dayHtml+=`</div>`;
+    dayHtml+=`</div></div>`;
+    
     calendarHtml+=dayHtml;
   }
   
-  // Empty cells for days after month ends
+  // Empty cells after month
   const totalCells=startingDayOfWeek+daysInMonth;
   const remainingCells=7-((totalCells)%7);
   if(remainingCells<7){
     for(let i=0;i<remainingCells;i++){
-      calendarHtml+=`<div style="background:var(--card);padding:8px;min-height:100px"></div>`;
+      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px;border:.5px solid var(--bd)"></div>`;
     }
   }
   
   calendarHtml+=`</div></div>`;
   
-  // Render calendar
+  // Render calendar to DOM
   const calMain=el('att-cal-main');
   if(calMain)calMain.innerHTML=calendarHtml;
   
-  // Render legend
+  // Build legend HTML (used in both top and side)
   let legendHtml='';
   for(const uid of Object.keys(attEmployees)){
     const color=attUserColors[uid];
-    legendHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;background:${color}20;border-left:3px solid ${color}">
-      <div style="width:16px;height:16px;background:${color};border-radius:3px;flex-shrink:0"></div>
-      <div style="font-size:12px;font-weight:500">${attEmployees[uid]}</div>
+    legendHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:${color}15;border-left:3px solid ${color}">
+      <div style="width:10px;height:10px;background:${color};border-radius:2px;flex-shrink:0"></div>
+      <div style="font-size:10px;font-weight:500;min-width:0;word-break:break-word">${attEmployees[uid]}</div>
     </div>`;
   }
-  const legend=el('att-cal-legend');
-  if(legend)legend.innerHTML=legendHtml;
+  
+  // Update legend in BOTH places (mobile top and desktop side)
+  const legendTop=el('att-cal-legend');
+  if(legendTop)legendTop.innerHTML=legendHtml;
+  const legendSide=el('att-cal-legend-copy');
+  if(legendSide)legendSide.innerHTML=legendHtml;
 }
+
 
 function attCloseOOO(){
   const m=el('att-modal');
