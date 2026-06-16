@@ -573,10 +573,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-emp" style="display:block">
-      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px" onchange="attRenderEmpCalendar()"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
+      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
+      <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">—</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" onclick="attCheckIn()">✓ Check In</button><button class="btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">📍 Mark OOO</button></div>
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">My Calendar</div>
-      <div id="att-emp-calendar" style="display:grid;gap:12px"></div>
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Attendance History</div>
+      <div id="att-timeline" style="display:grid;gap:4px"></div>
     </div>
     
     <div id="att-adm" style="display:none">
@@ -1329,37 +1330,34 @@ function onPaymentProjectChange(){
   // Only process if customer is selected
   if(!customer || customer==='__other__')return;
   
+  // Get all projects for this customer
+  const custProjects=projectsData.filter(p=>{
+    const clients=p.clients||[];
+    return clients.includes(customer);
+  });
+  
   // If Project Name is selected, update Project Number
-  if(projName){
-    const proj=projectsData.find(p=>p.name===projName && projectsData.find(x=>x.clients&&x.clients.includes(customer)));
-    if(!proj){
-      const custProjects=projectsData.filter(p=>{
-        const clients=p.clients||[];
-        return clients.includes(customer) && p.name===projName;
-      });
-      if(custProjects.length>0){
-        el('pay-project-num').value=custProjects[0].number||'';
-        updatePONumbers();
-      }
+  if(projName && !projNum){
+    const matchingProj=custProjects.find(p=>p.name===projName);
+    if(matchingProj){
+      el('pay-project-num').value=matchingProj.number||'';
     }
   }
   
   // If Project Number is selected, update Project Name
-  if(projNum){
-    const custProjects=projectsData.filter(p=>{
-      const clients=p.clients||[];
-      return clients.includes(customer) && p.number===projNum;
-    });
-    if(custProjects.length>0){
-      el('pay-project-name').value=custProjects[0].name||'';
-      updatePONumbers();
+  if(projNum && !projName){
+    const matchingProj=custProjects.find(p=>p.number===projNum);
+    if(matchingProj){
+      el('pay-project-name').value=matchingProj.name||'';
     }
   }
   
-  // Always update POs if we have project info
-  if(projName || projNum){
-    updatePONumbers();
-  }
+  // Always update POs after sync
+  updatePONumbers();
+}
+
+function onPaymentPOChange(){
+  // PO selection handler - can be used for future logic
 }
 
 function updatePONumbers(){
@@ -1368,60 +1366,83 @@ function updatePONumbers(){
   const customer=el('pay-customer').value;
   const poNum=el('pay-po-number');
   
-  if(!customer || !projName || !projNum){
+  // If not ready, show message
+  if(!customer || customer==='__other__'){
+    poNum.innerHTML='<option value="">Select customer first</option>';
+    return;
+  }
+  
+  if(!projName && !projNum){
     poNum.innerHTML='<option value="">Select project first</option>';
     return;
   }
   
-  // Find exact project by customer + number + name
+  // Find project - accept either name or number (or both)
+  let proj=null;
+  
+  // Get all customer projects
   const custProjects=projectsData.filter(p=>{
     const clients=p.clients||[];
-    return clients.includes(customer) && p.number===projNum && p.name===projName;
+    return clients.includes(customer);
   });
   
-  if(custProjects.length===0){
-    poNum.innerHTML='<option value="">Project not found</option>';
+  // Find matching project by both name and number if both are selected
+  if(projName && projNum){
+    proj=custProjects.find(p=>p.name===projName && p.number===projNum);
+  }
+  // Find by name only
+  else if(projName){
+    proj=custProjects.find(p=>p.name===projName);
+  }
+  // Find by number only
+  else if(projNum){
+    proj=custProjects.find(p=>p.number===projNum);
+  }
+  
+  if(!proj){
+    poNum.innerHTML='<option value="">No project found</option>';
+    console.log('Project not found. Customer:', customer, 'Name:', projName, 'Number:', projNum);
+    console.log('Available projects:', custProjects);
     return;
   }
   
-  const proj=custProjects[0];
-  
-  // Extract PO numbers - check multiple possible field names and formats
+  // Extract PO numbers from multiple possible field names
   let poList=[];
   
-  // Method 1: Check poNumbers (array)
-  if(proj.poNumbers && Array.isArray(proj.poNumbers)){
-    poList=[...proj.poNumbers.filter(Boolean)];
-  }
+  // Check all possible PO field names and formats
+  const possiblePOFields=[
+    proj.poNumbers,    // Array: ['PO-001', 'PO-002']
+    proj.po,           // Array: ['PO-001', 'PO-002']
+    proj.poNumber,     // String: 'PO-001'
+    proj.poPO,         // String: 'PO-001'
+    proj.poList,       // Array: ['PO-001', 'PO-002']
+    proj.POs,          // Array: ['PO-001', 'PO-002']
+    proj.PO,           // String or Array
+  ];
   
-  // Method 2: Check po (array)
-  if(proj.po && Array.isArray(proj.po)){
-    poList=[...poList, ...proj.po.filter(Boolean)];
-  }
+  possiblePOFields.forEach(field=>{
+    if(field){
+      if(Array.isArray(field)){
+        poList=[...poList, ...field.filter(Boolean)];
+      }else if(typeof field==='string'){
+        poList=[...poList, field];
+      }
+    }
+  });
   
-  // Method 3: Check poNumber (string)
-  if(proj.poNumber && typeof proj.poNumber==='string'){
-    poList=[...poList, proj.poNumber];
-  }
-  
-  // Method 4: Check poPO (string)
-  if(proj.poPO && typeof proj.poPO==='string'){
-    poList=[...poList, proj.poPO];
-  }
-  
-  // Method 5: Check poList (array)
-  if(proj.poList && Array.isArray(proj.poList)){
-    poList=[...poList, ...proj.poList.filter(Boolean)];
-  }
-  
-  // Remove duplicates and empty values
+  // Remove duplicates and empty values, then sort
   const uniquePOs=poList
     .filter(Boolean)
     .filter((v,i,a)=>a.indexOf(v)===i)
     .sort();
   
+  // Debug log
+  console.log('Project found:', proj.name, '(', proj.number, ')');
+  console.log('PO data from project:', {poNumbers: proj.poNumbers, po: proj.po, poNumber: proj.poNumber});
+  console.log('Extracted POs:', uniquePOs);
+  
   if(uniquePOs.length===0){
-    poNum.innerHTML='<option value="">No POs for this project</option>';
+    poNum.innerHTML='<option value="">No POs found for this project</option>';
   }else{
     const poOptions=uniquePOs
       .map(po=>`<option value="${po}">${esc(po)}</option>`)
@@ -3699,8 +3720,50 @@ async function attRender(){
 }
 
 async function attRenderEmp(){
-  // Render the employee calendar
-  await attRenderEmpCalendar();
+  const now=new Date();
+  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  const rec=await attGet(attCurrentUser,ds);
+  
+  if(rec){
+    el('att-today').textContent=rec.status==='present'?`✓ ${rec.checkin_time}`:`📍 ${rec.oof_reason}`;
+    // Lock the buttons - status already set for today
+    const checkInBtn=document.querySelector('button[onclick="attCheckIn()"]');
+    const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
+    if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='0.5';checkInBtn.style.cursor='not-allowed';}
+    if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='0.5';oooBtn.style.cursor='not-allowed';}
+    // Show locked message
+    const lockMsg=document.createElement('div');
+    lockMsg.style.cssText='background:#E8F5E9;color:#3F704D;padding:10px;border-radius:7px;margin-top:10px;font-size:12px;font-weight:500;text-align:center';
+    lockMsg.textContent='✓ Status locked for today';
+    const timeline=el('att-timeline');
+    if(timeline&&!timeline.parentElement.querySelector('[style*="Status locked"]')){
+      timeline.parentElement.insertBefore(lockMsg,timeline);
+    }
+  }else{
+    el('att-today').textContent='⏳ Pending';
+    // Enable buttons
+    const checkInBtn=document.querySelector('button[onclick="attCheckIn()"]');
+    const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
+    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.style.cursor='pointer';}
+    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.style.cursor='pointer';}
+  }
+  
+  let h='';
+  const dates=['06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17','06-18','06-19'];
+  for(const ds of dates){
+    const r=await attGet(attCurrentUser,ds);
+    const [m,d]=ds.split('-');
+    if(r){
+      const bg=r.status==='present'?'#E8F5E9':'#E3F2FD';
+      const ic=r.status==='present'?'✓':'📍';
+      const tx=r.checkin_time||r.oof_reason;
+      h+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;font-weight:500">${ic} ${tx}</div></div>`;
+    }else{
+      h+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;color:var(--t2)">—</div></div>`;
+    }
+  }
+  const tl=el('att-timeline');
+  if(tl)tl.innerHTML=h;
 }
 
 async function attRenderAdm(){
