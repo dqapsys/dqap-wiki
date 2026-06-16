@@ -581,8 +581,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-adm" style="display:none">
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Team Status</div>
-      <div id="att-admin-list" style="display:grid;gap:4px"></div>
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Team Attendance Calendar</div>
+      <div id="att-team-calendar" style="display:grid;gap:12px"></div>
+      
+      <!-- Team Legend -->
+      <div style="margin-top:16px;padding:12px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd)">
+        <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">Team Color Legend</div>
+        <div id="att-team-legend" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+      </div>
     </div>
     
     
@@ -1268,8 +1274,9 @@ function onPaymentCustomerChange(){
   const projName=el('pay-project-name');
   const poNum=el('pay-po-number');
   
-  projNum.innerHTML='<option value="">Select project</option>';
+  // Reset all dropdowns
   projName.innerHTML='<option value="">Select project</option>';
+  projNum.innerHTML='<option value="">Select project</option>';
   poNum.innerHTML='<option value="">Select PO</option>';
   
   if(customer==='__other__'){
@@ -1285,78 +1292,98 @@ function onPaymentCustomerChange(){
     poNum.disabled=false;
     
     if(customer){
+      // Get all projects for this customer
       const customerProjects=projectsData.filter(p=>{
         const clients=p.clients||[];
         return clients.includes(customer);
       });
       
-      const projOptions=customerProjects.map(p=>`<option value="${p.number||''}">${esc(p.number||'')}</option>`).join('');
-      const projNameOptions=customerProjects.map(p=>`<option value="${p.name||''}">${esc(p.name||'')}</option>`).join('');
-      
-      // Get all POs from customer projects - check multiple field names
-      let allPOs=[];
-      customerProjects.forEach(p=>{
-        if(p.poNumbers && Array.isArray(p.poNumbers)){
-          allPOs.push(...p.poNumbers);
-        }else if(p.po && Array.isArray(p.po)){
-          allPOs.push(...p.po);
-        }else if(p.poNumber){
-          allPOs.push(p.poNumber);
-        }
-      });
-      
-      const poOptions=allPOs
+      // Populate PROJECT NAME dropdown with unique project names
+      const projNameOptions=customerProjects
+        .map(p=>p.name||'')
         .filter(Boolean)
         .filter((v,i,a)=>a.indexOf(v)===i) // Remove duplicates
-        .map(po=>`<option value="${po}">${esc(po)}</option>`)
+        .sort()
+        .map(name=>`<option value="${name}">${esc(name)}</option>`)
         .join('');
       
-      projNum.innerHTML='<option value="">Select project</option>'+projOptions;
       projName.innerHTML='<option value="">Select project</option>'+projNameOptions;
-      poNum.innerHTML='<option value="">Select PO</option>'+poOptions;
+      projNum.innerHTML='<option value="">Select project name first</option>';
+      poNum.innerHTML='<option value="">Select project number first</option>';
     }
   }
 }
 
 function onPaymentProjectChange(){
-  const projNum=el('pay-project-num').value;
   const projName=el('pay-project-name').value;
+  const projNum=el('pay-project-num').value;
+  const poNum=el('pay-po-number');
   
-  const proj=projectsData.find(p=>(projNum && p.number===projNum) || (projName && p.name===projName));
-  if(!proj)return;
+  // If Project Name is selected, update Project Number
+  if(projName && !projNum){
+    const proj=projectsData.find(p=>p.name===projName);
+    if(proj){
+      el('pay-project-num').value=proj.number||'';
+      updatePONumbers();
+    }
+  }
+  // If Project Number is selected, update Project Name
+  else if(projNum && !projName){
+    const proj=projectsData.find(p=>p.number===projNum);
+    if(proj){
+      el('pay-project-name').value=proj.name||'';
+      updatePONumbers();
+    }
+  }
+  // If both are selected, just update POs
+  else if(projName || projNum){
+    updatePONumbers();
+  }
+}
+
+function updatePONumbers(){
+  const projName=el('pay-project-name').value;
+  const projNum=el('pay-project-num').value;
+  const poNum=el('pay-po-number');
   
-  // Sync project name and number
-  if(projNum && !projName){
-    el('pay-project-name').value=proj.name||'';
-  }else if(projName && !projNum){
-    el('pay-project-num').value=proj.number||'';
+  // Find the exact project
+  let proj=null;
+  if(projName && projNum){
+    proj=projectsData.find(p=>p.name===projName && p.number===projNum);
+  }else if(projName){
+    proj=projectsData.find(p=>p.name===projName);
+  }else if(projNum){
+    proj=projectsData.find(p=>p.number===projNum);
   }
   
-  // Populate PO numbers - check multiple possible field names
-  const poNum=el('pay-po-number');
-  let poList=[];
+  if(!proj){
+    poNum.innerHTML='<option value="">No POs found</option>';
+    return;
+  }
   
-  // Try different field names for PO numbers
+  // Extract PO numbers from project - check multiple field names
+  let poList=[];
   if(proj.poNumbers && Array.isArray(proj.poNumbers)){
-    poList=proj.poNumbers;
+    poList=[...proj.poNumbers]; // Create copy to avoid mutations
   }else if(proj.po && Array.isArray(proj.po)){
-    poList=proj.po;
+    poList=[...proj.po];
   }else if(proj.poNumber){
     poList=[proj.poNumber];
   }
   
-  // Filter and create options
-  const poOptions=poList
+  // Remove duplicates and empty values
+  const uniquePOs=poList
     .filter(Boolean)
-    .filter((v,i,a)=>a.indexOf(v)===i) // Remove duplicates
-    .map(po=>`<option value="${po}">${esc(po)}</option>`)
-    .join('');
+    .filter((v,i,a)=>a.indexOf(v)===i);
   
-  poNum.innerHTML='<option value="">Select PO</option>'+poOptions;
-}
-
-function onPaymentPOChange(){
-  // PO selection handler
+  if(uniquePOs.length===0){
+    poNum.innerHTML='<option value="">No POs for this project</option>';
+  }else{
+    const poOptions=uniquePOs
+      .map(po=>`<option value="${po}">${esc(po)}</option>`)
+      .join('');
+    poNum.innerHTML='<option value="">Select PO</option>'+poOptions;
+  }
 }
 
 function populateRMAProjects(){
@@ -3675,19 +3702,111 @@ async function attRenderEmp(){
 }
 
 async function attRenderAdm(){
-  let h='';
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth();
+  const firstDay=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0);
+  const daysInMonth=lastDay.getDate();
+  const startingDayOfWeek=firstDay.getDay();
+  
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthYear=`${monthNames[month]} ${year}`;
+  
+  // Fetch all OOO data for all employees for the month
+  const oooData={};
+  const promises=[];
+  
   for(const uid of Object.keys(attEmployees)){
-    const now=new Date();
-    const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
-    const r=await attGet(uid,ds);
-    let s='⏳ —';
-    if(r){
-      s=r.status==='present'?`✓ ${r.checkin_time}`:`📍 ${r.oof_reason}`;
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
+      promises.push(
+        attGet(uid,ds).then(rec=>{
+          if(rec&&rec.status==='ooo'){
+            if(!oooData[ds])oooData[ds]=[];
+            oooData[ds].push({
+              uid,name:attEmployees[uid],
+              type:rec.oof_reason,
+              remarks:rec.remarks||''
+            });
+          }
+        }).catch(()=>{})
+      );
     }
-    h+=`<div class="card" style="display:grid;grid-template-columns:1fr 80px;gap:10px;align-items:center;padding:10px"><div style="font-weight:500">${attEmployees[uid]}</div><div style="font-size:11px;text-align:right;color:var(--t2)">${s}</div></div>`;
   }
-  const a=el('att-admin-list');
-  if(a)a.innerHTML=h;
+  
+  await Promise.all(promises);
+  
+  // Build calendar HTML
+  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
+  
+  // Weekday headers
+  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayNames.forEach(d=>{
+    calendarHtml+=`<div style="padding:8px;text-align:center;font-weight:600;font-size:11px;color:var(--p)">${d}</div>`;
+  });
+  calendarHtml+=`</div>`;
+  
+  // Calendar dates grid
+  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
+  
+  // Empty cells before month
+  for(let i=0;i<startingDayOfWeek;i++){
+    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:100px"></div>`;
+  }
+  
+  // Date cells with OOO entries
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
+    const dayOOOs=oooData[ds]||[];
+    const isToday=d===now.getDate();
+    
+    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:100px;display:flex;flex-direction:column;border:.5px solid var(--bd);overflow:hidden">`;
+    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
+    
+    // OOO entries
+    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    if(dayOOOs.length>0){
+      dayOOOs.forEach(ooo=>{
+        const color=attUserColors[ooo.uid];
+        dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:2px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.1;flex-shrink:0;min-width:0;cursor:help" title="${esc(ooo.name)} - ${ooo.type}${ooo.remarks?': '+ooo.remarks:''}">`;
+        dayHtml+=`<div style="opacity:.95">${esc(ooo.name.split(' ')[0])} ${ooo.type}</div>`;
+        dayHtml+=`</div>`;
+      });
+    }
+    dayHtml+=`</div></div>`;
+    
+    calendarHtml+=dayHtml;
+  }
+  
+  // Empty cells after month
+  const totalCells=startingDayOfWeek+daysInMonth;
+  const remainingCells=7-((totalCells)%7);
+  if(remainingCells<7){
+    for(let i=0;i<remainingCells;i++){
+      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:100px;border:.5px solid var(--bd)"></div>`;
+    }
+  }
+  
+  calendarHtml+=`</div></div>`;
+  
+  // Render calendar
+  const calDiv=el('att-team-calendar');
+  if(calDiv)calDiv.innerHTML=calendarHtml;
+  
+  // Render team legend
+  let legendHtml='';
+  for(const uid of Object.keys(attEmployees)){
+    const color=attUserColors[uid];
+    legendHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:${color}15;border-left:3px solid ${color}">
+      <div style="width:10px;height:10px;background:${color};border-radius:2px;flex-shrink:0"></div>
+      <div style="font-size:10px;font-weight:500">${attEmployees[uid]}</div>
+    </div>`;
+  }
+  
+  const legend=el('att-team-legend');
+  if(legend)legend.innerHTML=legendHtml;
 }
 
 async function attRenderRank(){
