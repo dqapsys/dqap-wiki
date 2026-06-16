@@ -573,11 +573,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-emp" style="display:block">
-      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
-      <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">—</div></div>
+      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px" onchange="attRenderEmpCalendar()"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" onclick="attCheckIn()">✓ Check In</button><button class="btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">📍 Mark OOO</button></div>
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">10-Day Timeline</div>
-      <div id="att-timeline" style="display:grid;gap:4px"></div>
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">My Calendar</div>
+      <div id="att-emp-calendar" style="display:grid;gap:12px"></div>
     </div>
     
     <div id="att-adm" style="display:none">
@@ -1275,8 +1274,8 @@ function onPaymentCustomerChange(){
   const poNum=el('pay-po-number');
   
   // Reset all dropdowns
-  projName.innerHTML='<option value="">Select project</option>';
-  projNum.innerHTML='<option value="">Select project</option>';
+  projName.innerHTML='<option value="">Select project name</option>';
+  projNum.innerHTML='<option value="">Select project number</option>';
   poNum.innerHTML='<option value="">Select PO</option>';
   
   if(customer==='__other__'){
@@ -1298,18 +1297,26 @@ function onPaymentCustomerChange(){
         return clients.includes(customer);
       });
       
-      // Populate PROJECT NAME dropdown with unique project names
+      // Sort by project number for consistency
+      customerProjects.sort((a,b)=>{
+        const numA=a.number||'';
+        const numB=b.number||'';
+        return numA.localeCompare(numB);
+      });
+      
+      // Populate PROJECT NAME dropdown - show name with number
       const projNameOptions=customerProjects
-        .map(p=>p.name||'')
-        .filter(Boolean)
-        .filter((v,i,a)=>a.indexOf(v)===i) // Remove duplicates
-        .sort()
-        .map(name=>`<option value="${name}">${esc(name)}</option>`)
+        .map(p=>`<option value="${p.name||''}">${esc(p.name||'')} (${esc(p.number||'')})</option>`)
         .join('');
       
-      projName.innerHTML='<option value="">Select project</option>'+projNameOptions;
-      projNum.innerHTML='<option value="">Select project name first</option>';
-      poNum.innerHTML='<option value="">Select project number first</option>';
+      // Populate PROJECT NUMBER dropdown - show number with name
+      const projNumOptions=customerProjects
+        .map(p=>`<option value="${p.number||''}">${esc(p.number||'')} - ${esc(p.name||'')}</option>`)
+        .join('');
+      
+      projName.innerHTML='<option value="">Select project name</option>'+projNameOptions;
+      projNum.innerHTML='<option value="">Select project number</option>'+projNumOptions;
+      poNum.innerHTML='<option value="">Select project first</option>';
     }
   }
 }
@@ -1317,26 +1324,40 @@ function onPaymentCustomerChange(){
 function onPaymentProjectChange(){
   const projName=el('pay-project-name').value;
   const projNum=el('pay-project-num').value;
-  const poNum=el('pay-po-number');
+  const customer=el('pay-customer').value;
+  
+  // Only process if customer is selected
+  if(!customer || customer==='__other__')return;
   
   // If Project Name is selected, update Project Number
-  if(projName && !projNum){
-    const proj=projectsData.find(p=>p.name===projName);
-    if(proj){
-      el('pay-project-num').value=proj.number||'';
-      updatePONumbers();
+  if(projName){
+    const proj=projectsData.find(p=>p.name===projName && projectsData.find(x=>x.clients&&x.clients.includes(customer)));
+    if(!proj){
+      const custProjects=projectsData.filter(p=>{
+        const clients=p.clients||[];
+        return clients.includes(customer) && p.name===projName;
+      });
+      if(custProjects.length>0){
+        el('pay-project-num').value=custProjects[0].number||'';
+        updatePONumbers();
+      }
     }
   }
+  
   // If Project Number is selected, update Project Name
-  else if(projNum && !projName){
-    const proj=projectsData.find(p=>p.number===projNum);
-    if(proj){
-      el('pay-project-name').value=proj.name||'';
+  if(projNum){
+    const custProjects=projectsData.filter(p=>{
+      const clients=p.clients||[];
+      return clients.includes(customer) && p.number===projNum;
+    });
+    if(custProjects.length>0){
+      el('pay-project-name').value=custProjects[0].name||'';
       updatePONumbers();
     }
   }
-  // If both are selected, just update POs
-  else if(projName || projNum){
+  
+  // Always update POs if we have project info
+  if(projName || projNum){
     updatePONumbers();
   }
 }
@@ -1344,37 +1365,60 @@ function onPaymentProjectChange(){
 function updatePONumbers(){
   const projName=el('pay-project-name').value;
   const projNum=el('pay-project-num').value;
+  const customer=el('pay-customer').value;
   const poNum=el('pay-po-number');
   
-  // Find the exact project
-  let proj=null;
-  if(projName && projNum){
-    proj=projectsData.find(p=>p.name===projName && p.number===projNum);
-  }else if(projName){
-    proj=projectsData.find(p=>p.name===projName);
-  }else if(projNum){
-    proj=projectsData.find(p=>p.number===projNum);
-  }
-  
-  if(!proj){
-    poNum.innerHTML='<option value="">No POs found</option>';
+  if(!customer || !projName || !projNum){
+    poNum.innerHTML='<option value="">Select project first</option>';
     return;
   }
   
-  // Extract PO numbers from project - check multiple field names
+  // Find exact project by customer + number + name
+  const custProjects=projectsData.filter(p=>{
+    const clients=p.clients||[];
+    return clients.includes(customer) && p.number===projNum && p.name===projName;
+  });
+  
+  if(custProjects.length===0){
+    poNum.innerHTML='<option value="">Project not found</option>';
+    return;
+  }
+  
+  const proj=custProjects[0];
+  
+  // Extract PO numbers - check multiple possible field names and formats
   let poList=[];
+  
+  // Method 1: Check poNumbers (array)
   if(proj.poNumbers && Array.isArray(proj.poNumbers)){
-    poList=[...proj.poNumbers]; // Create copy to avoid mutations
-  }else if(proj.po && Array.isArray(proj.po)){
-    poList=[...proj.po];
-  }else if(proj.poNumber){
-    poList=[proj.poNumber];
+    poList=[...proj.poNumbers.filter(Boolean)];
+  }
+  
+  // Method 2: Check po (array)
+  if(proj.po && Array.isArray(proj.po)){
+    poList=[...poList, ...proj.po.filter(Boolean)];
+  }
+  
+  // Method 3: Check poNumber (string)
+  if(proj.poNumber && typeof proj.poNumber==='string'){
+    poList=[...poList, proj.poNumber];
+  }
+  
+  // Method 4: Check poPO (string)
+  if(proj.poPO && typeof proj.poPO==='string'){
+    poList=[...poList, proj.poPO];
+  }
+  
+  // Method 5: Check poList (array)
+  if(proj.poList && Array.isArray(proj.poList)){
+    poList=[...poList, ...proj.poList.filter(Boolean)];
   }
   
   // Remove duplicates and empty values
   const uniquePOs=poList
     .filter(Boolean)
-    .filter((v,i,a)=>a.indexOf(v)===i);
+    .filter((v,i,a)=>a.indexOf(v)===i)
+    .sort();
   
   if(uniquePOs.length===0){
     poNum.innerHTML='<option value="">No POs for this project</option>';
@@ -3655,50 +3699,8 @@ async function attRender(){
 }
 
 async function attRenderEmp(){
-  const now=new Date();
-  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
-  const rec=await attGet(attCurrentUser,ds);
-  
-  if(rec){
-    el('att-today').textContent=rec.status==='present'?`✓ ${rec.checkin_time}`:`📍 ${rec.oof_reason}`;
-    // Lock the buttons - status already set for today
-    const checkInBtn=document.querySelector('button[onclick="attCheckIn()"]');
-    const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
-    if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='0.5';checkInBtn.style.cursor='not-allowed';}
-    if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='0.5';oooBtn.style.cursor='not-allowed';}
-    // Show locked message
-    const lockMsg=document.createElement('div');
-    lockMsg.style.cssText='background:#E8F5E9;color:#3F704D;padding:10px;border-radius:7px;margin-top:10px;font-size:12px;font-weight:500;text-align:center';
-    lockMsg.textContent='✓ Status locked for today';
-    const timeline=el('att-timeline');
-    if(timeline&&!timeline.parentElement.querySelector('[style*="Status locked"]')){
-      timeline.parentElement.insertBefore(lockMsg,timeline);
-    }
-  }else{
-    el('att-today').textContent='⏳ Pending';
-    // Enable buttons
-    const checkInBtn=document.querySelector('button[onclick="attCheckIn()"]');
-    const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
-    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.style.cursor='pointer';}
-    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.style.cursor='pointer';}
-  }
-  
-  let h='';
-  const dates=['06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17','06-18','06-19'];
-  for(const ds of dates){
-    const r=await attGet(attCurrentUser,ds);
-    const [m,d]=ds.split('-');
-    if(r){
-      const bg=r.status==='present'?'#E8F5E9':'#E3F2FD';
-      const ic=r.status==='present'?'✓':'📍';
-      const tx=r.checkin_time||r.oof_reason;
-      h+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;font-weight:500">${ic} ${tx}</div></div>`;
-    }else{
-      h+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;color:var(--t2)">—</div></div>`;
-    }
-  }
-  const tl=el('att-timeline');
-  if(tl)tl.innerHTML=h;
+  // Render the employee calendar
+  await attRenderEmpCalendar();
 }
 
 async function attRenderAdm(){
@@ -3830,6 +3832,96 @@ async function attRenderRank(){
   const r=el('att-rank-list');
   if(r)r.innerHTML=h;
 }
+
+async function attRenderEmpCalendar(){
+  const uid=el('att-user').value;
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth();
+  const firstDay=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0);
+  const daysInMonth=lastDay.getDate();
+  const startingDayOfWeek=firstDay.getDay();
+  
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthYear=`${monthNames[month]} ${year}`;
+  
+  // Fetch OOO data for this employee for the month
+  const oooData={};
+  const promises=[];
+  
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
+    promises.push(
+      attGet(uid,ds).then(rec=>{
+        if(rec&&rec.status==='ooo'){
+          oooData[ds]={
+            type:rec.oof_reason,
+            remarks:rec.remarks||''
+          };
+        }
+      }).catch(()=>{})
+    );
+  }
+  
+  await Promise.all(promises);
+  
+  // Build calendar
+  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
+  
+  // Weekday headers
+  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayNames.forEach(d=>{
+    calendarHtml+=`<div style="padding:8px;text-align:center;font-weight:600;font-size:11px;color:var(--p)">${d}</div>`;
+  });
+  calendarHtml+=`</div>`;
+  
+  // Calendar grid
+  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
+  
+  // Empty cells before month
+  for(let i=0;i<startingDayOfWeek;i++){
+    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px"></div>`;
+  }
+  
+  // Days with OOO
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
+    const ooo=oooData[ds];
+    const isToday=d===now.getDate();
+    
+    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
+    
+    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    if(ooo){
+      const color=attUserColors[uid];
+      dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
+      dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'…':''):''}</div>`;
+      dayHtml+=`</div>`;
+    }
+    dayHtml+=`</div></div>`;
+    
+    calendarHtml+=dayHtml;
+  }
+  
+  // Empty cells after month
+  const totalCells=startingDayOfWeek+daysInMonth;
+  const remainingCells=7-((totalCells)%7);
+  if(remainingCells<7){
+    for(let i=0;i<remainingCells;i++){
+      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px;border:.5px solid var(--bd)"></div>`;
+    }
+  }
+  
+  calendarHtml+=`</div></div>`;
+  
+  // Render to DOM
+  const empCal=el('att-emp-calendar');
+  if(empCal)empCal.innerHTML=calendarHtml;
+}
+
 
 async function attGet(uid,ds){
   try{
