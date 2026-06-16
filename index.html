@@ -936,7 +936,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div class="g3" style="margin-bottom:12px">
             <div class="fg" style="grid-column:span 2"><label class="fl r">Contract name</label><input class="fi" id="amc-name" placeholder="e.g. BPCL Panipat FDAS — AMC 2025-26"></div>
             <div class="fg"><label class="fl r">Client</label><input class="fi" id="amc-client" placeholder="Customer name"></div>
-            <div class="fg"><label class="fl">Link to project</label><select class="fs" id="amc-project"><option value="">— None —</option></select></div>
+            <div class="fg"><label class="fl r">Link to project</label><select class="fs" id="amc-project" required><option value="">Select a project (required)</option></select></div>
             <div class="fg"><label class="fl r">Visit frequency</label><select class="fs" id="amc-freq"><option value="">Select frequency</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annual</option></select></div>
             <div class="fg"><label class="fl r">Assigned to</label><select class="fs" id="amc-assignee"><option value="">Select engineer</option></select></div>
           </div>
@@ -3458,14 +3458,18 @@ async function saveAMC(){
   if(!CU.canWrite){toast('Not permitted','err');return;}
   const contractName=g('amc-name'),client=g('amc-client'),frequency=g('amc-freq');
   const assignedTo=g('amc-assignee'),startDate=g('amc-start'),endDate=g('amc-end');
+  const project=g('amc-project');
+  
   if(!contractName){toast('Enter a contract name','err');return;}
   if(!client){toast('Enter a client','err');return;}
+  if(!project){toast('Link to a project (mandatory)','err');return;}
   if(!frequency){toast('Select a frequency','err');return;}
   if(!assignedTo){toast('Select an assignee','err');return;}
   if(!startDate){toast('Set a start date','err');return;}
   if(!endDate){toast('Set an end date','err');return;}
   if(new Date(endDate)<=new Date(startDate)){toast('End date must be after start date','err');return;}
-  const d={contractName,client,project:g('amc-project'),frequency,assignedTo,startDate,endDate,
+  
+  const d={contractName,client,project,frequency,assignedTo,startDate,endDate,
     contractValue:parseFloat(el('amc-value').value)||0,scope:g('amc-scope'),status:g('amc-status')||'Active',
     updatedAt:new Date().toISOString()};
   showLoad('Saving…');
