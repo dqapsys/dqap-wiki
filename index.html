@@ -1326,6 +1326,8 @@ function onPaymentProjectChange(){
   const projName=el('pay-project-name').value;
   const projNum=el('pay-project-num').value;
   const customer=el('pay-customer').value;
+  const projNumSelect=el('pay-project-num');
+  const projNameSelect=el('pay-project-name');
   
   // Only process if customer is selected
   if(!customer || customer==='__other__')return;
@@ -1336,24 +1338,36 @@ function onPaymentProjectChange(){
     return clients.includes(customer);
   });
   
-  // If Project Name is selected, update Project Number
-  if(projName && !projNum){
+  // If Project Name is selected, update Project Number dropdown AND value
+  if(projName){
     const matchingProj=custProjects.find(p=>p.name===projName);
     if(matchingProj){
-      el('pay-project-num').value=matchingProj.number||'';
+      // Set the value
+      projNumSelect.value=matchingProj.number||'';
+      
+      // UPDATE THE DROPDOWN to show ONLY this project's number
+      const singleOption=`<option value="${matchingProj.number||''}">${esc(matchingProj.number||'')} - ${esc(matchingProj.name||'')}</option>`;
+      projNumSelect.innerHTML='<option value="">Select project number</option>'+singleOption;
+      
+      // Trigger PO update
+      updatePONumbers();
     }
   }
-  
-  // If Project Number is selected, update Project Name
-  if(projNum && !projName){
+  // If Project Number is selected, update Project Name dropdown AND value
+  else if(projNum){
     const matchingProj=custProjects.find(p=>p.number===projNum);
     if(matchingProj){
-      el('pay-project-name').value=matchingProj.name||'';
+      // Set the value
+      projNameSelect.value=matchingProj.name||'';
+      
+      // UPDATE THE DROPDOWN to show ONLY this project's name
+      const singleOption=`<option value="${matchingProj.name||''}">${esc(matchingProj.name||'')} (${esc(matchingProj.number||'')})</option>`;
+      projNameSelect.innerHTML='<option value="">Select project name</option>'+singleOption;
+      
+      // Trigger PO update
+      updatePONumbers();
     }
   }
-  
-  // Always update POs after sync
-  updatePONumbers();
 }
 
 function onPaymentPOChange(){
@@ -1377,76 +1391,56 @@ function updatePONumbers(){
     return;
   }
   
-  // Find project - accept either name or number (or both)
+  // Find project
   let proj=null;
-  
-  // Get all customer projects
   const custProjects=projectsData.filter(p=>{
     const clients=p.clients||[];
     return clients.includes(customer);
   });
   
-  // Find matching project by both name and number if both are selected
   if(projName && projNum){
     proj=custProjects.find(p=>p.name===projName && p.number===projNum);
-  }
-  // Find by name only
-  else if(projName){
+  }else if(projName){
     proj=custProjects.find(p=>p.name===projName);
-  }
-  // Find by number only
-  else if(projNum){
+  }else if(projNum){
     proj=custProjects.find(p=>p.number===projNum);
   }
   
   if(!proj){
     poNum.innerHTML='<option value="">No project found</option>';
-    console.log('Project not found. Customer:', customer, 'Name:', projName, 'Number:', projNum);
-    console.log('Available projects:', custProjects);
     return;
   }
   
-  // Extract PO numbers from multiple possible field names
+  // Extract POs from multiple field formats
   let poList=[];
   
-  // Check all possible PO field names and formats
-  const possiblePOFields=[
-    proj.poNumbers,    // Array: ['PO-001', 'PO-002']
-    proj.po,           // Array: ['PO-001', 'PO-002']
-    proj.poNumber,     // String: 'PO-001'
-    proj.poPO,         // String: 'PO-001'
-    proj.poList,       // Array: ['PO-001', 'PO-002']
-    proj.POs,          // Array: ['PO-001', 'PO-002']
-    proj.PO,           // String or Array
-  ];
+  // Check all possible field names
+  const fields=[proj.poNumbers,proj.po,proj.poNumber,proj.poPO,proj.poList,proj.POs,proj.PO,proj.purchaseOrders,proj.orders];
   
-  possiblePOFields.forEach(field=>{
+  fields.forEach(field=>{
     if(field){
       if(Array.isArray(field)){
-        poList=[...poList, ...field.filter(Boolean)];
+        poList=[...poList,...field.filter(Boolean)];
       }else if(typeof field==='string'){
-        poList=[...poList, field];
+        // Handle comma or semicolon separated
+        if(field.includes(',')){
+          poList=[...poList,...field.split(',').map(p=>p.trim()).filter(Boolean)];
+        }else if(field.includes(';')){
+          poList=[...poList,...field.split(';').map(p=>p.trim()).filter(Boolean)];
+        }else{
+          poList=[...poList,field];
+        }
       }
     }
   });
   
-  // Remove duplicates and empty values, then sort
-  const uniquePOs=poList
-    .filter(Boolean)
-    .filter((v,i,a)=>a.indexOf(v)===i)
-    .sort();
-  
-  // Debug log
-  console.log('Project found:', proj.name, '(', proj.number, ')');
-  console.log('PO data from project:', {poNumbers: proj.poNumbers, po: proj.po, poNumber: proj.poNumber});
-  console.log('Extracted POs:', uniquePOs);
+  // Deduplicate and sort
+  const uniquePOs=poList.filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).sort();
   
   if(uniquePOs.length===0){
-    poNum.innerHTML='<option value="">No POs found for this project</option>';
+    poNum.innerHTML='<option value="">No POs for this project</option>';
   }else{
-    const poOptions=uniquePOs
-      .map(po=>`<option value="${po}">${esc(po)}</option>`)
-      .join('');
+    const poOptions=uniquePOs.map(po=>`<option value="${po}">${esc(po)}</option>`).join('');
     poNum.innerHTML='<option value="">Select PO</option>'+poOptions;
   }
 }
