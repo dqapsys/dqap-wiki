@@ -1414,8 +1414,13 @@ function updatePONumbers(){
   // Extract POs from multiple field formats
   let poList=[];
   
-  // Check all possible field names
-  const fields=[proj.pos, proj.poNumbers,proj.po,proj.poNumber,proj.poPO,proj.poList,proj.POs,proj.PO,proj.purchaseOrders,proj.orders];
+  // NEW FORMAT: Array of PO objects with number property
+  if(Array.isArray(proj.pos)){
+    poList=[...poList,...proj.pos.map(po=>po?.number||po).filter(Boolean)];
+  }
+  
+  // OLD FORMATS: Backward compatibility
+  const fields=[proj.poNumbers,proj.po,proj.poNumber,proj.poPO,proj.poList,proj.POs,proj.PO,proj.purchaseOrders,proj.orders];
   
   fields.forEach(field=>{
     if(field){
@@ -1434,8 +1439,8 @@ function updatePONumbers(){
     }
   });
   
-  // Deduplicate and sort
-  const uniquePOs=poList.filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).sort();
+  // Deduplicate and sort using Set (cleaner approach)
+  const uniquePOs=[...new Set(poList)].sort();
   
   if(uniquePOs.length===0){
     poNum.innerHTML='<option value="">No POs for this project</option>';
