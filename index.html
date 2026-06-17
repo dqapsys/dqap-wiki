@@ -329,7 +329,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
-    <div class="ni" onclick="window.open('https://dqapsys.github.io/lead-management/','_blank')" id="ni-leadmgmt"><i class="ti ti-target"></i>Lead Management<i class="ti ti-external-link" style="font-size:11px;margin-left:auto;opacity:.5"></i></div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
@@ -3735,14 +3734,8 @@ async function attRenderEmp(){
     const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
     if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='0.5';checkInBtn.style.cursor='not-allowed';}
     if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='0.5';oooBtn.style.cursor='not-allowed';}
-    // Show locked message
-    const lockMsg=document.createElement('div');
-    lockMsg.style.cssText='background:#E8F5E9;color:#3F704D;padding:10px;border-radius:7px;margin-top:10px;font-size:12px;font-weight:500;text-align:center';
-    lockMsg.textContent='✓ Status locked for today';
-    const timeline=el('att-timeline');
-    if(timeline&&!timeline.parentElement.querySelector('[style*="Status locked"]')){
-      timeline.parentElement.insertBefore(lockMsg,timeline);
-    }
+    // Show locked message as toast (not DOM)
+    toast('✓ Status locked for today','ok');
   }else{
     el('att-today').textContent='⏳ Pending';
     // Enable buttons
@@ -3772,110 +3765,86 @@ async function attRenderEmp(){
 
 async function attRenderAdm(){
   const now=new Date();
-  const year=now.getFullYear();
-  const month=now.getMonth();
-  const firstDay=new Date(year,month,1);
-  const lastDay=new Date(year,month+1,0);
-  const daysInMonth=lastDay.getDate();
-  const startingDayOfWeek=firstDay.getDay();
+  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
   
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthYear=`${monthNames[month]} ${year}`;
-  
-  // Fetch all OOO data for all employees for the month
-  const oooData={};
+  // Fetch today's attendance for all employees
   const promises=[];
+  const teamStatus={};
   
   for(const uid of Object.keys(attEmployees)){
-    for(let d=1;d<=daysInMonth;d++){
-      const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
-      promises.push(
-        attGet(uid,ds).then(rec=>{
-          if(rec&&rec.status==='ooo'){
-            if(!oooData[ds])oooData[ds]=[];
-            oooData[ds].push({
-              uid,name:attEmployees[uid],
-              type:rec.oof_reason,
-              remarks:rec.remarks||''
-            });
-          }
-        }).catch(()=>{})
-      );
-    }
+    promises.push(
+      attGet(uid,ds).then(rec=>{
+        teamStatus[uid]={name:attEmployees[uid],rec};
+      }).catch(()=>{
+        teamStatus[uid]={name:attEmployees[uid],rec:null};
+      })
+    );
   }
   
   await Promise.all(promises);
   
-  // Build calendar HTML
-  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
+  // Build team attendance list
+  let h='<div style="display:grid;gap:8px">';
   
-  // Weekday headers
-  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
-  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  dayNames.forEach(d=>{
-    calendarHtml+=`<div style="padding:8px;text-align:center;font-weight:600;font-size:11px;color:var(--p)">${d}</div>`;
+  // Sort by status (present first, then OOO, then pending)
+  const sorted=Object.keys(teamStatus).sort((a,b)=>{
+    const recA=teamStatus[a].rec;
+    const recB=teamStatus[b].rec;
+    
+    // Present first
+    if(recA?.status==='present'&&recB?.status!=='present')return -1;
+    if(recA?.status!=='present'&&recB?.status==='present')return 1;
+    
+    // Then OOO
+    if(recA?.status==='ooo'&&recB?.status!=='ooo')return -1;
+    if(recA?.status!=='ooo'&&recB?.status==='ooo')return 1;
+    
+    // Then by name
+    return teamStatus[a].name.localeCompare(teamStatus[b].name);
   });
-  calendarHtml+=`</div>`;
   
-  // Calendar dates grid
-  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
-  
-  // Empty cells before month
-  for(let i=0;i<startingDayOfWeek;i++){
-    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:100px"></div>`;
-  }
-  
-  // Date cells with OOO entries
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
-    const dayOOOs=oooData[ds]||[];
-    const isToday=d===now.getDate();
-    
-    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:100px;display:flex;flex-direction:column;border:.5px solid var(--bd);overflow:hidden">`;
-    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
-    
-    // OOO entries
-    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
-    if(dayOOOs.length>0){
-      dayOOOs.forEach(ooo=>{
-        const color=attUserColors[ooo.uid];
-        dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:2px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.1;flex-shrink:0;min-width:0;cursor:help" title="${esc(ooo.name)} - ${ooo.type}${ooo.remarks?': '+ooo.remarks:''}">`;
-        dayHtml+=`<div style="opacity:.95">${esc(ooo.name.split(' ')[0])} ${ooo.type}</div>`;
-        dayHtml+=`</div>`;
-      });
-    }
-    dayHtml+=`</div></div>`;
-    
-    calendarHtml+=dayHtml;
-  }
-  
-  // Empty cells after month
-  const totalCells=startingDayOfWeek+daysInMonth;
-  const remainingCells=7-((totalCells)%7);
-  if(remainingCells<7){
-    for(let i=0;i<remainingCells;i++){
-      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:100px;border:.5px solid var(--bd)"></div>`;
-    }
-  }
-  
-  calendarHtml+=`</div></div>`;
-  
-  // Render calendar
-  const calDiv=el('att-team-calendar');
-  if(calDiv)calDiv.innerHTML=calendarHtml;
-  
-  // Render team legend
-  let legendHtml='';
-  for(const uid of Object.keys(attEmployees)){
+  // Render each team member
+  sorted.forEach(uid=>{
+    const {name,rec}=teamStatus[uid];
     const color=attUserColors[uid];
-    legendHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:${color}15;border-left:3px solid ${color}">
-      <div style="width:10px;height:10px;background:${color};border-radius:2px;flex-shrink:0"></div>
-      <div style="font-size:10px;font-weight:500">${attEmployees[uid]}</div>
+    
+    let statusText='⏳ Pending';
+    let bgColor='#F5F5F5';
+    let badge='—';
+    
+    if(rec){
+      if(rec.status==='present'){
+        statusText=`✓ ${rec.checkin_time}`;
+        bgColor='#E8F5E9';
+        badge='Present';
+      }else if(rec.status==='ooo'){
+        statusText=`📍 ${rec.oof_reason}`;
+        bgColor='#E3F2FD';
+        badge=rec.oof_reason;
+      }
+    }
+    
+    h+=`<div class="card" style="display:grid;grid-template-columns:1fr 100px 120px;gap:12px;align-items:center;padding:12px;background:${bgColor};border-left:4px solid ${color}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">${name.split(' ').map(n=>n[0]).join('')}</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--t1)">${name}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px">${statusText}</div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;font-weight:600;padding:4px 8px;border-radius:4px;background:${rec?.status==='present'?'#4CAF50':rec?.status==='ooo'?'#2196F3':'#757575'};color:#fff">${badge}</div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:var(--t2)">
+        ${rec?new Date(rec.timestamp||rec.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'No record'}
+      </div>
     </div>`;
-  }
+  });
   
-  const legend=el('att-team-legend');
-  if(legend)legend.innerHTML=legendHtml;
+  h+=`</div>`;
+  
+  const adm=el('att-admin');
+  if(adm)adm.innerHTML=h;
 }
 
 async function attRenderRank(){
