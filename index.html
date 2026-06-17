@@ -325,6 +325,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
+    <div class="ni" onclick="go('leads')"           id="ni-leads"><i class="ti ti-users-group"></i>Lead Management<span id="leads-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
@@ -559,6 +560,20 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div></div></div>
 </div>
 
+<!-- ══ LEAD MANAGEMENT ══ -->
+<div id="v-leads" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-users-group" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Lead Management</div><div class="pg-s">Sales pipeline — track leads, opportunities, and customer interactions</div></div>
+  </div>
+  <div class="content">
+    <div style="padding:40px;text-align:center;color:var(--t2)">
+      <div style="font-size:48px;margin-bottom:16px">🚀</div>
+      <p style="font-weight:500;font-size:14px">Lead Management module</p>
+      <p style="font-size:12px;margin-top:8px;color:var(--t3)">Coming soon — CRM integration and sales pipeline tracking</p>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ATTENDANCE ══ -->
 <div id="v-attendance" class="view" style="display:none">
   <div class="topbar">
@@ -581,14 +596,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-adm" style="display:none">
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Team Attendance Calendar</div>
-      <div id="att-team-calendar" style="display:grid;gap:12px"></div>
-      
-      <!-- Team Legend -->
-      <div style="margin-top:16px;padding:12px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd)">
-        <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">Team Color Legend</div>
-        <div id="att-team-legend" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
-      </div>
+      <div style="display:grid;gap:8px" id="att-admin"></div>
     </div>
     
     
