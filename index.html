@@ -905,9 +905,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="fbar">
       <select class="fsel" id="task-ff-view" onchange="renderTasks()">
         <option value="mine">My tasks</option>
-        <option value="supervising">Supervising</option>
-        <option value="bymes">Assigned by me</option>
-        <option value="all">All tasks</option>
+        <option value="supervising" id="task-view-supervising" style="display:none">Supervising</option>
+        <option value="bymes" id="task-view-bymes" style="display:none">Assigned by me</option>
+        <option value="all" id="task-view-all" style="display:none">All tasks</option>
       </select>
       <select class="fsel" id="task-ff-status" onchange="renderTasks()">
         <option value="">All statuses</option>
@@ -1260,6 +1260,7 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startTaskExtListen();startUsersListen();startAMCListen();populateEngineers();
+  updateTaskViewOptions(); // Show/hide task view filters based on user role
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -2761,7 +2762,7 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
-  if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
+  if(n==='tasks'){togTaskForm(false);updateTaskViewOptions();renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
@@ -3370,8 +3371,13 @@ function renderTasks(){
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
 
-  // Stats over the tasks relevant to this user (mine + by me; admin sees all)
-  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
+  // ROLE-BASED VISIBILITY:
+  // - Admin users: See ALL tasks
+  // - Regular users: See ONLY tasks assigned to them
+  const visibleTasks=CU.isAdmin?taskData:taskData.filter(t=>t.assignedTo===CU.fullName);
+  
+  // Stats: Show stats for visible tasks only
+  const scope=visibleTasks;
   el('tk-st-total').textContent=scope.length;
   el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
   el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
@@ -3380,11 +3386,19 @@ function renderTasks(){
   el('tk-st-overdue').textContent=overdue;
   el('tk-st-overdue').style.color=overdue>0?'#B71C1C':'';
 
-  let list=taskData.filter(t=>{
-    if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
-    if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
-    if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
-    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
+  let list=visibleTasks.filter(t=>{
+    // View filter (different logic for admin vs regular users)
+    if(!CU.isAdmin){
+      // Non-admin: Can only view 'mine' (tasks assigned to them)
+      if(view!=='mine')return true; // Will be filtered below, just continue
+      if(t.assignedTo!==CU.fullName)return false;
+    }else{
+      // Admin: Can view all, mine, supervising, bymes, or all
+      if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
+      if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
+      if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
+      if(view==='all')return true; // Admin can see all
+    }
     if(statusF&&t.status!==statusF)return false;
     if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -3448,6 +3462,29 @@ function renderTasks(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ── UPDATE TASK VIEW FILTER OPTIONS ────────────────────────────
+// Show/hide filter options based on user role
+function updateTaskViewOptions(){
+  const supervising=el('task-view-supervising');
+  const bymes=el('task-view-bymes');
+  const all=el('task-view-all');
+  
+  if(CU.isAdmin){
+    // Admin sees all view options
+    if(supervising)supervising.style.display='';
+    if(bymes)bymes.style.display='';
+    if(all)all.style.display='';
+  }else{
+    // Non-admin only sees "My tasks"
+    if(supervising)supervising.style.display='none';
+    if(bymes)bymes.style.display='none';
+    if(all)all.style.display='none';
+    // Reset view to 'mine' for non-admin
+    const viewSelect=el('task-ff-view');
+    if(viewSelect)viewSelect.value='mine';
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
