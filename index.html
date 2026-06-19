@@ -792,7 +792,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
-
 <!-- ══ DEBT MANAGEMENT ══ -->
 <div id="v-debt" class="view" style="display:none">
   <div class="topbar">
@@ -1156,7 +1155,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         <div class="edesc">You do not have permission to view the Budget Tracker.<br>Contact your administrator to request access.</div>
       </div>
     </div>
-
 
     <!-- Add / Edit form -->
     <div id="budget-form-panel" style="display:none;margin-bottom:14px">
@@ -2006,7 +2004,6 @@ async function savePMO(){
   }catch(e){toast('Save failed: '+e.message,'err');}finally{hideLoad();}
 }
 
-
 async function deletePMO(id,name){
   if(!confirm('Delete PMO entry for "'+name+'"?'))return;
   showLoad('Deleting…');
@@ -2308,7 +2305,6 @@ async function savePMOInline(id){
     pmoEditId=null;
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
-
 
 // ── PAYMENT CRUD ───────────────────────────────────
 function togPayForm(show,data){
@@ -2924,7 +2920,6 @@ function renderProjectsPage(){
   }
 }
 
-
 // ── USERS ─────────────────────────────────────────
 async function loadUsers(){
   showLoad('Loading…');
@@ -3164,8 +3159,6 @@ function bsta(v){if(!v)return'';const m={Resolved:'res',Workaround:'wor',Open:'o
 function bpmoStatus(v){const m={'Not Started':'nst','In Progress':'act','Completed':'cmp','On Hold':'hld','Delayed':'del'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 function bpayStatus(v){const m={Pending:'pnd',Partial:'prt',Received:'rcv'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 function brmaStatus(v){const m={Raised:'rai',Approved:'apr','Replacement Received':'rep',Closed:'cls'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
-
-
 
 // ── LD DATE HELPER ────────────────────────────────
 function ldStatus(ldDate){
@@ -3479,7 +3472,6 @@ function exportBudgetExcel(){
   XLSX.writeFile(wb,`DQAP_Budget_${activeBudgetProject.replace(/[^a-z0-9]/gi,'_')}.xlsx`);
   toast('Exported ✓','ok');
 }
-
 
 // ── TASK LISTENERS ────────────────────────────────
 function startTaskListen(){
@@ -4648,7 +4640,6 @@ async function attRenderEmpCalendar(){
   if(empCal)empCal.innerHTML=calendarHtml;
 }
 
-
 async function attGet(uid,ds){
   try{
     const doc=await db.collection(ATTENDANCE_COL).doc(`${uid}_${ds}`).get();
@@ -4851,7 +4842,6 @@ async function attRenderCalendar(){
   if(legendSide)legendSide.innerHTML=legendHtml;
 }
 
-
 function attCloseOOO(){
   const m=el('att-modal');
   if(m)m.style.display='none';
@@ -4860,18 +4850,11 @@ function attCloseOOO(){
   if(rmk)rmk.value='';
 }
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── DEBT MANAGEMENT MODULE - JAVASCRIPT FUNCTIONS ───────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Global variables
-let debtData = [];
-let debtCollectionData = [];
-let debtUnsub = null;
-let debtCollectionUnsub = null;
-const DEBT_COL = "dqap_debt_management";
-const DEBT_COLLECTION_COL = "dqap_debt_collections";
 
 // ── MODAL FUNCTIONS ───────────────────────────────────────────────────
 function togDebtUploadModal(show){
