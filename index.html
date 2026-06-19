@@ -51,7 +51,6 @@ const AMC_SCOPES=["CAMC","N-CAMC"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Warranty Cost","Other Expenses"];
 const ATTENDANCE_COL="dqap_attendance";
-const TASK_EXT_COL="dqap_task_extensions";
 const CFG={NOTIFY_ON:true,EJS_KEY:"5HDT4B76AYxVxx0hw",EJS_SERVICE:"service_hbeq0no",EJS_TEMPLATE:"template_ew30odk",NOTIFY_TO:"uv@dqap.in"};
 const THEMES={
   blue:{sb1:"#006994",sb2:"#006994",p:"#006994",pd:"#006994",pl:"#EAF3FB",bg:"#F4F6FA"},
@@ -180,12 +179,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .toast.ok{background:#1B5E20}.toast.err{background:#B71C1C}
 @keyframes tIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 .pdf-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:600;display:none;flex-direction:column;padding:16px}
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200}
-.moverlay{position:absolute;inset:0;background:rgba(0,0,0,.5);cursor:pointer}
-.mdialog{position:relative;z-index:1;background:var(--card);border-radius:var(--rad);box-shadow:0 20px 60px rgba(0,0,0,.3);width:90%;max-width:500px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
-.mh{padding:14px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;font-weight:600}
-.mbody{padding:14px 16px;flex:1;overflow-y:auto}
-.mf{padding:12px 16px;border-top:.5px solid var(--bd);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .pdf-inner{background:#fff;border-radius:12px;flex:1;display:flex;flex-direction:column;overflow:hidden;max-height:calc(100vh - 32px)}
 .pdf-bar{padding:10px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
 .prog-wrap{background:#f0f0f0;border-radius:4px;height:5px;overflow:hidden;margin-top:6px}
@@ -333,8 +326,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('leads')"           id="ni-leads"><i class="ti ti-users-group"></i>Lead Management<span id="leads-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('debt')" id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
-    
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance</div>
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
@@ -623,388 +614,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           #att-cal-legend-top { display:block !important; }
           #att-cal-legend-side { display:none !important; }
         }
-      
-
-/* ═══════ DEBT MANAGEMENT CSS ═══════ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   DEBT MANAGEMENT - CSS STYLING
-   Add to: <style> section (at the end, before closing </style>)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Debt Tabs */
-.debt-tabs {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  border-bottom: 1px solid var(--bd);
-  flex-wrap: wrap;
-  background: #f9f9f9;
-}
-
-.debt-tab-btn {
-  flex: 1;
-  min-width: 120px;
-  padding: 8px 12px;
-  border: 1px solid var(--bd);
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: #666;
-  transition: all 0.2s ease;
-}
-
-.debt-tab-btn:hover {
-  background: var(--pl);
-  color: var(--p);
-  border-color: var(--p);
-}
-
-.debt-tab-btn.active {
-  background: var(--pl);
-  color: var(--p);
-  border-color: var(--p);
-  font-weight: 600;
-}
-
-/* Debt Tab Content */
-.debt-tab-content {
-  padding: 16px;
-  display: none;
-}
-
-.debt-tab-content.active {
-  display: block;
-}
-
-/* Debt Summary Cards */
-.debt-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.debt-summary-card {
-  background: white;
-  padding: 16px;
-  border-radius: 6px;
-  border-left: 4px solid var(--p);
-  box-shadow: 0 2px 4px rgba(0,0,0,.05);
-}
-
-.debt-summary-card.success {
-  border-left-color: #1B5E20;
-}
-
-.debt-summary-card.warning {
-  border-left-color: #f57f17;
-}
-
-.debt-summary-card.danger {
-  border-left-color: #d40000;
-}
-
-.debt-summary-label {
-  font-size: 12px;
-  color: #666;
-  text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.debt-summary-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--p);
-}
-
-/* Debt Upload Section */
-.debt-upload-box {
-  background: #f5f5f5;
-  padding: 16px;
-  border-radius: 6px;
-  border: 2px dashed var(--bd);
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.debt-upload-box:hover {
-  background: #f0f0f0;
-  border-color: var(--p);
-}
-
-/* Debt Customer List */
-.debt-customer-list {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 12px;
-  align-items: center;
-}
-
-.debt-customer-item {
-  background: white;
-  padding: 12px;
-  border-radius: 4px;
-  border: 1px solid var(--bd);
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.debt-customer-name {
-  font-weight: 500;
-  color: #333;
-}
-
-.debt-customer-amount {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.debt-customer-status {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 3px;
-}
-
-.debt-status-pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.debt-status-partial {
-  background: #fff3cd;
-  color: #f57f17;
-}
-
-.debt-status-cleared {
-  background: #d4edda;
-  color: #1B5E20;
-}
-
-/* Debt Collection Form */
-.debt-collection-form {
-  background: #f5f5f5;
-  padding: 16px;
-  border-radius: 6px;
-  margin-bottom: 16px;
-}
-
-.debt-collection-form input,
-.debt-collection-form select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--bd);
-  border-radius: 4px;
-  font-size: 13px;
-  font-family: inherit;
-  margin-bottom: 8px;
-}
-
-.debt-collection-form input:focus,
-.debt-collection-form select:focus {
-  outline: none;
-  border-color: var(--p);
-  box-shadow: 0 0 0 3px rgba(0,112,192,.1);
-}
-
-.debt-form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-/* Debt Collections List */
-.debt-collection-item {
-  background: white;
-  padding: 12px;
-  border-radius: 4px;
-  border: 1px solid var(--bd);
-  margin-bottom: 8px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: start;
-}
-
-.debt-collection-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.debt-collection-amount {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--p);
-}
-
-.debt-collection-meta {
-  font-size: 12px;
-  color: #666;
-}
-
-.debt-collection-notes {
-  font-size: 12px;
-  color: #666;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--bd);
-}
-
-/* Debt Parse Log */
-.debt-parse-log {
-  background: #1e1e1e;
-  color: #00ff00;
-  padding: 12px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  max-height: 300px;
-  overflow-y: auto;
-  margin-top: 12px;
-  display: none;
-}
-
-.debt-parse-log.show {
-  display: block;
-}
-
-.debt-log-line {
-  margin: 2px 0;
-  padding: 2px 0;
-}
-
-/* Debt Preview */
-.debt-preview {
-  background: #f9f9f9;
-  padding: 12px;
-  border-radius: 4px;
-  margin-top: 12px;
-  border: 1px solid var(--bd);
-}
-
-.debt-preview-header {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.debt-preview-table {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.debt-preview-item {
-  display: contents;
-}
-
-.debt-preview-name {
-  padding: 4px 0;
-  border-bottom: 1px solid var(--bd);
-}
-
-.debt-preview-amount {
-  padding: 4px 0;
-  border-bottom: 1px solid var(--bd);
-  text-align: right;
-  font-weight: 500;
-}
-
-/* Debt Statements List */
-.debt-statements-list {
-  margin-top: 16px;
-}
-
-.debt-statement-item {
-  background: white;
-  padding: 12px;
-  border-radius: 4px;
-  border: 1px solid var(--bd);
-  margin-bottom: 8px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: start;
-}
-
-.debt-statement-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.debt-statement-name {
-  font-weight: 600;
-  color: #333;
-}
-
-.debt-statement-meta {
-  font-size: 12px;
-  color: #666;
-}
-
-.debt-statement-stats {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 8px;
-  font-size: 12px;
-  margin-top: 8px;
-}
-
-.debt-statement-stat {
-  background: #f5f5f5;
-  padding: 4px 8px;
-  border-radius: 3px;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .debt-tabs {
-    grid-template-columns: 1fr;
-  }
-  
-  .debt-tab-btn {
-    width: 100%;
-  }
-  
-  .debt-form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .debt-customer-item {
-    grid-template-columns: 1fr;
-  }
-  
-  .debt-collection-item {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Dark mode support (if Wiki has it) */
-@media (prefers-color-scheme: dark) {
-  .debt-parse-log {
-    background: #1e1e1e;
-  }
-  
-  .debt-upload-box {
-    background: rgba(255,255,255,.05);
-  }
-  
-  .debt-collection-form {
-    background: rgba(255,255,255,.05);
-  }
-}
-
-</style>
+      </style>
       <div id="att-cal-container">
         <!-- Legend on top for mobile -->
         <div id="att-cal-legend-top" style="display:none">
@@ -1251,7 +861,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-tasks" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-checklist" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Task Management</div><div class="pg-s">Assign tasks down the hierarchy and track deadlines</div></div>
-    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button><button class="btn" onclick="togExtApprovalModal(true)" id="ext-approvals-btn" style="display:none"><i class="ti ti-thumb-up"></i>Extension Requests<span id="ext-req-badge" class="nav-badge" style="display:none;margin-left:5px"></span></button></div>
+    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
   </div>
   <div class="content">
     <!-- Stats -->
@@ -1288,9 +898,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="fbar">
       <select class="fsel" id="task-ff-view" onchange="renderTasks()">
         <option value="mine">My tasks</option>
-        <option value="supervising" id="task-view-supervising" style="display:none">Supervising</option>
-        <option value="bymes" id="task-view-bymes" style="display:none">Assigned by me</option>
-        <option value="all" id="task-view-all" style="display:none">All tasks</option>
+        <option value="supervising">Supervising</option>
+        <option value="bymes">Assigned by me</option>
+        <option value="all">All tasks</option>
       </select>
       <select class="fsel" id="task-ff-status" onchange="renderTasks()">
         <option value="">All statuses</option>
@@ -1301,69 +911,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
 
     <div id="task-list"></div>
-  </div>
-</div>
-
-<!-- ══ EXTENSION REQUEST MODAL ══ -->
-<div id="ext-req-modal" class="modal" style="display:none">
-  <div class="moverlay" onclick="togExtReqModal(false)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div><i class="ti ti-clock-plus" style="font-size:16px;margin-right:5px"></i>Request Deadline Extension</div>
-      <button class="btn sm" onclick="togExtReqModal(false)"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="mbody">
-      <div class="fg"><label class="fl r">Task</label><div style="padding:8px;background:var(--pl);border-radius:7px;font-weight:500;color:var(--p)" id="ext-task-title">—</div></div>
-      <div class="fg"><label class="fl r">Current deadline</label><div style="padding:8px;background:#FEF2F2;border-radius:7px;color:#B71C1C;font-weight:500" id="ext-current-deadline">—</div></div>
-      <div class="fg"><label class="fl r">Proposed new deadline</label><input type="datetime-local" class="fi" id="ext-new-deadline" required></div>
-      <div class="fg" style="grid-column:span 2"><label class="fl r">Justification</label><textarea class="fi" id="ext-justification" placeholder="Why is the extension needed?" rows="4" style="resize:vertical"></textarea></div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="togExtReqModal(false)">Cancel</button>
-      <button class="btn pri" onclick="submitExtensionRequest()"><i class="ti ti-send"></i>Submit request</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ EXTENSION REQUEST APPROVAL DASHBOARD ══ -->
-<div id="ext-approval-modal" class="modal" style="display:none">
-  <div class="moverlay" onclick="togExtApprovalModal(false)"></div>
-  <div class="mdialog" style="max-width:700px">
-    <div class="mh">
-      <div><i class="ti ti-thumb-up" style="font-size:16px;margin-right:5px"></i>Extension Requests to Approve</div>
-      <button class="btn sm" onclick="togExtApprovalModal(false)"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="mbody" style="max-height:500px;overflow-y:auto">
-      <div id="ext-approval-list"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ OVERDUE TASK BLOCKER MODAL ══ -->
-<div id="overdue-blocker-modal" class="modal" style="display:none;z-index:301">
-  <div class="moverlay" style="background:rgba(0,0,0,.7)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div style="display:flex;align-items:center;gap:10px">
-        <i class="ti ti-alert-triangle" style="font-size:20px;color:#B71C1C"></i>
-        <div>
-          <div style="font-size:14px;font-weight:600;color:#B71C1C">Task Deadline Action Required</div>
-          <div style="font-size:12px;color:var(--t2);margin-top:2px">You have overdue tasks that need attention</div>
-        </div>
-      </div>
-    </div>
-    <div class="mbody">
-      <div style="padding:12px;background:#FFEBEE;border-radius:8px;margin-bottom:14px">
-        <div style="font-size:12px;color:#B71C1C;margin-bottom:8px">
-          <i class="ti ti-info-circle" style="font-size:13px"></i>
-          <strong>Policy:</strong> You must complete overdue tasks or request an extension before accessing other features (except Attendance).
-        </div>
-      </div>
-      <div id="overdue-tasks-list"></div>
-    </div>
-    <div class="mf">
-      <button class="btn pri" onclick="go('tasks');togOverdueBlocker(false)"><i class="ti ti-checklist"></i>Go to Tasks</button>
-    </div>
   </div>
 </div>
 
@@ -1546,157 +1093,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
-
-
-<!-- ═══════ DEBT MANAGEMENT VIEW ═══════ -->
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     DEBT MANAGEMENT - HTML STRUCTURE
-     Add to: <nav class="sidebar"> section after leads navigation
-     ═══════════════════════════════════════════════════════════════════════════ -->
-
-<!-- Add this in the sidebar navigation (after line with "ni-leads") -->
-<div class="ni" onclick="go('debt')" id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
-
-
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     DEBT VIEW SECTION - Add after other view sections (after "pmo-view" or similar)
-     ═══════════════════════════════════════════════════════════════════════════ -->
-
-<!-- DEBT MANAGEMENT VIEW -->
-<div id="debt-view" class="view-section" style="display:none">
-  <div class="card">
-    <div class="ch">
-      <div class="ct"><i class="ti ti-coin" style="font-size:14px"></i>Debt Management</div>
-    </div>
-    
-    <!-- Debt Sub-tabs -->
-    <div class="debt-tabs" style="display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--bd);flex-wrap:wrap">
-      <button class="btn" id="debt-tab-statements" onclick="switchDebtTab('statements')" style="flex:1;min-width:120px;background:var(--pl);color:var(--p);border-color:var(--p)">
-        <i class="ti ti-upload"></i>Upload Statement
-      </button>
-      <button class="btn" id="debt-tab-customers" onclick="switchDebtTab('customers')" style="flex:1;min-width:120px">
-        <i class="ti ti-users"></i>Customers
-      </button>
-      <button class="btn" id="debt-tab-collections" onclick="switchDebtTab('collections')" style="flex:1;min-width:120px">
-        <i class="ti ti-coins"></i>Collections
-      </button>
-    </div>
-    
-    <!-- TAB 1: UPLOAD STATEMENT -->
-    <div id="debt-statements-tab" class="debt-tab-content" style="display:block;padding:16px">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
-        <div class="card" style="background:linear-gradient(135deg,rgba(0,112,192,.1),rgba(0,112,192,.05))">
-          <div style="font-size:12px;color:#666;text-transform:uppercase">Total Billed</div>
-          <div style="font-size:24px;font-weight:700;color:var(--p)" id="debt-total">₹0</div>
-        </div>
-        <div class="card" style="background:linear-gradient(135deg,rgba(27,94,32,.1),rgba(27,94,32,.05))">
-          <div style="font-size:12px;color:#666;text-transform:uppercase">Customers</div>
-          <div style="font-size:24px;font-weight:700;color:#1B5E20" id="debt-count">0</div>
-        </div>
-        <div class="card" style="background:linear-gradient(135deg,rgba(230,74,25,.1),rgba(230,74,25,.05))">
-          <div style="font-size:12px;color:#666;text-transform:uppercase">Status</div>
-          <div style="font-size:14px;font-weight:600" id="debt-status">Ready</div>
-        </div>
-      </div>
-      
-      <div style="margin:16px 0;padding:12px;background:#f5f5f5;border-radius:6px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Step 1: Select CSV File</div>
-        <input type="file" id="debt-file-input" accept=".csv" style="width:100%;padding:8px;border:1px solid var(--bd);border-radius:4px">
-        <div style="font-size:11px;color:#666;margin-top:4px">Expected format: Tally Sundry Debtors export (CSV)</div>
-      </div>
-      
-      <div style="margin:12px 0">
-        <button class="btn pri" onclick="debtParseFile()" style="width:100%;justify-content:center">
-          <i class="ti ti-upload"></i>Parse & Extract
-        </button>
-      </div>
-      
-      <div id="debt-parse-log" style="background:#f9f9f9;border:1px solid var(--bd);border-radius:4px;padding:12px;font-family:monospace;font-size:11px;max-height:200px;overflow-y:auto;display:none;margin-top:12px">
-        <!-- Parse log will appear here -->
-      </div>
-      
-      <div id="debt-statements-list" style="margin-top:16px">
-        <!-- Uploaded statements will appear here -->
-      </div>
-    </div>
-    
-    <!-- TAB 2: CUSTOMERS -->
-    <div id="debt-customers-tab" class="debt-tab-content" style="display:none;padding:16px">
-      <div style="margin-bottom:12px;display:flex;gap:8px">
-        <input type="text" id="debt-customer-search" placeholder="Search by name or amount..." oninput="debtFilterCustomers()" style="flex:1;padding:8px;border:1px solid var(--bd);border-radius:4px">
-        <button class="btn" onclick="debtExportCustomers()" style="width:auto">
-          <i class="ti ti-download"></i>Export
-        </button>
-      </div>
-      
-      <div id="debt-customers-list" style="max-height:500px;overflow-y:auto">
-        <div style="text-align:center;padding:40px;color:#999">
-          <i class="ti ti-inbox" style="font-size:48px;opacity:.3"></i>
-          <div style="margin-top:8px">No customers loaded. Upload a statement first.</div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- TAB 3: COLLECTIONS -->
-    <div id="debt-collections-tab" class="debt-tab-content" style="display:none;padding:16px">
-      <div style="background:#f5f5f5;padding:12px;border-radius:6px;margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Record Collection</div>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div>
-            <label style="font-size:11px;color:#666">Customer</label>
-            <select id="debt-coll-customer" style="width:100%;padding:6px;border:1px solid var(--bd);border-radius:4px;font-size:12px">
-              <option>Select customer...</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:11px;color:#666">Amount</label>
-            <input type="number" id="debt-coll-amount" placeholder="₹0.00" style="width:100%;padding:6px;border:1px solid var(--bd);border-radius:4px;font-size:12px">
-          </div>
-        </div>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div>
-            <label style="font-size:11px;color:#666">Date</label>
-            <input type="date" id="debt-coll-date" value="" style="width:100%;padding:6px;border:1px solid var(--bd);border-radius:4px;font-size:12px">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#666">Method</label>
-            <select id="debt-coll-method" style="width:100%;padding:6px;border:1px solid var(--bd);border-radius:4px;font-size:12px">
-              <option value="cheque">Cheque</option>
-              <option value="transfer">Bank Transfer</option>
-              <option value="cash">Cash</option>
-              <option value="online">Online</option>
-            </select>
-          </div>
-        </div>
-        
-        <div style="margin-bottom:8px">
-          <label style="font-size:11px;color:#666">Notes</label>
-          <input type="text" id="debt-coll-notes" placeholder="Payment details..." style="width:100%;padding:6px;border:1px solid var(--bd);border-radius:4px;font-size:12px">
-        </div>
-        
-        <button class="btn pri" onclick="debtSaveCollection()" style="width:100%;justify-content:center">
-          <i class="ti ti-check"></i>Record Collection
-        </button>
-      </div>
-      
-      <div id="debt-collections-list" style="max-height:400px;overflow-y:auto">
-        <div style="text-align:center;padding:40px;color:#999">
-          <i class="ti ti-inbox" style="font-size:48px;opacity:.3"></i>
-          <div style="margin-top:8px">No collections recorded yet.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 </main>
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[],taskExtData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null,taskExtUnsub=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1761,9 +1163,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,taskExtUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=taskExtUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];taskExtData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -1787,8 +1189,7 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startTaskExtListen();startUsersListen();startAMCListen();populateEngineers();
-  updateTaskViewOptions(); // Show/hide task view filters based on user role
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -2286,35 +1687,9 @@ function renderPMODashboard(list){
   </div>`;
 }
 
-  // ── Header cells (rotated stage names + colour bar) ──
-  const headerCells=PMO_STAGES.map((s,i)=>`
-    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:0;border-left:.5px solid var(--bd);background:var(--card);vertical-align:bottom">
-      <div style="height:115px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:hidden">
-        <span style="display:block;transform:rotate(-90deg);transform-origin:center bottom;white-space:nowrap;font-size:9px;font-weight:600;color:var(--t1);letter-spacing:.2px;line-height:1.2;max-width:108px;overflow:hidden;text-overflow:ellipsis" title="${esc(s)}">
-          ${STAGE_SHORT[i]}
-        </span>
-      </div>
-      <div style="height:4px;background:${STAGE_COLORS[i]}"></div>
-    </th>`).join('');
+/* Loose PMO code removed to fix SEG ReferenceError */
 
-  // ── Data rows ──
-  const rows=list.map(p=>{
-    const stages=p.stages||[];
-    const segCells=stages.map((s,i)=>{
-      const pct=s.pct||0;
-      const col=STAGE_COLORS[i]||'#999';
-      const textOnFill=pct>=55;
-      return `<td style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:4px 3px;border-left:.5px solid var(--bd)">
-        <div style="background:#ebebeb;border-radius:3px;height:22px;overflow:hidden;position:relative" title="${esc(s.stage)}: ${pct}%">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width .3s"></div>
-          ${pct>0?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:${textOnFill?'#fff':'#444'};pointer-events:none">${pct}%</span>`:''}
-        </div>
-      </td>`;
-    }).join('');
-
-    const overall=p.overall||0;
-    const pctCol=overall===100?'#1B5E20':overall>=60?'var(--p)':'#E65100';
-    const stCol={'Not Started':'#78909C','In Progress':'#0070C0','Completed':'#1B5E20','On Hold':'#F57F17','Delayed':'#B71C1C'}[p.status]||'#666';
+/* Loose PMO code removed to fix SEG ReferenceError */
 
     return `<tr style="border-bottom:.5px solid var(--bd)">
       <td style="min-width:${NAME_W}px;max-width:${NAME_W}px;padding:5px 8px 5px 12px;position:sticky;left:0;background:var(--card);z-index:2;border-right:.5px solid var(--bd);box-shadow:1px 0 4px rgba(0,0,0,.06)">
@@ -3265,18 +2640,6 @@ function doSearch(){
 
 // ── NAV ───────────────────────────────────────────
 function go(n){
-  // OVERDUE TASK ENFORCEMENT: Block access to non-attendance modules if user has overdue tasks
-  if(n!=='attendance'&&CU){
-    const myOverdueTasks=taskData.filter(t=>
-      t.assignedTo===CU.fullName&&t.status!=='Completed'&&
-      taskDeadlineStatus(t.deadline,t.status)?.days<0
-    );
-    if(myOverdueTasks.length>0){
-      window.suppressOverdueCheck=true;
-      showOverdueBlocker(myOverdueTasks);
-      return;
-    }
-  }
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
   if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
@@ -3290,7 +2653,7 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
-  if(n==='tasks'){togTaskForm(false);updateTaskViewOptions();renderTasks();markTasksSeen();}
+  if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
@@ -3899,13 +3262,8 @@ function renderTasks(){
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
 
-  // ROLE-BASED VISIBILITY:
-  // - Admin users: See ALL tasks
-  // - Regular users: See ONLY tasks assigned to them
-  const visibleTasks=CU.isAdmin?taskData:taskData.filter(t=>t.assignedTo===CU.fullName);
-  
-  // Stats: Show stats for visible tasks only
-  const scope=visibleTasks;
+  // Stats over the tasks relevant to this user (mine + by me; admin sees all)
+  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
   el('tk-st-total').textContent=scope.length;
   el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
   el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
@@ -3914,19 +3272,11 @@ function renderTasks(){
   el('tk-st-overdue').textContent=overdue;
   el('tk-st-overdue').style.color=overdue>0?'#B71C1C':'';
 
-  let list=visibleTasks.filter(t=>{
-    // View filter (different logic for admin vs regular users)
-    if(!CU.isAdmin){
-      // Non-admin: Can only view 'mine' (tasks assigned to them)
-      if(view!=='mine')return true; // Will be filtered below, just continue
-      if(t.assignedTo!==CU.fullName)return false;
-    }else{
-      // Admin: Can view all, mine, supervising, bymes, or all
-      if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
-      if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
-      if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
-      if(view==='all')return true; // Admin can see all
-    }
+  let list=taskData.filter(t=>{
+    if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
+    if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
+    if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
+    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
     if(statusF&&t.status!==statusF)return false;
     if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -3977,7 +3327,6 @@ function renderTasks(){
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
             ${dchip}
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-              ${ds&&ds.days!==undefined&&ds.days<0&&t.status!=='Completed'&&t.assignedTo===CU.fullName?`<button class="btn sm ora" onclick="openExtensionRequestModal('${t.id}')"><i class="ti ti-clock-plus"></i>Request Extension</button>`:''}
               ${canStatus&&t.status!=='Completed'?`<select class="fsel" style="padding:3px 6px;font-size:10.5px" onchange="updateTaskStatus('${t.id}',this.value)">
                 <option value="">Set status…</option>
                 ${['Open','In Progress','Completed'].filter(s=>s!==t.status).map(s=>`<option value="${s}">${s}</option>`).join('')}
@@ -3992,247 +3341,6 @@ function renderTasks(){
   }).join('');
 }
 
-// ── UPDATE TASK VIEW FILTER OPTIONS ────────────────────────────
-// Show/hide filter options based on user role
-function updateTaskViewOptions(){
-  const supervising=el('task-view-supervising');
-  const bymes=el('task-view-bymes');
-  const all=el('task-view-all');
-  
-  if(CU.isAdmin){
-    // Admin sees all view options
-    if(supervising)supervising.style.display='';
-    if(bymes)bymes.style.display='';
-    if(all)all.style.display='';
-  }else{
-    // Non-admin only sees "My tasks"
-    if(supervising)supervising.style.display='none';
-    if(bymes)bymes.style.display='none';
-    if(all)all.style.display='none';
-    // Reset view to 'mine' for non-admin
-    const viewSelect=el('task-ff-view');
-    if(viewSelect)viewSelect.value='mine';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// ── TASK EXTENSION REQUEST FUNCTIONS ──────────────────────────
-// ══════════════════════════════════════════════════════════════
-
-function checkOverdueTasksBlock(){
-  if(!CU)return;
-  const myOverdueTasks=taskData.filter(t=>
-    t.assignedTo===CU.fullName&&t.status!=='Completed'&&
-    taskDeadlineStatus(t.deadline,t.status)?.days<0
-  );
-  if(myOverdueTasks.length>0&&!window.suppressOverdueCheck){
-    showOverdueBlocker(myOverdueTasks);
-  }
-}
-
-function showOverdueBlocker(overdueTasks){
-  const html=overdueTasks.map(t=>`
-    <div style="padding:10px 12px;background:#FFF8F6;border:.5px solid #FFCDD2;border-radius:6px;margin-bottom:8px">
-      <div style="font-weight:600;color:#B71C1C;font-size:12px;margin-bottom:4px"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:3px"></i>${esc(t.title)}</div>
-      <div style="font-size:10.5px;color:var(--t2);margin-bottom:6px">Due: ${t.deadline?new Date(t.deadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
-      <button class="btn sm pri" onclick="openExtensionRequestModal('${t.id}')"><i class="ti ti-clock-plus"></i>Request Extension</button>
-    </div>
-  `).join('');
-  el('overdue-tasks-list').innerHTML=html;
-  el('overdue-blocker-modal').style.display='flex';
-}
-
-function togOverdueBlocker(show){
-  if(show)el('overdue-blocker-modal').style.display='flex';
-  else el('overdue-blocker-modal').style.display='none';
-}
-
-function openExtensionRequestModal(taskId){
-  const task=taskData.find(t=>t.id===taskId);
-  if(!task){toast('Task not found','err');return;}
-  el('ext-task-title').textContent=task.title;
-  el('ext-current-deadline').textContent=task.deadline?new Date(task.deadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
-  el('ext-new-deadline').value='';
-  el('ext-justification').value='';
-  el('ext-new-deadline').setAttribute('data-task-id',taskId);
-  el('ext-justification').setAttribute('data-task-id',taskId);
-  togExtReqModal(true);
-  togOverdueBlocker(false);
-}
-
-function togExtReqModal(show){
-  el('ext-req-modal').style.display=show?'flex':'none';
-}
-
-function togExtApprovalModal(show){
-  if(show){
-    renderExtensionApprovals();
-    el('ext-approval-modal').style.display='flex';
-  }else{
-    el('ext-approval-modal').style.display='none';
-  }
-}
-
-async function submitExtensionRequest(){
-  const taskId=el('ext-new-deadline').getAttribute('data-task-id');
-  const newDeadline=el('ext-new-deadline').value;
-  const justification=el('ext-justification').value.trim();
-  
-  if(!newDeadline){toast('Select a new deadline','err');return;}
-  if(!justification){toast('Provide a justification','err');return;}
-  
-  const task=taskData.find(t=>t.id===taskId);
-  if(!task){toast('Task not found','err');return;}
-  
-  showLoad('Submitting request…');
-  try{
-    const now=new Date().toISOString();
-    const reqObj={
-      taskId,
-      taskTitle:task.title,
-      requestedBy:CU.fullName,
-      assignedBy:task.assignedBy,
-      currentDeadline:task.deadline,
-      proposedDeadline:newDeadline,
-      justification,
-      status:'pending',
-      createdAt:now
-    };
-    await db.collection(TASK_EXT_COL).add(reqObj);
-    toast('Extension request submitted ✓','ok');
-    togExtReqModal(false);
-    sendExtensionRequestNotification(reqObj);
-  }catch(e){
-    toast('Failed: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-function renderExtensionApprovals(){
-  const myRequests=taskExtData.filter(r=>r.assignedBy===CU.fullName&&r.status==='pending');
-  
-  const html=myRequests.length?myRequests.map(r=>`
-    <div style="padding:12px;background:var(--pl);border:.5px solid #90CAF9;border-radius:8px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
-        <div style="flex:1">
-          <div style="font-weight:600;color:var(--p);margin-bottom:3px"><i class="ti ti-clock-plus"></i> ${esc(r.taskTitle)}</div>
-          <div style="font-size:10.5px;color:var(--t2);margin-bottom:6px">
-            <div>Requested by: <strong>${esc(r.requestedBy)}</strong></div>
-            <div>Current: ${r.currentDeadline?new Date(r.currentDeadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
-            <div style="color:#B71C1C">Proposed: ${r.proposedDeadline?new Date(r.proposedDeadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
-            <div style="margin-top:6px;padding:8px;background:#fff;border-radius:4px;border-left:2px solid var(--p)"><strong>Reason:</strong> ${esc(r.justification)}</div>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;justify-content:flex-end">
-        <button class="btn sm danger" onclick="rejectExtensionRequest('${r.id}')"><i class="ti ti-x"></i>Reject</button>
-        <button class="btn sm grn" onclick="approveExtensionRequest('${r.id}')"><i class="ti ti-check"></i>Approve</button>
-      </div>
-    </div>
-  `).join(''):`<div style="text-align:center;padding:20px;color:var(--t2)"><i class="ti ti-circle-check" style="font-size:32px;opacity:.3;margin-bottom:10px;display:block"></i>No pending requests</div>`;
-  
-  el('ext-approval-list').innerHTML=html;
-}
-
-async function approveExtensionRequest(reqId){
-  const req=taskExtData.find(r=>r.id===reqId);
-  if(!req){toast('Request not found','err');return;}
-  
-  showLoad('Approving request…');
-  try{
-    const now=new Date().toISOString();
-    
-    // Update extension request status
-    await db.collection(TASK_EXT_COL).doc(reqId).update({
-      status:'approved',
-      approvedAt:now,
-      approvedBy:CU.fullName
-    });
-    
-    // Update the task's deadline
-    await db.collection(TASK_COL).doc(req.taskId).update({
-      deadline:req.proposedDeadline,
-      updatedAt:now
-    });
-    
-    toast('Extension approved ✓ — deadline updated','ok');
-    sendExtensionApprovalNotification(req,'approved');
-    renderExtensionApprovals();
-  }catch(e){
-    toast('Failed: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-async function rejectExtensionRequest(reqId){
-  const reason=prompt('Reason for rejection (optional):');
-  if(reason===null)return;
-  
-  showLoad('Rejecting request…');
-  try{
-    const now=new Date().toISOString();
-    const req=taskExtData.find(r=>r.id===reqId);
-    
-    await db.collection(TASK_EXT_COL).doc(reqId).update({
-      status:'rejected',
-      rejectionReason:reason||'—',
-      updatedAt:now
-    });
-    
-    toast('Extension rejected ✓','ok');
-    sendExtensionApprovalNotification(req,'rejected',reason);
-    renderExtensionApprovals();
-  }catch(e){
-    toast('Failed: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-function sendExtensionRequestNotification(req){
-  if(!CFG.NOTIFY_ON)return;
-  const assigner=req.assignedBy;
-  const link='https://dqap-wiki.firebaseapp.com';
-  const text=`${req.requestedBy} has requested a deadline extension for task "${req.taskTitle}".\n\nCurrent deadline: ${new Date(req.currentDeadline).toLocaleString()}\nProposed deadline: ${new Date(req.proposedDeadline).toLocaleString()}\nJustification: ${req.justification}\n\nReview and approve/reject: ${link}`;
-  
-  emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{
-    to_email:CFG.NOTIFY_TO,to_name:assigner,subject:`Extension Request: ${req.taskTitle}`,message:text
-  },CFG.EJS_KEY).catch(()=>{});
-}
-
-function sendExtensionApprovalNotification(req,action,reason=''){
-  if(!CFG.NOTIFY_ON)return;
-  const statusText=action==='approved'?'Approved — deadline updated':'Rejected'+(reason?': '+reason:'');
-  const text=`Your extension request for "${req.taskTitle}" has been ${statusText}.\n\nApproved by: ${req.approvedBy||'System'}\nNew deadline: ${action==='approved'?new Date(req.proposedDeadline).toLocaleString():'Not changed'}`;
-  
-  emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{
-    to_email:CFG.NOTIFY_TO,to_name:req.requestedBy,subject:`Extension ${statusText}: ${req.taskTitle}`,message:text
-  },CFG.EJS_KEY).catch(()=>{});
-}
-
-function startTaskExtListen(){
-  if(taskExtUnsub)taskExtUnsub();
-  taskExtUnsub=db.collection(TASK_EXT_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
-    taskExtData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    updateExtensionBadge();
-    checkOverdueTasksBlock();
-  },err=>{});
-}
-
-function updateExtensionBadge(){
-  const pending=taskExtData.filter(r=>r.assignedBy===CU?.fullName&&r.status==='pending');
-  const btn=el('ext-approvals-btn'),badge=el('ext-req-badge');
-  if(pending.length>0){
-    btn.style.display='inline-flex';
-    badge.style.display='block';
-    badge.textContent=pending.length;
-  }else{
-    btn.style.display='none';
-    badge.style.display='none';
-  }
-}
 
 // ── AMC LISTENER ──────────────────────────────────
 function startAMCListen(){
@@ -5041,461 +4149,6 @@ function attCloseOOO(){
   if(rmk)rmk.value='';
 }
 
-
-
-
-// ═══════ DEBT MANAGEMENT JAVASCRIPT ═══════
-/* ═══════════════════════════════════════════════════════════════════════════
-   DEBT MANAGEMENT - JAVASCRIPT FUNCTIONS
-   Add to: Main <script> section (after other module functions)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-// DEBT MANAGEMENT GLOBAL VARIABLES
-const DEBT_STATEMENT_COL = "dqap_debt_statement";
-const DEBT_CUSTOMERS_COL = "dqap_debt_customers";
-const DEBT_COLLECTIONS_COL = "dqap_debt_collections";
-
-let debtStatements = [];
-let debtCustomers = [];
-let debtCollections = [];
-let debtParsedData = null;
-let debtCurrentStatement = null;
-
-// Initialize debt module when DOM loads
-function initDebtModule() {
-  const dateInput = document.getElementById('debt-coll-date');
-  if (dateInput) {
-    dateInput.valueAsDate = new Date();
-  }
-  loadDebtFromFirestore();
-}
-
-// Switch between debt sub-tabs
-function switchDebtTab(tabName) {
-  if (!tabName) return;
-  // Hide all tabs
-  document.querySelectorAll('.debt-tab-content').forEach(tab => {
-    tab.style.display = 'none';
-  });
-  document.querySelectorAll('#debt-tab-statements, #debt-tab-customers, #debt-tab-collections').forEach(btn => {
-    btn.style.background = '';
-    btn.style.color = '';
-    btn.style.borderColor = '';
-  });
-  
-  // Show selected tab
-  document.getElementById('debt-' + tabName + '-tab').style.display = 'block';
-  
-  // Highlight button
-  const btn = document.getElementById('debt-tab-' + tabName);
-  if (btn) {
-    btn.style.background = 'var(--pl)';
-    btn.style.color = 'var(--p)';
-    btn.style.borderColor = 'var(--p)';
-  }
-  
-  // Load data if customers tab
-  if (tabName === 'customers') {
-    debtRenderCustomers();
-  } else if (tabName === 'collections') {
-    debtRenderCollections();
-    debtPopulateCustomerDropdown();
-  }
-}
-
-// Parse CSV file
-async function debtParseFile() {
-  const fileInput = document.getElementById('debt-file-input');
-  const file = fileInput.files[0];
-  
-  if (!file) {
-    alert('Please select a CSV file');
-    return;
-  }
-  
-  try {
-    document.getElementById('debt-parse-log').style.display = 'block';
-    debtAddLog('Starting parse: ' + file.name, 'info');
-    
-    const text = await file.text();
-    const result = debtParseCSV(text);
-    
-    if (result.customers.length === 0) {
-      debtAddLog('No customers extracted', 'error');
-      return;
-    }
-    
-    debtParsedData = result;
-    debtAddLog('✓ Successfully parsed ' + result.customers.length + ' customers', 'success');
-    debtAddLog('✓ Total: ₹' + result.total.toLocaleString('en-IN'), 'success');
-    
-    // Update summary
-    document.getElementById('debt-total').textContent = '₹' + result.total.toLocaleString('en-IN');
-    document.getElementById('debt-count').textContent = result.customers.length;
-    document.getElementById('debt-status').textContent = '✓ Parsed';
-    
-    // Show preview
-    debtShowStatementPreview(result);
-    
-    // Save to Firestore
-    await debtSaveStatementToFirestore(result, file.name);
-    
-  } catch (err) {
-    debtAddLog('Parse failed: ' + err.message, 'error');
-  }
-}
-
-// Parse CSV with proper quote handling
-function debtParseCSV(csvText) {
-  debtAddLog('Parsing CSV...', 'info');
-  
-  const lines = csvText.split('\n');
-  debtAddLog('Total lines: ' + lines.length, 'info');
-  
-  const customers = [];
-  
-  // Find header row
-  let headerRow = 0;
-  for (let i = 0; i < Math.min(lines.length, 20); i++) {
-    if (lines[i].toLowerCase().includes('particulars')) {
-      headerRow = i;
-      debtAddLog('✓ Header found at row ' + (i + 1), 'success');
-      break;
-    }
-  }
-  
-  // Data starts after header + 2 rows
-  const dataStartRow = headerRow + 3;
-  debtAddLog('✓ Data starts at row ' + (dataStartRow + 1), 'success');
-  
-  // Parse data rows
-  for (let i = dataStartRow; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    if (!line) continue;
-    
-    const parts = debtParseCSVLine(line);
-    
-    if (parts.length < 2) continue;
-    
-    const name = parts[0];
-    
-    // Skip invalid rows
-    if (!name || name.startsWith(',') || name === 'Grand Total') {
-      continue;
-    }
-    
-    // Get closing balance
-    let closing = parts[4] || '';
-    
-    if (!closing) continue;
-    
-    closing = closing.replace(/"/g, '').trim();
-    const amountStr = closing.replace(/,/g, '');
-    const amount = parseFloat(amountStr) || 0;
-    
-    if (amount > 0) {
-      customers.push({ name, amount });
-      debtAddLog('  ✓ ' + name.substring(0, 40) + ': ₹' + amount.toLocaleString('en-IN'), 'info');
-    }
-  }
-  
-  const total = customers.reduce((sum, c) => sum + c.amount, 0);
-  debtAddLog('Total extracted: ' + customers.length + ' customers', 'success');
-  
-  return { customers, total };
-}
-
-// Parse CSV line with quote handling
-function debtParseCSVLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-}
-
-// Add log message
-function debtAddLog(msg, type = 'info') {
-  const logEl = document.getElementById('debt-parse-log');
-  const line = document.createElement('div');
-  
-  let color = '#00ff00';
-  if (type === 'error') color = '#ff6b6b';
-  else if (type === 'success') color = '#51cf66';
-  
-  const time = new Date().toLocaleTimeString();
-  line.innerHTML = '<span style="color:' + color + '">[' + time + '] ' + msg + '</span>';
-  logEl.appendChild(line);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-// Show preview of parsed statement
-function debtShowStatementPreview(result) {
-  const preview = '<div style="background:#f9f9f9;padding:12px;border-radius:4px;margin-top:12px">' +
-    '<div style="font-weight:600;margin-bottom:8px">Preview:</div>' +
-    '<div style="font-size:12px;display:grid;grid-template-columns:1fr auto;gap:8px">';
-  
-  let html = preview;
-  result.customers.slice(0, 5).forEach(c => {
-    html += '<div>' + c.name.substring(0, 35) + '</div>';
-    html += '<div style="text-align:right">₹' + c.amount.toLocaleString('en-IN') + '</div>';
-  });
-  
-  if (result.customers.length > 5) {
-    html += '<div style="grid-column:1/-1;text-align:center;color:#999;font-size:11px;margin-top:8px">' +
-      '... and ' + (result.customers.length - 5) + ' more</div>';
-  }
-  
-  html += '</div></div>';
-  
-  document.getElementById('debt-statements-list').innerHTML = html;
-}
-
-// Save statement to Firestore
-async function debtSaveStatementToFirestore(result, fileName) {
-  if (!CU) {
-    alert('Please sign in first');
-    return;
-  }
-  
-  try {
-    debtAddLog('Saving to Firestore...', 'info');
-    
-    const stmt = {
-      uploadedAt: new Date(),
-      uploadedBy: CU.username || 'Unknown',
-      fileName: fileName,
-      totalAmount: result.total,
-      customerCount: result.customers.length,
-      status: 'active'
-    };
-    
-    const docRef = await db.collection(DEBT_STATEMENT_COL).add(stmt);
-    debtCurrentStatement = docRef.id;
-    
-    debtAddLog('✓ Statement saved: ' + docRef.id, 'success');
-    
-    // Save customers
-    for (const customer of result.customers) {
-      await db.collection(DEBT_CUSTOMERS_COL).add({
-        statementId: docRef.id,
-        name: customer.name,
-        outstanding: customer.amount,
-        dateAdded: new Date(),
-        collectionStatus: 'pending',
-        priority: 'normal'
-      });
-    }
-    
-    debtAddLog('✓ All customers saved to Firestore', 'success');
-    
-    // Reload from Firestore
-    await loadDebtFromFirestore();
-    
-  } catch (err) {
-    debtAddLog('Firestore error: ' + err.message, 'error');
-  }
-}
-
-// Load data from Firestore
-async function loadDebtFromFirestore() {
-  if (!CU) return;
-  
-  try {
-    // Load statements
-    const stmtSnap = await db.collection(DEBT_STATEMENT_COL)
-      .orderBy('uploadedAt', 'desc')
-      .limit(10)
-      .get();
-    
-    debtStatements = stmtSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // Load customers
-    const custSnap = await db.collection(DEBT_CUSTOMERS_COL)
-      .where('collectionStatus', '!=', 'cleared')
-      .get();
-    
-    debtCustomers = custSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // Load collections
-    const collSnap = await db.collection(DEBT_COLLECTIONS_COL)
-      .orderBy('date', 'desc')
-      .limit(50)
-      .get();
-    
-    debtCollections = collSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-  } catch (err) {
-    console.log('Load error:', err);
-  }
-}
-
-// Render customers list
-function debtRenderCustomers() {
-  if (debtCustomers.length === 0) {
-    document.getElementById('debt-customers-list').innerHTML = 
-      '<div style="text-align:center;padding:40px;color:#999">' +
-      '<i class="ti ti-inbox" style="font-size:48px;opacity:.3"></i>' +
-      '<div style="margin-top:8px">No customers. Upload a statement first.</div>' +
-      '</div>';
-    return;
-  }
-  
-  let html = '<div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center">';
-  
-  debtCustomers.forEach(cust => {
-    const status = cust.collectionStatus || 'pending';
-    let statusColor = status === 'cleared' ? '#1B5E20' : status === 'partial' ? '#f57f17' : '#d40000';
-    
-    html += '<input type="checkbox" style="width:18px;height:18px;cursor:pointer">';
-    html += '<div>' +
-      '<div style="font-weight:500">' + cust.name + '</div>' +
-      '<div style="font-size:11px;color:#666">' + cust.outstanding.toLocaleString('en-IN') + ' outstanding</div>' +
-      '</div>';
-    html += '<div style="font-size:12px;color:' + statusColor + ';font-weight:600">' + status + '</div>';
-    html += '<button class="btn sm" onclick="debtEditCustomer(\'' + cust.id + '\')" style="width:auto">Edit</button>';
-  });
-  
-  html += '</div>';
-  document.getElementById('debt-customers-list').innerHTML = html;
-}
-
-// Render collections list
-function debtRenderCollections() {
-  if (debtCollections.length === 0) {
-    document.getElementById('debt-collections-list').innerHTML = 
-      '<div style="text-align:center;padding:40px;color:#999">' +
-      '<i class="ti ti-inbox" style="font-size:48px;opacity:.3"></i>' +
-      '<div style="margin-top:8px">No collections recorded yet.</div>' +
-      '</div>';
-    return;
-  }
-  
-  let html = '<div>';
-  
-  debtCollections.forEach(coll => {
-    const date = new Date(coll.date?.toDate?.() || coll.date).toLocaleDateString('en-IN');
-    
-    html += '<div class="card" style="margin-bottom:8px;padding:12px">' +
-      '<div style="display:grid;grid-template-columns:1fr auto">' +
-      '<div>' +
-      '<div style="font-weight:600">₹' + coll.amount.toLocaleString('en-IN') + '</div>' +
-      '<div style="font-size:12px;color:#666">' + date + ' · ' + coll.method + '</div>' +
-      '</div>' +
-      '<div style="text-align:right;font-size:12px;color:#666">' + (coll.collectedBy || 'System') + '</div>' +
-      '</div>' +
-      (coll.notes ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:12px">' + coll.notes + '</div>' : '') +
-      '</div>';
-  });
-  
-  html += '</div>';
-  document.getElementById('debt-collections-list').innerHTML = html;
-}
-
-// Populate customer dropdown
-function debtPopulateCustomerDropdown() {
-  const select = document.getElementById('debt-coll-customer');
-  let html = '<option value="">Select customer...</option>';
-  
-  debtCustomers.forEach(c => {
-    html += '<option value="' + c.id + '">' + c.name + ' (₹' + c.outstanding.toLocaleString('en-IN') + ')</option>';
-  });
-  
-  select.innerHTML = html;
-}
-
-// Save collection record
-async function debtSaveCollection() {
-  const customerId = document.getElementById('debt-coll-customer').value;
-  const amount = parseFloat(document.getElementById('debt-coll-amount').value);
-  const date = document.getElementById('debt-coll-date').value;
-  const method = document.getElementById('debt-coll-method').value;
-  const notes = document.getElementById('debt-coll-notes').value;
-  
-  if (!customerId || !amount || !date) {
-    alert('Please fill all required fields');
-    return;
-  }
-  
-  try {
-    await db.collection(DEBT_COLLECTIONS_COL).add({
-      customerId: customerId,
-      amount: amount,
-      date: new Date(date),
-      method: method,
-      notes: notes,
-      collectedBy: CU.username || 'Unknown',
-      createdAt: new Date()
-    });
-    
-    // Clear form
-    document.getElementById('debt-coll-amount').value = '';
-    document.getElementById('debt-coll-customer').value = '';
-    document.getElementById('debt-coll-notes').value = '';
-    
-    // Reload
-    await loadDebtFromFirestore();
-    debtRenderCollections();
-    debtRenderCustomers();
-    
-    alert('Collection recorded successfully');
-    
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-}
-
-// Filter customers by search
-function debtFilterCustomers() {
-  const search = document.getElementById('debt-customer-search').value.toLowerCase();
-  document.querySelectorAll('#debt-customers-list .card').forEach(card => {
-    const text = card.textContent.toLowerCase();
-    card.style.display = text.includes(search) ? '' : 'none';
-  });
-}
-
-// Export customers to Excel
-function debtExportCustomers() {
-  const data = [['Customer Name', 'Outstanding', 'Status']];
-  debtCustomers.forEach(c => {
-    data.push([c.name, c.outstanding, c.collectionStatus]);
-  });
-  
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Debtors');
-  XLSX.writeFile(wb, 'debtors-' + new Date().toISOString().split('T')[0] + '.xlsx');
-}
-
-// Edit customer (placeholder for future)
-function debtEditCustomer(id) {
-  alert('Edit feature coming soon');
-}
-
-// Add to main go() function - update the section switcher
-// When you find the go() function, add this case:
-/*
-case 'debt':
-  closeSidebar();
-  document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
-  document.getElementById('debt-view').style.display = 'block';
-  document.getElementById('ni-debt').style.background = 'rgba(255,255,255,.15)';
-  updateNavIndicators();
-  break;
-*/
 
 </script>
 </body>
