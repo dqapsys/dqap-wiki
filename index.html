@@ -51,6 +51,7 @@ const AMC_SCOPES=["CAMC","N-CAMC"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Warranty Cost","Other Expenses"];
 const ATTENDANCE_COL="dqap_attendance";
+const TASK_EXT_COL="dqap_task_extensions";
 const CFG={NOTIFY_ON:true,EJS_KEY:"5HDT4B76AYxVxx0hw",EJS_SERVICE:"service_hbeq0no",EJS_TEMPLATE:"template_ew30odk",NOTIFY_TO:"uv@dqap.in"};
 const THEMES={
   blue:{sb1:"#006994",sb2:"#006994",p:"#006994",pd:"#006994",pl:"#EAF3FB",bg:"#F4F6FA"},
@@ -179,6 +180,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .toast.ok{background:#1B5E20}.toast.err{background:#B71C1C}
 @keyframes tIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 .pdf-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:600;display:none;flex-direction:column;padding:16px}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200}
+.moverlay{position:absolute;inset:0;background:rgba(0,0,0,.5);cursor:pointer}
+.mdialog{position:relative;z-index:1;background:var(--card);border-radius:var(--rad);box-shadow:0 20px 60px rgba(0,0,0,.3);width:90%;max-width:500px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
+.mh{padding:14px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;font-weight:600}
+.mbody{padding:14px 16px;flex:1;overflow-y:auto}
+.mf{padding:12px 16px;border-top:.5px solid var(--bd);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .pdf-inner{background:#fff;border-radius:12px;flex:1;display:flex;flex-direction:column;overflow:hidden;max-height:calc(100vh - 32px)}
 .pdf-bar{padding:10px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
 .prog-wrap{background:#f0f0f0;border-radius:4px;height:5px;overflow:hidden;margin-top:6px}
@@ -861,7 +868,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-tasks" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-checklist" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Task Management</div><div class="pg-s">Assign tasks down the hierarchy and track deadlines</div></div>
-    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
+    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button><button class="btn" onclick="togExtApprovalModal(true)" id="ext-approvals-btn" style="display:none"><i class="ti ti-thumb-up"></i>Extension Requests<span id="ext-req-badge" class="nav-badge" style="display:none;margin-left:5px"></span></button></div>
   </div>
   <div class="content">
     <!-- Stats -->
@@ -898,9 +905,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="fbar">
       <select class="fsel" id="task-ff-view" onchange="renderTasks()">
         <option value="mine">My tasks</option>
-        <option value="supervising">Supervising</option>
-        <option value="bymes">Assigned by me</option>
-        <option value="all">All tasks</option>
+        <option value="supervising" id="task-view-supervising" style="display:none">Supervising</option>
+        <option value="bymes" id="task-view-bymes" style="display:none">Assigned by me</option>
+        <option value="all" id="task-view-all" style="display:none">All tasks</option>
       </select>
       <select class="fsel" id="task-ff-status" onchange="renderTasks()">
         <option value="">All statuses</option>
@@ -911,6 +918,69 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
 
     <div id="task-list"></div>
+  </div>
+</div>
+
+<!-- ══ EXTENSION REQUEST MODAL ══ -->
+<div id="ext-req-modal" class="modal" style="display:none">
+  <div class="moverlay" onclick="togExtReqModal(false)"></div>
+  <div class="mdialog">
+    <div class="mh">
+      <div><i class="ti ti-clock-plus" style="font-size:16px;margin-right:5px"></i>Request Deadline Extension</div>
+      <button class="btn sm" onclick="togExtReqModal(false)"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="mbody">
+      <div class="fg"><label class="fl r">Task</label><div style="padding:8px;background:var(--pl);border-radius:7px;font-weight:500;color:var(--p)" id="ext-task-title">—</div></div>
+      <div class="fg"><label class="fl r">Current deadline</label><div style="padding:8px;background:#FEF2F2;border-radius:7px;color:#B71C1C;font-weight:500" id="ext-current-deadline">—</div></div>
+      <div class="fg"><label class="fl r">Proposed new deadline</label><input type="datetime-local" class="fi" id="ext-new-deadline" required></div>
+      <div class="fg" style="grid-column:span 2"><label class="fl r">Justification</label><textarea class="fi" id="ext-justification" placeholder="Why is the extension needed?" rows="4" style="resize:vertical"></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="togExtReqModal(false)">Cancel</button>
+      <button class="btn pri" onclick="submitExtensionRequest()"><i class="ti ti-send"></i>Submit request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EXTENSION REQUEST APPROVAL DASHBOARD ══ -->
+<div id="ext-approval-modal" class="modal" style="display:none">
+  <div class="moverlay" onclick="togExtApprovalModal(false)"></div>
+  <div class="mdialog" style="max-width:700px">
+    <div class="mh">
+      <div><i class="ti ti-thumb-up" style="font-size:16px;margin-right:5px"></i>Extension Requests to Approve</div>
+      <button class="btn sm" onclick="togExtApprovalModal(false)"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="mbody" style="max-height:500px;overflow-y:auto">
+      <div id="ext-approval-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OVERDUE TASK BLOCKER MODAL ══ -->
+<div id="overdue-blocker-modal" class="modal" style="display:none;z-index:301">
+  <div class="moverlay" style="background:rgba(0,0,0,.7)"></div>
+  <div class="mdialog">
+    <div class="mh">
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="ti ti-alert-triangle" style="font-size:20px;color:#B71C1C"></i>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#B71C1C">Task Deadline Action Required</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:2px">You have overdue tasks that need attention</div>
+        </div>
+      </div>
+    </div>
+    <div class="mbody">
+      <div style="padding:12px;background:#FFEBEE;border-radius:8px;margin-bottom:14px">
+        <div style="font-size:12px;color:#B71C1C;margin-bottom:8px">
+          <i class="ti ti-info-circle" style="font-size:13px"></i>
+          <strong>Policy:</strong> You must complete overdue tasks or request an extension before accessing other features (except Attendance).
+        </div>
+      </div>
+      <div id="overdue-tasks-list"></div>
+    </div>
+    <div class="mf">
+      <button class="btn pri" onclick="go('tasks');togOverdueBlocker(false)"><i class="ti ti-checklist"></i>Go to Tasks</button>
+    </div>
   </div>
 </div>
 
@@ -1097,8 +1167,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[],taskExtData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null,taskExtUnsub=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1163,9 +1233,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,taskExtUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=taskExtUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];taskExtData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -1189,7 +1259,8 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startTaskExtListen();startUsersListen();startAMCListen();populateEngineers();
+  updateTaskViewOptions(); // Show/hide task view filters based on user role
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -2666,6 +2737,18 @@ function doSearch(){
 
 // ── NAV ───────────────────────────────────────────
 function go(n){
+  // OVERDUE TASK ENFORCEMENT: Block access to non-attendance modules if user has overdue tasks
+  if(n!=='attendance'&&CU){
+    const myOverdueTasks=taskData.filter(t=>
+      t.assignedTo===CU.fullName&&t.status!=='Completed'&&
+      taskDeadlineStatus(t.deadline,t.status)?.days<0
+    );
+    if(myOverdueTasks.length>0){
+      window.suppressOverdueCheck=true;
+      showOverdueBlocker(myOverdueTasks);
+      return;
+    }
+  }
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
   if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
@@ -2679,7 +2762,7 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
-  if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
+  if(n==='tasks'){togTaskForm(false);updateTaskViewOptions();renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
@@ -3288,8 +3371,13 @@ function renderTasks(){
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
 
-  // Stats over the tasks relevant to this user (mine + by me; admin sees all)
-  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
+  // ROLE-BASED VISIBILITY:
+  // - Admin users: See ALL tasks
+  // - Regular users: See ONLY tasks assigned to them
+  const visibleTasks=CU.isAdmin?taskData:taskData.filter(t=>t.assignedTo===CU.fullName);
+  
+  // Stats: Show stats for visible tasks only
+  const scope=visibleTasks;
   el('tk-st-total').textContent=scope.length;
   el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
   el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
@@ -3298,11 +3386,19 @@ function renderTasks(){
   el('tk-st-overdue').textContent=overdue;
   el('tk-st-overdue').style.color=overdue>0?'#B71C1C':'';
 
-  let list=taskData.filter(t=>{
-    if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
-    if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
-    if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
-    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
+  let list=visibleTasks.filter(t=>{
+    // View filter (different logic for admin vs regular users)
+    if(!CU.isAdmin){
+      // Non-admin: Can only view 'mine' (tasks assigned to them)
+      if(view!=='mine')return true; // Will be filtered below, just continue
+      if(t.assignedTo!==CU.fullName)return false;
+    }else{
+      // Admin: Can view all, mine, supervising, bymes, or all
+      if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
+      if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
+      if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
+      if(view==='all')return true; // Admin can see all
+    }
     if(statusF&&t.status!==statusF)return false;
     if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -3353,6 +3449,7 @@ function renderTasks(){
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
             ${dchip}
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+              ${ds&&ds.days!==undefined&&ds.days<0&&t.status!=='Completed'&&t.assignedTo===CU.fullName?`<button class="btn sm ora" onclick="openExtensionRequestModal('${t.id}')"><i class="ti ti-clock-plus"></i>Request Extension</button>`:''}
               ${canStatus&&t.status!=='Completed'?`<select class="fsel" style="padding:3px 6px;font-size:10.5px" onchange="updateTaskStatus('${t.id}',this.value)">
                 <option value="">Set status…</option>
                 ${['Open','In Progress','Completed'].filter(s=>s!==t.status).map(s=>`<option value="${s}">${s}</option>`).join('')}
@@ -3367,6 +3464,247 @@ function renderTasks(){
   }).join('');
 }
 
+// ── UPDATE TASK VIEW FILTER OPTIONS ────────────────────────────
+// Show/hide filter options based on user role
+function updateTaskViewOptions(){
+  const supervising=el('task-view-supervising');
+  const bymes=el('task-view-bymes');
+  const all=el('task-view-all');
+  
+  if(CU.isAdmin){
+    // Admin sees all view options
+    if(supervising)supervising.style.display='';
+    if(bymes)bymes.style.display='';
+    if(all)all.style.display='';
+  }else{
+    // Non-admin only sees "My tasks"
+    if(supervising)supervising.style.display='none';
+    if(bymes)bymes.style.display='none';
+    if(all)all.style.display='none';
+    // Reset view to 'mine' for non-admin
+    const viewSelect=el('task-ff-view');
+    if(viewSelect)viewSelect.value='mine';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── TASK EXTENSION REQUEST FUNCTIONS ──────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+function checkOverdueTasksBlock(){
+  if(!CU)return;
+  const myOverdueTasks=taskData.filter(t=>
+    t.assignedTo===CU.fullName&&t.status!=='Completed'&&
+    taskDeadlineStatus(t.deadline,t.status)?.days<0
+  );
+  if(myOverdueTasks.length>0&&!window.suppressOverdueCheck){
+    showOverdueBlocker(myOverdueTasks);
+  }
+}
+
+function showOverdueBlocker(overdueTasks){
+  const html=overdueTasks.map(t=>`
+    <div style="padding:10px 12px;background:#FFF8F6;border:.5px solid #FFCDD2;border-radius:6px;margin-bottom:8px">
+      <div style="font-weight:600;color:#B71C1C;font-size:12px;margin-bottom:4px"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:3px"></i>${esc(t.title)}</div>
+      <div style="font-size:10.5px;color:var(--t2);margin-bottom:6px">Due: ${t.deadline?new Date(t.deadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
+      <button class="btn sm pri" onclick="openExtensionRequestModal('${t.id}')"><i class="ti ti-clock-plus"></i>Request Extension</button>
+    </div>
+  `).join('');
+  el('overdue-tasks-list').innerHTML=html;
+  el('overdue-blocker-modal').style.display='flex';
+}
+
+function togOverdueBlocker(show){
+  if(show)el('overdue-blocker-modal').style.display='flex';
+  else el('overdue-blocker-modal').style.display='none';
+}
+
+function openExtensionRequestModal(taskId){
+  const task=taskData.find(t=>t.id===taskId);
+  if(!task){toast('Task not found','err');return;}
+  el('ext-task-title').textContent=task.title;
+  el('ext-current-deadline').textContent=task.deadline?new Date(task.deadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+  el('ext-new-deadline').value='';
+  el('ext-justification').value='';
+  el('ext-new-deadline').setAttribute('data-task-id',taskId);
+  el('ext-justification').setAttribute('data-task-id',taskId);
+  togExtReqModal(true);
+  togOverdueBlocker(false);
+}
+
+function togExtReqModal(show){
+  el('ext-req-modal').style.display=show?'flex':'none';
+}
+
+function togExtApprovalModal(show){
+  if(show){
+    renderExtensionApprovals();
+    el('ext-approval-modal').style.display='flex';
+  }else{
+    el('ext-approval-modal').style.display='none';
+  }
+}
+
+async function submitExtensionRequest(){
+  const taskId=el('ext-new-deadline').getAttribute('data-task-id');
+  const newDeadline=el('ext-new-deadline').value;
+  const justification=el('ext-justification').value.trim();
+  
+  if(!newDeadline){toast('Select a new deadline','err');return;}
+  if(!justification){toast('Provide a justification','err');return;}
+  
+  const task=taskData.find(t=>t.id===taskId);
+  if(!task){toast('Task not found','err');return;}
+  
+  showLoad('Submitting request…');
+  try{
+    const now=new Date().toISOString();
+    const reqObj={
+      taskId,
+      taskTitle:task.title,
+      requestedBy:CU.fullName,
+      assignedBy:task.assignedBy,
+      currentDeadline:task.deadline,
+      proposedDeadline:newDeadline,
+      justification,
+      status:'pending',
+      createdAt:now
+    };
+    await db.collection(TASK_EXT_COL).add(reqObj);
+    toast('Extension request submitted ✓','ok');
+    togExtReqModal(false);
+    sendExtensionRequestNotification(reqObj);
+  }catch(e){
+    toast('Failed: '+e.message,'err');
+  }finally{
+    hideLoad();
+  }
+}
+
+function renderExtensionApprovals(){
+  const myRequests=taskExtData.filter(r=>r.assignedBy===CU.fullName&&r.status==='pending');
+  
+  const html=myRequests.length?myRequests.map(r=>`
+    <div style="padding:12px;background:var(--pl);border:.5px solid #90CAF9;border-radius:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--p);margin-bottom:3px"><i class="ti ti-clock-plus"></i> ${esc(r.taskTitle)}</div>
+          <div style="font-size:10.5px;color:var(--t2);margin-bottom:6px">
+            <div>Requested by: <strong>${esc(r.requestedBy)}</strong></div>
+            <div>Current: ${r.currentDeadline?new Date(r.currentDeadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
+            <div style="color:#B71C1C">Proposed: ${r.proposedDeadline?new Date(r.proposedDeadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
+            <div style="margin-top:6px;padding:8px;background:#fff;border-radius:4px;border-left:2px solid var(--p)"><strong>Reason:</strong> ${esc(r.justification)}</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn sm danger" onclick="rejectExtensionRequest('${r.id}')"><i class="ti ti-x"></i>Reject</button>
+        <button class="btn sm grn" onclick="approveExtensionRequest('${r.id}')"><i class="ti ti-check"></i>Approve</button>
+      </div>
+    </div>
+  `).join(''):`<div style="text-align:center;padding:20px;color:var(--t2)"><i class="ti ti-circle-check" style="font-size:32px;opacity:.3;margin-bottom:10px;display:block"></i>No pending requests</div>`;
+  
+  el('ext-approval-list').innerHTML=html;
+}
+
+async function approveExtensionRequest(reqId){
+  const req=taskExtData.find(r=>r.id===reqId);
+  if(!req){toast('Request not found','err');return;}
+  
+  showLoad('Approving request…');
+  try{
+    const now=new Date().toISOString();
+    
+    // Update extension request status
+    await db.collection(TASK_EXT_COL).doc(reqId).update({
+      status:'approved',
+      approvedAt:now,
+      approvedBy:CU.fullName
+    });
+    
+    // Update the task's deadline
+    await db.collection(TASK_COL).doc(req.taskId).update({
+      deadline:req.proposedDeadline,
+      updatedAt:now
+    });
+    
+    toast('Extension approved ✓ — deadline updated','ok');
+    sendExtensionApprovalNotification(req,'approved');
+    renderExtensionApprovals();
+  }catch(e){
+    toast('Failed: '+e.message,'err');
+  }finally{
+    hideLoad();
+  }
+}
+
+async function rejectExtensionRequest(reqId){
+  const reason=prompt('Reason for rejection (optional):');
+  if(reason===null)return;
+  
+  showLoad('Rejecting request…');
+  try{
+    const now=new Date().toISOString();
+    const req=taskExtData.find(r=>r.id===reqId);
+    
+    await db.collection(TASK_EXT_COL).doc(reqId).update({
+      status:'rejected',
+      rejectionReason:reason||'—',
+      updatedAt:now
+    });
+    
+    toast('Extension rejected ✓','ok');
+    sendExtensionApprovalNotification(req,'rejected',reason);
+    renderExtensionApprovals();
+  }catch(e){
+    toast('Failed: '+e.message,'err');
+  }finally{
+    hideLoad();
+  }
+}
+
+function sendExtensionRequestNotification(req){
+  if(!CFG.NOTIFY_ON)return;
+  const assigner=req.assignedBy;
+  const link='https://dqap-wiki.firebaseapp.com';
+  const text=`${req.requestedBy} has requested a deadline extension for task "${req.taskTitle}".\n\nCurrent deadline: ${new Date(req.currentDeadline).toLocaleString()}\nProposed deadline: ${new Date(req.proposedDeadline).toLocaleString()}\nJustification: ${req.justification}\n\nReview and approve/reject: ${link}`;
+  
+  emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{
+    to_email:CFG.NOTIFY_TO,to_name:assigner,subject:`Extension Request: ${req.taskTitle}`,message:text
+  },CFG.EJS_KEY).catch(()=>{});
+}
+
+function sendExtensionApprovalNotification(req,action,reason=''){
+  if(!CFG.NOTIFY_ON)return;
+  const statusText=action==='approved'?'Approved — deadline updated':'Rejected'+(reason?': '+reason:'');
+  const text=`Your extension request for "${req.taskTitle}" has been ${statusText}.\n\nApproved by: ${req.approvedBy||'System'}\nNew deadline: ${action==='approved'?new Date(req.proposedDeadline).toLocaleString():'Not changed'}`;
+  
+  emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{
+    to_email:CFG.NOTIFY_TO,to_name:req.requestedBy,subject:`Extension ${statusText}: ${req.taskTitle}`,message:text
+  },CFG.EJS_KEY).catch(()=>{});
+}
+
+function startTaskExtListen(){
+  if(taskExtUnsub)taskExtUnsub();
+  taskExtUnsub=db.collection(TASK_EXT_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
+    taskExtData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    updateExtensionBadge();
+    checkOverdueTasksBlock();
+  },err=>{});
+}
+
+function updateExtensionBadge(){
+  const pending=taskExtData.filter(r=>r.assignedBy===CU?.fullName&&r.status==='pending');
+  const btn=el('ext-approvals-btn'),badge=el('ext-req-badge');
+  if(pending.length>0){
+    btn.style.display='inline-flex';
+    badge.style.display='block';
+    badge.textContent=pending.length;
+  }else{
+    btn.style.display='none';
+    badge.style.display='none';
+  }
+}
 
 // ── AMC LISTENER ──────────────────────────────────
 function startAMCListen(){
