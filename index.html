@@ -2106,49 +2106,6 @@ function renderPMODashboard(list){
   </div>`;
 }
 
-  // ── Header cells (rotated stage names + colour bar) ──
-  const headerCells=PMO_STAGES.map((s,i)=>`
-    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:0;border-left:.5px solid var(--bd);background:var(--card);vertical-align:bottom">
-      <div style="height:115px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:hidden">
-        <span style="display:block;transform:rotate(-90deg);transform-origin:center bottom;white-space:nowrap;font-size:9px;font-weight:600;color:var(--t1);letter-spacing:.2px;line-height:1.2;max-width:108px;overflow:hidden;text-overflow:ellipsis" title="${esc(s)}">
-          ${STAGE_SHORT[i]}
-        </span>
-      </div>
-      <div style="height:4px;background:${STAGE_COLORS[i]}"></div>
-    </th>`).join('');
-
-  // ── Data rows ──
-  const rows=list.map(p=>{
-    const stages=p.stages||[];
-    const segCells=stages.map((s,i)=>{
-      const pct=s.pct||0;
-      const col=STAGE_COLORS[i]||'#999';
-      const textOnFill=pct>=55;
-      return `<td style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:4px 3px;border-left:.5px solid var(--bd)">
-        <div style="background:#ebebeb;border-radius:3px;height:22px;overflow:hidden;position:relative" title="${esc(s.stage)}: ${pct}%">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width .3s"></div>
-          ${pct>0?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:${textOnFill?'#fff':'#444'};pointer-events:none">${pct}%</span>`:''}
-        </div>
-      </td>`;
-    }).join('');
-
-    const overall=p.overall||0;
-    const pctCol=overall===100?'#1B5E20':overall>=60?'var(--p)':'#E65100';
-    const stCol={'Not Started':'#78909C','In Progress':'#0070C0','Completed':'#1B5E20','On Hold':'#F57F17','Delayed':'#B71C1C'}[p.status]||'#666';
-
-    return `<tr style="border-bottom:.5px solid var(--bd)">
-      <td style="min-width:${NAME_W}px;max-width:${NAME_W}px;padding:5px 8px 5px 12px;position:sticky;left:0;background:var(--card);z-index:2;border-right:.5px solid var(--bd);box-shadow:1px 0 4px rgba(0,0,0,.06)">
-        <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.projName)}">
-          ${p.projNum?`<span style="font-size:8.5px;font-weight:700;background:var(--pl);color:var(--p);padding:1px 5px;border-radius:7px;margin-right:4px">${esc(p.projNum)}</span>`:''}${esc(p.projName)}
-        </div>
-        <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:7px;background:${stCol}22;color:${stCol};margin-top:2px;display:inline-block">${p.status}</span>
-      </td>
-      ${segCells}
-      <td style="min-width:${TOTAL_W}px;text-align:center;font-size:12px;font-weight:800;color:${pctCol};border-left:.5px solid var(--bd);padding:0 4px">${overall}%</td>
-    </tr>`;
-  }).join('');
-
-  // ── Legend ──
 function renderPMO(){
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
