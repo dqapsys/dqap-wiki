@@ -2103,17 +2103,6 @@ function renderPMODashboard(list){
 }
 
   // ── Header cells (rotated stage names + colour bar) ──
-  const headerCells=PMO_STAGES.map((s,i)=>`
-    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:0;border-left:.5px solid var(--bd);background:var(--card);vertical-align:bottom">
-      <div style="height:115px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:hidden">
-        <span style="display:block;transform:rotate(-90deg);transform-origin:center bottom;white-space:nowrap;font-size:9px;font-weight:600;color:var(--t1);letter-spacing:.2px;line-height:1.2;max-width:108px;overflow:hidden;text-overflow:ellipsis" title="${esc(s)}">
-          ${STAGE_SHORT[i]}
-        </span>
-      </div>
-      <div style="height:4px;background:${STAGE_COLORS[i]}"></div>
-    </th>`).join('');
-
-  // ── Data rows ──
   const rows=list.map(p=>{
     const stages=p.stages||[];
     const segCells=stages.map((s,i)=>{
@@ -5077,7 +5066,7 @@ function showDebtLinkingForm(customers){
         <select class="debt-project-select fsel" style="width:100%;font-size:11px">
           <option value="">Select project…</option>
           <option value="other">Other-Non Customer</option>
-          ${projData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
+          ${projectsData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
         </select>
       </div>
       <button class="btn pri sm" onclick="linkDebtCustomer(this)">Link</button>
@@ -5098,7 +5087,7 @@ async function linkDebtCustomer(btn){
   
   showLoad('Linking…');
   try{
-    const project = projectId === 'other' ? {id:'other',projectName:'Other-Non Customer',poNumber:''} : projData.find(p => p.id === projectId);
+    const project = projectId === 'other' ? {id:'other',projectName:'Other-Non Customer',poNumber:''} : projectsData.find(p => p.id === projectId);
     
     await db.collection(DEBT_COL).add({
       customerName: customerName,
@@ -5142,7 +5131,7 @@ async function saveDebtEntry(){
   
   showLoad('Saving…');
   try{
-    const project = projectId === 'other' ? {projectName:'Other-Non Customer',poNumber:''} : projData.find(p => p.id === projectId);
+    const project = projectId === 'other' ? {projectName:'Other-Non Customer',poNumber:''} : projectsData.find(p => p.id === projectId);
     
     const data = {
       customerName: customerName,
@@ -5440,7 +5429,7 @@ function initDebtModule(){
     projSelect.innerHTML = `
       <option value="">Select project</option>
       <option value="other">Other-Non Customer</option>
-      ${projData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
+      ${projectsData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
     `;
   }
 }
