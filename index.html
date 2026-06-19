@@ -5072,6 +5072,7 @@ function initDebtModule() {
 
 // Switch between debt sub-tabs
 function switchDebtTab(tabName) {
+  if (!tabName) return;
   // Hide all tabs
   document.querySelectorAll('.debt-tab-content').forEach(tab => {
     tab.style.display = 'none';
