@@ -793,6 +793,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
+
 <!-- ══ DEBT MANAGEMENT ══ -->
 <div id="v-debt" class="view" style="display:none">
   <div class="topbar">
@@ -1139,6 +1140,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     color: var(--t1);
   }
 </style>
+
 <!-- ══ BUDGET TRACKER ══ -->
 <div id="v-budget" class="view" style="display:none">
   <div class="topbar">
@@ -1156,6 +1158,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         <div class="edesc">You do not have permission to view the Budget Tracker.<br>Contact your administrator to request access.</div>
       </div>
     </div>
+
 
     <!-- Add / Edit form -->
     <div id="budget-form-panel" style="display:none;margin-bottom:14px">
@@ -2005,6 +2008,7 @@ async function savePMO(){
   }catch(e){toast('Save failed: '+e.message,'err');}finally{hideLoad();}
 }
 
+
 async function deletePMO(id,name){
   if(!confirm('Delete PMO entry for "'+name+'"?'))return;
   showLoad('Deleting…');
@@ -2103,6 +2107,17 @@ function renderPMODashboard(list){
 }
 
   // ── Header cells (rotated stage names + colour bar) ──
+  const headerCells=PMO_STAGES.map((s,i)=>`
+    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:0;border-left:.5px solid var(--bd);background:var(--card);vertical-align:bottom">
+      <div style="height:115px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:hidden">
+        <span style="display:block;transform:rotate(-90deg);transform-origin:center bottom;white-space:nowrap;font-size:9px;font-weight:600;color:var(--t1);letter-spacing:.2px;line-height:1.2;max-width:108px;overflow:hidden;text-overflow:ellipsis" title="${esc(s)}">
+          ${STAGE_SHORT[i]}
+        </span>
+      </div>
+      <div style="height:4px;background:${STAGE_COLORS[i]}"></div>
+    </th>`).join('');
+
+  // ── Data rows ──
   const rows=list.map(p=>{
     const stages=p.stages||[];
     const segCells=stages.map((s,i)=>{
@@ -2295,6 +2310,7 @@ async function savePMOInline(id){
     pmoEditId=null;
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
+
 
 // ── PAYMENT CRUD ───────────────────────────────────
 function togPayForm(show,data){
@@ -2910,6 +2926,7 @@ function renderProjectsPage(){
   }
 }
 
+
 // ── USERS ─────────────────────────────────────────
 async function loadUsers(){
   showLoad('Loading…');
@@ -3093,8 +3110,8 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
-  if(n==='tasks'){togTaskForm(false);updateTaskViewOptions();renderTasks();markTasksSeen();}
-if(n==='debt'){renderDebtTable();updateDebtSummary();initDebtModule();}
+  if(n==='debt'){renderDebtTable();updateDebtSummary();initDebtModule();}
+if(n==='tasks'){togTaskForm(false);updateTaskViewOptions();renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
@@ -3149,6 +3166,8 @@ function bsta(v){if(!v)return'';const m={Resolved:'res',Workaround:'wor',Open:'o
 function bpmoStatus(v){const m={'Not Started':'nst','In Progress':'act','Completed':'cmp','On Hold':'hld','Delayed':'del'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 function bpayStatus(v){const m={Pending:'pnd',Partial:'prt',Received:'rcv'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
 function brmaStatus(v){const m={Raised:'rai',Approved:'apr','Replacement Received':'rep',Closed:'cls'};return`<span class="badge b-${m[v]||'oth'}">${v||''}</span>`;}
+
+
 
 // ── LD DATE HELPER ────────────────────────────────
 function ldStatus(ldDate){
@@ -3462,6 +3481,7 @@ function exportBudgetExcel(){
   XLSX.writeFile(wb,`DQAP_Budget_${activeBudgetProject.replace(/[^a-z0-9]/gi,'_')}.xlsx`);
   toast('Exported ✓','ok');
 }
+
 
 // ── TASK LISTENERS ────────────────────────────────
 function startTaskListen(){
@@ -4630,6 +4650,7 @@ async function attRenderEmpCalendar(){
   if(empCal)empCal.innerHTML=calendarHtml;
 }
 
+
 async function attGet(uid,ds){
   try{
     const doc=await db.collection(ATTENDANCE_COL).doc(`${uid}_${ds}`).get();
@@ -4832,6 +4853,7 @@ async function attRenderCalendar(){
   if(legendSide)legendSide.innerHTML=legendHtml;
 }
 
+
 function attCloseOOO(){
   const m=el('att-modal');
   if(m)m.style.display='none';
@@ -4840,11 +4862,18 @@ function attCloseOOO(){
   if(rmk)rmk.value='';
 }
 
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── DEBT MANAGEMENT MODULE - JAVASCRIPT FUNCTIONS ───────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Global variables
+let debtData = [];
+let debtCollectionData = [];
+let debtUnsub = null;
+let debtCollectionUnsub = null;
+const DEBT_COL = "dqap_debt_management";
+const DEBT_COLLECTION_COL = "dqap_debt_collections";
 
 // ── MODAL FUNCTIONS ───────────────────────────────────────────────────
 function togDebtUploadModal(show){
@@ -5066,7 +5095,7 @@ function showDebtLinkingForm(customers){
         <select class="debt-project-select fsel" style="width:100%;font-size:11px">
           <option value="">Select project…</option>
           <option value="other">Other-Non Customer</option>
-          ${projectsData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
+          ${projData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
         </select>
       </div>
       <button class="btn pri sm" onclick="linkDebtCustomer(this)">Link</button>
@@ -5087,7 +5116,7 @@ async function linkDebtCustomer(btn){
   
   showLoad('Linking…');
   try{
-    const project = projectId === 'other' ? {id:'other',projectName:'Other-Non Customer',poNumber:''} : projectsData.find(p => p.id === projectId);
+    const project = projectId === 'other' ? {id:'other',projectName:'Other-Non Customer',poNumber:''} : projData.find(p => p.id === projectId);
     
     await db.collection(DEBT_COL).add({
       customerName: customerName,
@@ -5131,7 +5160,7 @@ async function saveDebtEntry(){
   
   showLoad('Saving…');
   try{
-    const project = projectId === 'other' ? {projectName:'Other-Non Customer',poNumber:''} : projectsData.find(p => p.id === projectId);
+    const project = projectId === 'other' ? {projectName:'Other-Non Customer',poNumber:''} : projData.find(p => p.id === projectId);
     
     const data = {
       customerName: customerName,
@@ -5429,7 +5458,7 @@ function initDebtModule(){
     projSelect.innerHTML = `
       <option value="">Select project</option>
       <option value="other">Other-Non Customer</option>
-      ${projectsData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
+      ${projData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
     `;
   }
 }
@@ -5440,6 +5469,7 @@ if(document.readyState === 'loading'){
 }else{
   initDebtModule();
 }
+
 </script>
 </body>
 </html>
