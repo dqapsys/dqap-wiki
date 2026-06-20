@@ -44,14 +44,13 @@ firebase.initializeApp({
   appId:"1:932523956178:web:cc83a8e7369eaa80649a0b"
 });
 const db=firebase.firestore(),storage=firebase.storage();
-const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc",DEBT_COL="dqap_debt_management",DEBT_COLLECTION_COL="dqap_debt_collections";
+const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
 const AMC_SCOPES=["CAMC","N-CAMC"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Warranty Cost","Other Expenses"];
 const ATTENDANCE_COL="dqap_attendance";
-const TASK_EXT_COL="dqap_task_extensions";
 const CFG={NOTIFY_ON:true,EJS_KEY:"5HDT4B76AYxVxx0hw",EJS_SERVICE:"service_hbeq0no",EJS_TEMPLATE:"template_ew30odk",NOTIFY_TO:"uv@dqap.in"};
 const THEMES={
   blue:{sb1:"#006994",sb2:"#006994",p:"#006994",pd:"#006994",pl:"#EAF3FB",bg:"#F4F6FA"},
@@ -180,12 +179,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .toast.ok{background:#1B5E20}.toast.err{background:#B71C1C}
 @keyframes tIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 .pdf-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:600;display:none;flex-direction:column;padding:16px}
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200}
-.moverlay{position:absolute;inset:0;background:rgba(0,0,0,.5);cursor:pointer}
-.mdialog{position:relative;z-index:1;background:var(--card);border-radius:var(--rad);box-shadow:0 20px 60px rgba(0,0,0,.3);width:90%;max-width:500px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
-.mh{padding:14px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;font-weight:600}
-.mbody{padding:14px 16px;flex:1;overflow-y:auto}
-.mf{padding:12px 16px;border-top:.5px solid var(--bd);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .pdf-inner{background:#fff;border-radius:12px;flex:1;display:flex;flex-direction:column;overflow:hidden;max-height:calc(100vh - 32px)}
 .pdf-bar{padding:10px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
 .prog-wrap{background:#f0f0f0;border-radius:4px;height:5px;overflow:hidden;margin-top:6px}
@@ -337,6 +330,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
+    <div class="ni" onclick="go('debt')"            id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
@@ -455,6 +449,98 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <span id="fc" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
     <div id="wl"></div>
+  </div>
+</div>
+
+
+<!-- ══ DEBT MANAGEMENT ══ -->
+<div id="v-debt" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-coin" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Debt Management</div><div class="pg-s">Track customer debts, link to projects, manage collections</div></div>
+  </div>
+  <div class="content">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
+      <button class="tab-btn" onclick="switchDebtTab('upload')" id="debt-tab-upload" style="padding:8px 10px;border-radius:7px;border:.5px solid var(--bds);background:transparent;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px;background:var(--pl);color:var(--p);border-color:var(--p)">📤 Upload CSV</button>
+      <button class="tab-btn" onclick="switchDebtTab('summary')" id="debt-tab-summary" style="padding:8px 10px;border-radius:7px;border:.5px solid var(--bds);background:transparent;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px">📊 Summary</button>
+      <button class="tab-btn" onclick="switchDebtTab('linking')" id="debt-tab-linking" style="padding:8px 10px;border-radius:7px;border:.5px solid var(--bds);background:transparent;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px">🔗 Link</button>
+      <button class="tab-btn" onclick="switchDebtTab('commitments')" id="debt-tab-commitments" style="padding:8px 10px;border-radius:7px;border:.5px solid var(--bds);background:transparent;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px">📅 Commitments</button>
+      <button class="tab-btn" onclick="switchDebtTab('leaderboard')" id="debt-tab-leaderboard" style="padding:8px 10px;border-radius:7px;border:.5px solid var(--bds);background:transparent;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px">🏆 Leaderboard</button>
+    </div>
+    
+    <!-- Upload Tab -->
+    <div id="debt-upload" class="tab-content" style="display:block">
+      <div class="card"><div class="cb">
+        <div style="margin-bottom:16px"><label class="fl r" style="margin-bottom:8px">Upload Tally CSV</label><input type="file" id="debtCsvFile" accept=".csv" class="fi" onchange="handleDebtCSVUpload(event)"><button class="btn pri" onclick="parseDebtCSV()" style="margin-top:8px"><i class="ti ti-upload"></i>Upload & Parse</button></div>
+      </div></div>
+      <div style="margin-top:14px" class="wtable-wrap"><table class="wtable"><thead><tr><th>Customer Name</th><th style="text-align:right">Opening</th><th style="text-align:right">Billed</th><th style="text-align:right">Collected</th><th style="text-align:right">Outstanding</th></tr></thead><tbody id="debtCsvPreviewBody"><tr><td colspan="5" style="text-align:center;color:var(--t2)">Upload a CSV file to see preview</td></tr></tbody></table></div>
+    </div>
+    
+    <!-- Summary Tab -->
+    <div id="debt-summary" class="tab-content" style="display:none">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+        <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-coin" style="color:#006994;font-size:18px"></i></div><div><div class="sv" id="debtSummaryOutstanding">₹0</div><div class="sl">Outstanding</div></div></div>
+        <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-link" style="color:#006994;font-size:18px"></i></div><div><div class="sv" id="debtSummaryAllocated">₹0</div><div class="sl">Allocated</div></div></div>
+        <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-calendar-check" style="color:#006994;font-size:18px"></i></div><div><div class="sv" id="debtSummaryCommitted">₹0</div><div class="sl">Committed</div></div></div>
+        <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#3F704D;font-size:18px"></i></div><div><div class="sv" id="debtSummaryCollected">₹0</div><div class="sl">Collected</div></div></div>
+      </div>
+      <div class="card"><div class="wtable-wrap"><table class="wtable"><thead><tr><th>Customer</th><th style="text-align:right">Outstanding</th><th style="text-align:right">Allocated</th><th style="text-align:right">Committed</th><th>Status</th></tr></thead><tbody id="debtSummaryTableBody"><tr><td colspan="5" style="text-align:center;color:var(--t2)">No data yet</td></tr></tbody></table></div></div>
+    </div>
+    
+    <!-- Linking Tab -->
+    <div id="debt-linking" class="tab-content" style="display:none">
+      <div class="card"><div class="wtable-wrap"><table class="wtable"><thead><tr><th>Customer</th><th style="text-align:right">Outstanding</th><th style="text-align:right">Allocated</th><th style="text-align:right">Unallocated</th><th>Status</th><th>Action</th></tr></thead><tbody id="debtLinkingTableBody"><tr><td colspan="6" style="text-align:center;color:var(--t2)">Upload CSV first</td></tr></tbody></table></div></div>
+    </div>
+    
+    <!-- Commitments Tab -->
+    <div id="debt-commitments" class="tab-content" style="display:none">
+      <div class="card"><div class="wtable-wrap"><table class="wtable"><thead><tr><th>Customer</th><th>Project</th><th>PO</th><th style="text-align:right">Amount</th><th>Assigned To</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="debtCommitmentsTableBody"><tr><td colspan="8" style="text-align:center;color:var(--t2)">No commitments yet</td></tr></tbody></table></div></div>
+    </div>
+    
+    <!-- Leaderboard Tab -->
+    <div id="debt-leaderboard" class="tab-content" style="display:none">
+      <div id="debtLeaderboardContainer" style="text-align:center;padding:40px 20px;color:var(--t2)">No commitments yet. Create commitments to see performance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Debt Link Modal -->
+<div id="debtLinkModal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:var(--rad);padding:20px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 6px rgba(0,0,0,.1)">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px">Link Customer to Projects</div>
+    <div class="g1" style="margin-bottom:14px">
+      <div class="fg"><label class="fl">Customer</label><input type="text" id="debtModalCustomer" readonly class="fi" style="background:#f5f5f5"></div>
+      <div class="fg"><label class="fl">Outstanding</label><input type="text" id="debtModalOutstanding" readonly class="fi" style="background:#f5f5f5"></div>
+      <div class="fg"><label class="fl">Remaining to Allocate</label><input type="text" id="debtModalRemaining" readonly class="fi" style="background:#f5f5f5"></div>
+    </div>
+    <div style="border-top:.5px solid var(--bd);padding-top:14px;margin-bottom:14px"></div>
+    <div class="g1" style="margin-bottom:14px">
+      <div class="fg"><label class="fl r">Project Name</label><select id="debtProjectDropdown" class="fs" onchange="loadDebtProjectPOs()"><option value="">-- Select Project --</option></select></div>
+      <div class="fg"><label class="fl r">PO Number</label><select id="debtPoDropdown" class="fs"><option value="">-- Select PO --</option></select></div>
+      <div class="fg"><label class="fl r">Amount to Allocate</label><input type="number" id="debtAllocationAmount" class="fi" placeholder="0" min="0" step="0.01"></div>
+    </div>
+    <button class="btn pri" onclick="addDebtTempAllocation()" style="width:100%;margin-bottom:14px"><i class="ti ti-plus"></i>Add This Allocation</button>
+    <div style="margin-bottom:14px"><div style="font-weight:500;font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Current Allocations:</div><div id="debtCurrentAllocationsDiv" style="max-height:200px;overflow-y:auto;padding:10px;background:var(--bg);border-radius:7px"><div style="color:var(--t2);text-align:center">No allocations yet</div></div></div>
+    <div style="display:flex;gap:8px"><button class="btn" onclick="closeDebtLinkModal()" style="flex:1">Cancel</button><button class="btn pri" onclick="saveDebtAllocations()" style="flex:1"><i class="ti ti-device-floppy"></i>Save</button></div>
+  </div>
+</div>
+
+<!-- Debt Commitment Modal -->
+<div id="debtCommitmentModal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:var(--rad);padding:20px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 6px rgba(0,0,0,.1)">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px">Set Collection Commitment</div>
+    <div class="g1" style="margin-bottom:14px">
+      <div class="fg"><label class="fl">Customer</label><input type="text" id="debtCommitCustomer" readonly class="fi" style="background:#f5f5f5"></div>
+      <div class="fg"><label class="fl">Project</label><input type="text" id="debtCommitProject" readonly class="fi" style="background:#f5f5f5"></div>
+      <div class="fg"><label class="fl">PO Number</label><input type="text" id="debtCommitPO" readonly class="fi" style="background:#f5f5f5"></div>
+      <div class="fg"><label class="fl">Amount</label><input type="text" id="debtCommitAmount" readonly class="fi" style="background:#f5f5f5"></div>
+    </div>
+    <div style="border-top:.5px solid var(--bd);padding-top:14px;margin-bottom:14px"></div>
+    <div class="g1" style="margin-bottom:14px">
+      <div class="fg"><label class="fl r">Assigned To (Collector)</label><select id="debtCommitAssignedTo" class="fs"><option value="">-- Select User --</option><option value="Ravi">Ravi - Field Collections</option><option value="Jawed">Jawed - Follow-up</option><option value="Chetan">Chetan - Sales</option><option value="Keshav">Keshav - Admin</option></select></div>
+      <div class="fg"><label class="fl r">Commitment Date</label><input type="date" id="debtCommitDate" class="fi"></div>
+      <div class="fg"><label class="fl">Expected Collected Amount (₹)</label><input type="number" id="debtCommitCollectedAmount" class="fi" placeholder="0" min="0" step="0.01"></div>
+    </div>
+    <div style="display:flex;gap:8px"><button class="btn" onclick="closeDebtCommitmentModal()" style="flex:1">Cancel</button><button class="btn pri" onclick="saveDebtCommitment()" style="flex:1"><i class="ti ti-device-floppy"></i>Save</button></div>
   </div>
 </div>
 
@@ -793,352 +879,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 
-<!-- ══ DEBT MANAGEMENT ══ -->
-<div id="v-debt" class="view" style="display:none">
-  <div class="topbar">
-    <div>
-      <div class="pg-t">
-        <i class="ti ti-cash" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>
-        Debt Management
-      </div>
-      <div class="pg-s">Track customer debts, link to projects, and manage collections</div>
-    </div>
-    <div class="tr">
-      <button class="btn pri" onclick="togDebtUploadModal(true)">
-        <i class="ti ti-upload"></i>Upload Statement
-      </button>
-      <button class="btn grn" onclick="togDebtEntryModal(true)" id="debt-add-btn" style="display:none">
-        <i class="ti ti-plus"></i>Add Entry
-      </button>
-    </div>
-  </div>
-
-  <!-- SUMMARY BLOCK -->
-  <div class="content" style="margin-bottom:20px">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px">
-      <div class="stat-card">
-        <div class="stat-label">Total Billed</div>
-        <div class="stat-value" id="debt-total-billed">₹ 0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Collected</div>
-        <div class="stat-value" style="color:#1B5E20" id="debt-total-collected">₹ 0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Outstanding</div>
-        <div class="stat-value" style="color:#B71C1C" id="debt-total-outstanding">₹ 0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Collection %</div>
-        <div class="stat-value" style="color:#0070C0" id="debt-collection-percent">0%</div>
-      </div>
-    </div>
-
-    <!-- TABS -->
-    <div style="border-bottom:1px solid var(--bd);margin-bottom:15px;display:flex;gap:20px">
-      <button class="tab-btn active" onclick="showDebtTab('active')">
-        <i class="ti ti-list"></i>Active Debts
-      </button>
-      <button class="tab-btn" onclick="showDebtTab('upload')">
-        <i class="ti ti-upload"></i>Upload & Link
-      </button>
-      <button class="tab-btn" onclick="showDebtTab('collections')">
-        <i class="ti ti-coin"></i>Collections
-      </button>
-      <button class="tab-btn" onclick="showDebtTab('history')">
-        <i class="ti ti-history"></i>History
-      </button>
-    </div>
-
-    <!-- TAB: ACTIVE DEBTS -->
-    <div id="debt-tab-active" style="display:block">
-      <div style="display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap">
-        <input type="text" id="debt-search" class="fi" placeholder="Search customer or PO..." style="flex:1;min-width:200px" oninput="renderDebtTable()">
-        <select id="debt-filter-status" class="fsel" onchange="renderDebtTable()">
-          <option value="">All Status</option>
-          <option>Active</option>
-          <option>Overdue</option>
-          <option>Resolved</option>
-        </select>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="tbl" style="width:100%;font-size:12px">
-          <thead>
-            <tr>
-              <th>Customer Name</th>
-              <th>Project / PO</th>
-              <th>Amount Billed</th>
-              <th>Collectible</th>
-              <th>Collected</th>
-              <th>Outstanding</th>
-              <th>Forecast Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="debt-active-tbody"></tbody>
-        </table>
-        <div id="debt-empty" class="empty">
-          <i class="ti ti-inbox eico"></i>
-          <div class="etit">No debts tracked yet</div>
-          <div class="edesc">Upload a debt statement and link customers to projects to get started.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB: UPLOAD & LINK -->
-    <div id="debt-tab-upload" style="display:none">
-      <div style="background:var(--card);border-radius:var(--rad);padding:20px;margin-bottom:20px">
-        <div style="margin-bottom:15px;font-weight:600">Step 1: Upload Debt Statement (Excel)</div>
-        <div style="display:flex;gap:10px;margin-bottom:15px">
-          <input type="file" id="debt-file-input" accept=".xlsx,.xls,.csv" class="fi">
-          <button class="btn pri" onclick="parseDebtStatement()">
-            <i class="ti ti-upload"></i>Parse
-          </button>
-        </div>
-        <div id="debt-parse-preview" style="display:none;background:#f5f5f5;padding:10px;border-radius:5px;max-height:300px;overflow-y:auto;font-size:11px">
-          <div style="font-weight:600;margin-bottom:10px">Preview of parsed customers:</div>
-          <div id="debt-preview-list"></div>
-        </div>
-      </div>
-
-      <div style="background:var(--card);border-radius:var(--rad);padding:20px">
-        <div style="margin-bottom:15px;font-weight:600">Step 2: Link Customers to Projects</div>
-        <div id="debt-link-form"></div>
-      </div>
-    </div>
-
-    <!-- TAB: COLLECTIONS -->
-    <div id="debt-tab-collections" style="display:none">
-      <div style="display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap">
-        <input type="date" id="debt-collection-date-from" class="fi" onchange="renderCollectionsTable()">
-        <input type="date" id="debt-collection-date-to" class="fi" onchange="renderCollectionsTable()">
-        <input type="text" id="debt-collection-search" class="fi" placeholder="Search..." style="flex:1;min-width:200px" oninput="renderCollectionsTable()">
-      </div>
-      <div style="overflow-x:auto">
-        <table class="tbl" style="width:100%;font-size:12px">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>PO</th>
-              <th>Committed Amount</th>
-              <th>Collection Date</th>
-              <th>Payment Method</th>
-              <th>Remarks</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="debt-collections-tbody"></tbody>
-        </table>
-        <div id="debt-collections-empty" class="empty">
-          <i class="ti ti-inbox eico"></i>
-          <div class="etit">No collections recorded</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB: HISTORY -->
-    <div id="debt-tab-history" style="display:none">
-      <div style="overflow-x:auto">
-        <table class="tbl" style="width:100%;font-size:12px">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Amount Billed</th>
-              <th>Total Collected</th>
-              <th>Status</th>
-              <th>Resolved Date</th>
-              <th>Collection Days</th>
-            </tr>
-          </thead>
-          <tbody id="debt-history-tbody"></tbody>
-        </table>
-        <div id="debt-history-empty" class="empty">
-          <i class="ti ti-inbox eico"></i>
-          <div class="etit">No resolved debts</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODALS -->
-
-<!-- DEBT STATEMENT UPLOAD MODAL -->
-<div id="debt-upload-modal" class="modal">
-  <div class="moverlay" onclick="togDebtUploadModal(false)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div style="font-weight:600">Upload Debt Statement</div>
-      <button class="btn nosty" style="position:absolute;right:10px;top:10px" onclick="togDebtUploadModal(false)">
-        <i class="ti ti-x"></i>
-      </button>
-    </div>
-    <div class="mbody">
-      <div style="margin-bottom:15px">
-        <div style="font-size:12px;color:var(--t2);margin-bottom:5px">Select Excel file (Tally or similar format)</div>
-        <input type="file" id="debt-statement-file" accept=".xlsx,.xls,.csv" class="fi" style="width:100%">
-      </div>
-      <div style="font-size:11px;color:var(--t2)">
-        <strong>Supported formats:</strong> Excel (.xlsx), CSV
-        <br><strong>Expected columns:</strong> Customer Name, Opening Balance, Debit, Credit, Closing Balance
-      </div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="togDebtUploadModal(false)">Cancel</button>
-      <button class="btn pri" onclick="uploadDebtStatement()">Upload</button>
-    </div>
-  </div>
-</div>
-
-<!-- DEBT ENTRY MODAL -->
-<div id="debt-entry-modal" class="modal">
-  <div class="moverlay" onclick="togDebtEntryModal(false)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div style="font-weight:600">Add/Edit Debt Entry</div>
-      <button class="btn nosty" style="position:absolute;right:10px;top:10px" onclick="togDebtEntryModal(false)">
-        <i class="ti ti-x"></i>
-      </button>
-    </div>
-    <div class="mbody">
-      <input type="hidden" id="debt-entry-id">
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Customer Name *</label>
-        <input type="text" id="debt-entry-customer" class="fi" placeholder="Enter or select customer" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Project / PO *</label>
-        <select id="debt-entry-project" class="fsel" style="width:100%">
-          <option value="">Select project</option>
-          <option value="other">Other-Non Customer</option>
-        </select>
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Amount Billed *</label>
-        <input type="number" id="debt-entry-amount" class="fi" placeholder="0.00" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Collectible Amount</label>
-        <input type="number" id="debt-entry-collectible" class="fi" placeholder="0.00" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Forecast Collection Date</label>
-        <input type="date" id="debt-entry-forecast" class="fi" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Notes</label>
-        <textarea id="debt-entry-notes" class="fi" placeholder="Add any remarks..." style="width:100%;height:60px;resize:none"></textarea>
-      </div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="togDebtEntryModal(false)">Cancel</button>
-      <button class="btn pri" onclick="saveDebtEntry()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- COLLECTION MODAL -->
-<div id="debt-collection-modal" class="modal">
-  <div class="moverlay" onclick="togDebtCollectionModal(false)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div style="font-weight:600">Record Collection / Commitment</div>
-      <button class="btn nosty" style="position:absolute;right:10px;top:10px" onclick="togDebtCollectionModal(false)">
-        <i class="ti ti-x"></i>
-      </button>
-    </div>
-    <div class="mbody">
-      <input type="hidden" id="debt-collection-entry-id">
-
-      <div style="background:#f9f9f9;padding:10px;border-radius:5px;margin-bottom:12px;font-size:12px">
-        <div><strong>Customer:</strong> <span id="debt-coll-customer-display"></span></div>
-        <div><strong>Outstanding:</strong> ₹<span id="debt-coll-outstanding-display">0</span></div>
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Committed Amount *</label>
-        <input type="number" id="debt-collection-amount" class="fi" placeholder="0.00" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Collection Date *</label>
-        <input type="date" id="debt-collection-date" class="fi" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Payment Method</label>
-        <select id="debt-collection-method" class="fsel" style="width:100%">
-          <option value="bank_transfer">Bank Transfer</option>
-          <option value="cheque">Cheque</option>
-          <option value="cash">Cash</option>
-          <option value="online">Online</option>
-        </select>
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Reference Number</label>
-        <input type="text" id="debt-collection-ref" class="fi" placeholder="Cheque/Transaction #" style="width:100%">
-      </div>
-
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:var(--t2)">Remarks</label>
-        <textarea id="debt-collection-remarks" class="fi" placeholder="Notes..." style="width:100%;height:60px;resize:none"></textarea>
-      </div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="togDebtCollectionModal(false)">Cancel</button>
-      <button class="btn grn" onclick="saveDebtCollection()">Commit Collection</button>
-    </div>
-  </div>
-</div>
-
-<style>
-  .stat-card {
-    background: var(--card);
-    padding: 15px;
-    border-radius: var(--rad);
-    border-left: 3px solid var(--p);
-  }
-  .stat-label {
-    font-size: 11px;
-    color: var(--t2);
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-  .stat-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--t1);
-  }
-  .tab-btn {
-    padding: 10px 15px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    color: var(--t2);
-    font-size: 13px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-  .tab-btn.active {
-    color: var(--p);
-    border-bottom: 2px solid var(--p);
-  }
-  .tab-btn:hover {
-    color: var(--t1);
-  }
-</style>
 <!-- ══ BUDGET TRACKER ══ -->
 <div id="v-budget" class="view" style="display:none">
   <div class="topbar">
@@ -1214,7 +954,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-tasks" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-checklist" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Task Management</div><div class="pg-s">Assign tasks down the hierarchy and track deadlines</div></div>
-    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button><button class="btn" onclick="togExtApprovalModal(true)" id="ext-approvals-btn" style="display:none"><i class="ti ti-thumb-up"></i>Extension Requests<span id="ext-req-badge" class="nav-badge" style="display:none;margin-left:5px"></span></button></div>
+    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
   </div>
   <div class="content">
     <!-- Stats -->
@@ -1251,9 +991,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="fbar">
       <select class="fsel" id="task-ff-view" onchange="renderTasks()">
         <option value="mine">My tasks</option>
-        <option value="supervising" id="task-view-supervising" style="display:none">Supervising</option>
-        <option value="bymes" id="task-view-bymes" style="display:none">Assigned by me</option>
-        <option value="all" id="task-view-all" style="display:none">All tasks</option>
+        <option value="supervising">Supervising</option>
+        <option value="bymes">Assigned by me</option>
+        <option value="all">All tasks</option>
       </select>
       <select class="fsel" id="task-ff-status" onchange="renderTasks()">
         <option value="">All statuses</option>
@@ -1264,69 +1004,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
 
     <div id="task-list"></div>
-  </div>
-</div>
-
-<!-- ══ EXTENSION REQUEST MODAL ══ -->
-<div id="ext-req-modal" class="modal" style="display:none">
-  <div class="moverlay" onclick="togExtReqModal(false)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div><i class="ti ti-clock-plus" style="font-size:16px;margin-right:5px"></i>Request Deadline Extension</div>
-      <button class="btn sm" onclick="togExtReqModal(false)"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="mbody">
-      <div class="fg"><label class="fl r">Task</label><div style="padding:8px;background:var(--pl);border-radius:7px;font-weight:500;color:var(--p)" id="ext-task-title">—</div></div>
-      <div class="fg"><label class="fl r">Current deadline</label><div style="padding:8px;background:#FEF2F2;border-radius:7px;color:#B71C1C;font-weight:500" id="ext-current-deadline">—</div></div>
-      <div class="fg"><label class="fl r">Proposed new deadline</label><input type="datetime-local" class="fi" id="ext-new-deadline" required></div>
-      <div class="fg" style="grid-column:span 2"><label class="fl r">Justification</label><textarea class="fi" id="ext-justification" placeholder="Why is the extension needed?" rows="4" style="resize:vertical"></textarea></div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="togExtReqModal(false)">Cancel</button>
-      <button class="btn pri" onclick="submitExtensionRequest()"><i class="ti ti-send"></i>Submit request</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ EXTENSION REQUEST APPROVAL DASHBOARD ══ -->
-<div id="ext-approval-modal" class="modal" style="display:none">
-  <div class="moverlay" onclick="togExtApprovalModal(false)"></div>
-  <div class="mdialog" style="max-width:700px">
-    <div class="mh">
-      <div><i class="ti ti-thumb-up" style="font-size:16px;margin-right:5px"></i>Extension Requests to Approve</div>
-      <button class="btn sm" onclick="togExtApprovalModal(false)"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="mbody" style="max-height:500px;overflow-y:auto">
-      <div id="ext-approval-list"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ OVERDUE TASK BLOCKER MODAL ══ -->
-<div id="overdue-blocker-modal" class="modal" style="display:none;z-index:301">
-  <div class="moverlay" style="background:rgba(0,0,0,.7)"></div>
-  <div class="mdialog">
-    <div class="mh">
-      <div style="display:flex;align-items:center;gap:10px">
-        <i class="ti ti-alert-triangle" style="font-size:20px;color:#B71C1C"></i>
-        <div>
-          <div style="font-size:14px;font-weight:600;color:#B71C1C">Task Deadline Action Required</div>
-          <div style="font-size:12px;color:var(--t2);margin-top:2px">You have overdue tasks that need attention</div>
-        </div>
-      </div>
-    </div>
-    <div class="mbody">
-      <div style="padding:12px;background:#FFEBEE;border-radius:8px;margin-bottom:14px">
-        <div style="font-size:12px;color:#B71C1C;margin-bottom:8px">
-          <i class="ti ti-info-circle" style="font-size:13px"></i>
-          <strong>Policy:</strong> You must complete overdue tasks or request an extension before accessing other features (except Attendance).
-        </div>
-      </div>
-      <div id="overdue-tasks-list"></div>
-    </div>
-    <div class="mf">
-      <button class="btn pri" onclick="go('tasks');togOverdueBlocker(false)"><i class="ti ti-checklist"></i>Go to Tasks</button>
-    </div>
   </div>
 </div>
 
@@ -1513,8 +1190,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[],taskExtData=[],debtData=[],debtCollectionData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null,taskExtUnsub,debtUnsub=null,debtCollectionUnsub=null=null;
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1579,9 +1256,9 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,taskExtUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=taskExtUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];taskExtData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -1605,8 +1282,7 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startTaskExtListen();startUsersListen();startAMCListen();startDebtListen();startDebtCollectionListen();populateEngineers();
-  updateTaskViewOptions(); // Show/hide task view filters based on user role
+  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -3083,18 +2759,6 @@ function doSearch(){
 
 // ── NAV ───────────────────────────────────────────
 function go(n){
-  // OVERDUE TASK ENFORCEMENT: Block access to non-attendance modules if user has overdue tasks
-  if(n!=='attendance'&&CU){
-    const myOverdueTasks=taskData.filter(t=>
-      t.assignedTo===CU.fullName&&t.status!=='Completed'&&
-      taskDeadlineStatus(t.deadline,t.status)?.days<0
-    );
-    if(myOverdueTasks.length>0){
-      window.suppressOverdueCheck=true;
-      showOverdueBlocker(myOverdueTasks);
-      return;
-    }
-  }
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
   if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
@@ -3108,8 +2772,7 @@ function go(n){
   if(n==='users')loadUsers();
   if(n==='library'){renderLibrary();updateStorageBar();}
   if(n==='projects')renderProjectsPage();
-  if(n==='tasks'){togTaskForm(false);updateTaskViewOptions();renderTasks();markTasksSeen();}
-if(n==='debt'){renderDebtTable();updateDebtSummary();initDebtModule();}
+  if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
@@ -3718,13 +3381,8 @@ function renderTasks(){
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
 
-  // ROLE-BASED VISIBILITY:
-  // - Admin users: See ALL tasks
-  // - Regular users: See ONLY tasks assigned to them
-  const visibleTasks=CU.isAdmin?taskData:taskData.filter(t=>t.assignedTo===CU.fullName);
-  
-  // Stats: Show stats for visible tasks only
-  const scope=visibleTasks;
+  // Stats over the tasks relevant to this user (mine + by me; admin sees all)
+  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
   el('tk-st-total').textContent=scope.length;
   el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
   el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
@@ -3733,19 +3391,11 @@ function renderTasks(){
   el('tk-st-overdue').textContent=overdue;
   el('tk-st-overdue').style.color=overdue>0?'#B71C1C':'';
 
-  let list=visibleTasks.filter(t=>{
-    // View filter (different logic for admin vs regular users)
-    if(!CU.isAdmin){
-      // Non-admin: Can only view 'mine' (tasks assigned to them)
-      if(view!=='mine')return true; // Will be filtered below, just continue
-      if(t.assignedTo!==CU.fullName)return false;
-    }else{
-      // Admin: Can view all, mine, supervising, bymes, or all
-      if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
-      if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
-      if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
-      if(view==='all')return true; // Admin can see all
-    }
+  let list=taskData.filter(t=>{
+    if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
+    if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
+    if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
+    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
     if(statusF&&t.status!==statusF)return false;
     if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -3796,7 +3446,6 @@ function renderTasks(){
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
             ${dchip}
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-              ${ds&&ds.days!==undefined&&ds.days<0&&t.status!=='Completed'&&t.assignedTo===CU.fullName?`<button class="btn sm ora" onclick="openExtensionRequestModal('${t.id}')"><i class="ti ti-clock-plus"></i>Request Extension</button>`:''}
               ${canStatus&&t.status!=='Completed'?`<select class="fsel" style="padding:3px 6px;font-size:10.5px" onchange="updateTaskStatus('${t.id}',this.value)">
                 <option value="">Set status…</option>
                 ${['Open','In Progress','Completed'].filter(s=>s!==t.status).map(s=>`<option value="${s}">${s}</option>`).join('')}
@@ -3811,247 +3460,6 @@ function renderTasks(){
   }).join('');
 }
 
-// ── UPDATE TASK VIEW FILTER OPTIONS ────────────────────────────
-// Show/hide filter options based on user role
-function updateTaskViewOptions(){
-  const supervising=el('task-view-supervising');
-  const bymes=el('task-view-bymes');
-  const all=el('task-view-all');
-  
-  if(CU.isAdmin){
-    // Admin sees all view options
-    if(supervising)supervising.style.display='';
-    if(bymes)bymes.style.display='';
-    if(all)all.style.display='';
-  }else{
-    // Non-admin only sees "My tasks"
-    if(supervising)supervising.style.display='none';
-    if(bymes)bymes.style.display='none';
-    if(all)all.style.display='none';
-    // Reset view to 'mine' for non-admin
-    const viewSelect=el('task-ff-view');
-    if(viewSelect)viewSelect.value='mine';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// ── TASK EXTENSION REQUEST FUNCTIONS ──────────────────────────
-// ══════════════════════════════════════════════════════════════
-
-function checkOverdueTasksBlock(){
-  if(!CU)return;
-  const myOverdueTasks=taskData.filter(t=>
-    t.assignedTo===CU.fullName&&t.status!=='Completed'&&
-    taskDeadlineStatus(t.deadline,t.status)?.days<0
-  );
-  if(myOverdueTasks.length>0&&!window.suppressOverdueCheck){
-    showOverdueBlocker(myOverdueTasks);
-  }
-}
-
-function showOverdueBlocker(overdueTasks){
-  const html=overdueTasks.map(t=>`
-    <div style="padding:10px 12px;background:#FFF8F6;border:.5px solid #FFCDD2;border-radius:6px;margin-bottom:8px">
-      <div style="font-weight:600;color:#B71C1C;font-size:12px;margin-bottom:4px"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:3px"></i>${esc(t.title)}</div>
-      <div style="font-size:10.5px;color:var(--t2);margin-bottom:6px">Due: ${t.deadline?new Date(t.deadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
-      <button class="btn sm pri" onclick="openExtensionRequestModal('${t.id}')"><i class="ti ti-clock-plus"></i>Request Extension</button>
-    </div>
-  `).join('');
-  el('overdue-tasks-list').innerHTML=html;
-  el('overdue-blocker-modal').style.display='flex';
-}
-
-function togOverdueBlocker(show){
-  if(show)el('overdue-blocker-modal').style.display='flex';
-  else el('overdue-blocker-modal').style.display='none';
-}
-
-function openExtensionRequestModal(taskId){
-  const task=taskData.find(t=>t.id===taskId);
-  if(!task){toast('Task not found','err');return;}
-  el('ext-task-title').textContent=task.title;
-  el('ext-current-deadline').textContent=task.deadline?new Date(task.deadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
-  el('ext-new-deadline').value='';
-  el('ext-justification').value='';
-  el('ext-new-deadline').setAttribute('data-task-id',taskId);
-  el('ext-justification').setAttribute('data-task-id',taskId);
-  togExtReqModal(true);
-  togOverdueBlocker(false);
-}
-
-function togExtReqModal(show){
-  el('ext-req-modal').style.display=show?'flex':'none';
-}
-
-function togExtApprovalModal(show){
-  if(show){
-    renderExtensionApprovals();
-    el('ext-approval-modal').style.display='flex';
-  }else{
-    el('ext-approval-modal').style.display='none';
-  }
-}
-
-async function submitExtensionRequest(){
-  const taskId=el('ext-new-deadline').getAttribute('data-task-id');
-  const newDeadline=el('ext-new-deadline').value;
-  const justification=el('ext-justification').value.trim();
-  
-  if(!newDeadline){toast('Select a new deadline','err');return;}
-  if(!justification){toast('Provide a justification','err');return;}
-  
-  const task=taskData.find(t=>t.id===taskId);
-  if(!task){toast('Task not found','err');return;}
-  
-  showLoad('Submitting request…');
-  try{
-    const now=new Date().toISOString();
-    const reqObj={
-      taskId,
-      taskTitle:task.title,
-      requestedBy:CU.fullName,
-      assignedBy:task.assignedBy,
-      currentDeadline:task.deadline,
-      proposedDeadline:newDeadline,
-      justification,
-      status:'pending',
-      createdAt:now
-    };
-    await db.collection(TASK_EXT_COL).add(reqObj);
-    toast('Extension request submitted ✓','ok');
-    togExtReqModal(false);
-    sendExtensionRequestNotification(reqObj);
-  }catch(e){
-    toast('Failed: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-function renderExtensionApprovals(){
-  const myRequests=taskExtData.filter(r=>r.assignedBy===CU.fullName&&r.status==='pending');
-  
-  const html=myRequests.length?myRequests.map(r=>`
-    <div style="padding:12px;background:var(--pl);border:.5px solid #90CAF9;border-radius:8px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
-        <div style="flex:1">
-          <div style="font-weight:600;color:var(--p);margin-bottom:3px"><i class="ti ti-clock-plus"></i> ${esc(r.taskTitle)}</div>
-          <div style="font-size:10.5px;color:var(--t2);margin-bottom:6px">
-            <div>Requested by: <strong>${esc(r.requestedBy)}</strong></div>
-            <div>Current: ${r.currentDeadline?new Date(r.currentDeadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
-            <div style="color:#B71C1C">Proposed: ${r.proposedDeadline?new Date(r.proposedDeadline).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—'}</div>
-            <div style="margin-top:6px;padding:8px;background:#fff;border-radius:4px;border-left:2px solid var(--p)"><strong>Reason:</strong> ${esc(r.justification)}</div>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;justify-content:flex-end">
-        <button class="btn sm danger" onclick="rejectExtensionRequest('${r.id}')"><i class="ti ti-x"></i>Reject</button>
-        <button class="btn sm grn" onclick="approveExtensionRequest('${r.id}')"><i class="ti ti-check"></i>Approve</button>
-      </div>
-    </div>
-  `).join(''):`<div style="text-align:center;padding:20px;color:var(--t2)"><i class="ti ti-circle-check" style="font-size:32px;opacity:.3;margin-bottom:10px;display:block"></i>No pending requests</div>`;
-  
-  el('ext-approval-list').innerHTML=html;
-}
-
-async function approveExtensionRequest(reqId){
-  const req=taskExtData.find(r=>r.id===reqId);
-  if(!req){toast('Request not found','err');return;}
-  
-  showLoad('Approving request…');
-  try{
-    const now=new Date().toISOString();
-    
-    // Update extension request status
-    await db.collection(TASK_EXT_COL).doc(reqId).update({
-      status:'approved',
-      approvedAt:now,
-      approvedBy:CU.fullName
-    });
-    
-    // Update the task's deadline
-    await db.collection(TASK_COL).doc(req.taskId).update({
-      deadline:req.proposedDeadline,
-      updatedAt:now
-    });
-    
-    toast('Extension approved ✓ — deadline updated','ok');
-    sendExtensionApprovalNotification(req,'approved');
-    renderExtensionApprovals();
-  }catch(e){
-    toast('Failed: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-async function rejectExtensionRequest(reqId){
-  const reason=prompt('Reason for rejection (optional):');
-  if(reason===null)return;
-  
-  showLoad('Rejecting request…');
-  try{
-    const now=new Date().toISOString();
-    const req=taskExtData.find(r=>r.id===reqId);
-    
-    await db.collection(TASK_EXT_COL).doc(reqId).update({
-      status:'rejected',
-      rejectionReason:reason||'—',
-      updatedAt:now
-    });
-    
-    toast('Extension rejected ✓','ok');
-    sendExtensionApprovalNotification(req,'rejected',reason);
-    renderExtensionApprovals();
-  }catch(e){
-    toast('Failed: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-function sendExtensionRequestNotification(req){
-  if(!CFG.NOTIFY_ON)return;
-  const assigner=req.assignedBy;
-  const link='https://dqap-wiki.firebaseapp.com';
-  const text=`${req.requestedBy} has requested a deadline extension for task "${req.taskTitle}".\n\nCurrent deadline: ${new Date(req.currentDeadline).toLocaleString()}\nProposed deadline: ${new Date(req.proposedDeadline).toLocaleString()}\nJustification: ${req.justification}\n\nReview and approve/reject: ${link}`;
-  
-  emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{
-    to_email:CFG.NOTIFY_TO,to_name:assigner,subject:`Extension Request: ${req.taskTitle}`,message:text
-  },CFG.EJS_KEY).catch(()=>{});
-}
-
-function sendExtensionApprovalNotification(req,action,reason=''){
-  if(!CFG.NOTIFY_ON)return;
-  const statusText=action==='approved'?'Approved — deadline updated':'Rejected'+(reason?': '+reason:'');
-  const text=`Your extension request for "${req.taskTitle}" has been ${statusText}.\n\nApproved by: ${req.approvedBy||'System'}\nNew deadline: ${action==='approved'?new Date(req.proposedDeadline).toLocaleString():'Not changed'}`;
-  
-  emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{
-    to_email:CFG.NOTIFY_TO,to_name:req.requestedBy,subject:`Extension ${statusText}: ${req.taskTitle}`,message:text
-  },CFG.EJS_KEY).catch(()=>{});
-}
-
-function startTaskExtListen(){
-  if(taskExtUnsub)taskExtUnsub();
-  taskExtUnsub=db.collection(TASK_EXT_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
-    taskExtData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    updateExtensionBadge();
-    checkOverdueTasksBlock();
-  },err=>{});
-}
-
-function updateExtensionBadge(){
-  const pending=taskExtData.filter(r=>r.assignedBy===CU?.fullName&&r.status==='pending');
-  const btn=el('ext-approvals-btn'),badge=el('ext-req-badge');
-  if(pending.length>0){
-    btn.style.display='inline-flex';
-    badge.style.display='block';
-    badge.textContent=pending.length;
-  }else{
-    btn.style.display='none';
-    badge.style.display='none';
-  }
-}
 
 // ── AMC LISTENER ──────────────────────────────────
 function startAMCListen(){
@@ -4861,612 +4269,579 @@ function attCloseOOO(){
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── DEBT MANAGEMENT MODULE - JAVASCRIPT FUNCTIONS ───────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
 
-// Global variables
-let debtData = [];
-let debtCollectionData = [];
-let debtUnsub = null;
-let debtCollectionUnsub = null;
-const DEBT_COL = "dqap_debt_management";
-const DEBT_COLLECTION_COL = "dqap_debt_collections";
+// ===== DEBT MANAGEMENT MODULE =====
+let debtCsvData = [];
+let debtAllocationsData = [];
+let debtCommitmentsData = [];
+let debtProjectsData = [];
+let debtCurrentCustomer = null;
+let debtTempAllocations = [];
+let debtCurrentAllocationId = null;
 
-// ── MODAL FUNCTIONS ───────────────────────────────────────────────────
-function togDebtUploadModal(show){
-  const m = el('debt-upload-modal');
-  if(m) m.style.display = show ? 'flex' : 'none';
-  if(!show) el('debt-statement-file').value = '';
-}
-
-function togDebtEntryModal(show, entry=null){
-  const m = el('debt-entry-modal');
-  if(m) m.style.display = show ? 'flex' : 'none';
-  
-  if(show){
-    if(entry){
-      // Edit mode
-      el('debt-entry-id').value = entry.id;
-      el('debt-entry-customer').value = entry.customerName;
-      el('debt-entry-project').value = entry.projectId || '';
-      el('debt-entry-amount').value = entry.amountBilled || 0;
-      el('debt-entry-collectible').value = entry.collectibleAmount || 0;
-      el('debt-entry-forecast').value = entry.forecastDate ? entry.forecastDate.split('T')[0] : '';
-      el('debt-entry-notes').value = entry.notes || '';
-    }else{
-      // Add mode
-      el('debt-entry-id').value = '';
-      el('debt-entry-customer').value = '';
-      el('debt-entry-project').value = '';
-      el('debt-entry-amount').value = '';
-      el('debt-entry-collectible').value = '';
-      el('debt-entry-forecast').value = '';
-      el('debt-entry-notes').value = '';
-    }
-  }
-}
-
-function togDebtCollectionModal(show, entryId=null){
-  const m = el('debt-collection-modal');
-  if(m) m.style.display = show ? 'flex' : 'none';
-  
-  if(show && entryId){
-    const entry = debtData.find(d => d.id === entryId);
-    if(entry){
-      el('debt-collection-entry-id').value = entryId;
-      el('debt-coll-customer-display').textContent = entry.customerName;
-      
-      // Calculate outstanding
-      const collected = debtCollectionData.filter(c => c.debtEntryId === entryId)
-        .reduce((sum, c) => sum + (c.committedAmount || 0), 0);
-      const outstanding = (entry.amountBilled || 0) - collected;
-      el('debt-coll-outstanding-display').textContent = outstanding.toLocaleString('en-IN', {maximumFractionDigits: 2});
-      
-      el('debt-collection-amount').value = '';
-      el('debt-collection-date').value = new Date().toISOString().split('T')[0];
-      el('debt-collection-method').value = 'bank_transfer';
-      el('debt-collection-ref').value = '';
-      el('debt-collection-remarks').value = '';
-    }
-  }
-}
-
-// ── TAB SWITCHING ───────────────────────────────────────────────────
-function showDebtTab(tab){
-  document.querySelectorAll('[id^="debt-tab-"]').forEach(t => t.style.display = 'none');
-  el(`debt-tab-${tab}`).style.display = 'block';
-  
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  event.target.closest('.tab-btn').classList.add('active');
-  
-  if(tab === 'active') renderDebtTable();
-  if(tab === 'collections') renderCollectionsTable();
-  if(tab === 'history') renderHistoryTable();
-}
-
-// ── DEBT STATEMENT UPLOAD & PARSE ───────────────────────────────────
-async function uploadDebtStatement(){
-  const file = el('debt-statement-file').files[0];
-  if(!file){
-    toast('Please select a file','err');
-    return;
-  }
-  
-  showLoad('Uploading debt statement…');
-  try{
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try{
-        let customers = [];
-        
-        if(file.name.endsWith('.csv')){
-          // Parse CSV
-          const lines = e.target.result.split('\n');
-          // Simple CSV parsing - adjust based on actual format
-          for(let line of lines.slice(1)){
-            const parts = line.split(',');
-            if(parts.length >= 2 && parts[0].trim()){
-              customers.push({
-                name: parts[0].trim(),
-                outstandingAmount: parseFloat(parts[parts.length-1]) || 0
-              });
-            }
-          }
-        }else{
-          // Parse Excel - needs xlsx library
-          const arr = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(arr, {type:'array'});
-          const ws = workbook.Sheets[workbook.SheetNames[0]];
-          const data = XLSX.utils.sheet_to_json(ws);
-          
-          // Parse based on Tally format
-          customers = data
-            .filter(row => row['Particulars'] && row['Particulars'].trim())
-            .map(row => ({
-              name: row['Particulars'].trim(),
-              outstandingAmount: parseFloat(row['Closing Balance']) || 0
-            }));
+// Tab switching
+function switchDebtTab(tabName) {
+    document.querySelectorAll('[id^="debt-"][id*="content"]').forEach(tab => {
+        if (tab.id.startsWith('debt-') && !tab.id.includes('Modal')) {
+            tab.style.display = 'none';
         }
+    });
+    document.querySelectorAll('.tab-btn[id^="debt-tab-"]').forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--t1)';
+        btn.style.borderColor = 'var(--bds)';
+    });
+    const tabEl = document.getElementById('debt-' + tabName);
+    if (tabEl) {
+        tabEl.style.display = 'block';
+        const btnEl = document.getElementById('debt-tab-' + tabName);
+        if (btnEl) {
+            btnEl.style.background = 'var(--pl)';
+            btnEl.style.color = 'var(--p)';
+            btnEl.style.borderColor = 'var(--p)';
+        }
+    }
+    updateDebtAllTabs();
+}
+
+// Load projects from Firestore
+async function loadDebtProjectsFromFirestore() {
+    try {
+        if (!window.db) return;
+        const snapshot = await db.collection('dqap_projects').get();
         
-        // Save to Firestore
-        const statementRef = await db.collection(DEBT_COL).doc('statements').collection('list').add({
-          uploadDate: new Date(),
-          fileName: file.name,
-          uploadedBy: CU.fullName,
-          parsedCustomers: customers,
-          totalOutstanding: customers.reduce((sum, c) => sum + c.outstandingAmount, 0),
-          status: 'processed'
+        debtProjectsData = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            let pos = [];
+            if (data.pos && Array.isArray(data.pos)) {
+                pos = data.pos.map(po => ({
+                    date: po.date || '',
+                    number: po.number || '',
+                    value: po.value || 0
+                }));
+            }
+            
+            debtProjectsData.push({
+                id: doc.id,
+                name: data.name || '',
+                number: data.number || '',
+                pos: pos
+            });
         });
         
-        // Show parsed customers for linking
-        showDebtLinkingForm(customers);
-        
-        togDebtUploadModal(false);
-        toast('Statement uploaded successfully ✓','ok');
-        
-      }catch(err){
-        toast('Error parsing file: '+err.message,'err');
-      }finally{
-        hideLoad();
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }catch(e){
-    toast('Upload failed: '+e.message,'err');
-    hideLoad();
-  }
+        console.log('✓ Debt: Loaded', debtProjectsData.length, 'projects from Firestore');
+    } catch (err) {
+        console.warn('Debt: Could not load projects:', err.message);
+    }
 }
 
-function parseDebtStatement(){
-  const file = el('debt-file-input').files[0];
-  if(!file){
-    toast('Please select a file','err');
-    return;
-  }
-  
-  showLoad('Parsing debt statement…');
-  try{
+// CSV Upload
+function handleDebtCSVUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      try{
-        let customers = [];
+    reader.onload = (e) => {
+        const content = e.target.result;
+        const lines = content.split('\n');
+        const mergedLines = mergeDebtMultilineCSVRows(lines);
         
-        if(file.name.endsWith('.csv')){
-          const lines = e.target.result.split('\n');
-          for(let line of lines.slice(1)){
-            const parts = line.split(',');
-            if(parts.length >= 2 && parts[0].trim()){
-              customers.push({
-                name: parts[0].trim(),
-                outstandingAmount: parseFloat(parts[parts.length-1]) || 0
-              });
-            }
-          }
-        }else{
-          const arr = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(arr, {type:'array'});
-          const ws = workbook.Sheets[workbook.SheetNames[0]];
-          const data = XLSX.utils.sheet_to_json(ws);
-          
-          customers = data
-            .filter(row => row['Particulars'] && row['Particulars'].trim())
-            .map(row => ({
-              name: row['Particulars'].trim(),
-              outstandingAmount: parseFloat(row['Closing Balance']) || 0
-            }))
-            .filter(c => c.outstandingAmount > 0);
+        debtCsvData = [];
+        
+        for (let i = 14; i < mergedLines.length; i++) {
+            const row = parseDebtCSVRow(mergedLines[i]);
+            if (row.length < 5) continue;
+            
+            const customerName = row[0].trim();
+            if (!customerName || customerName.length < 2) continue;
+            if (!/[a-zA-Z]/.test(customerName)) continue;
+            if (customerName.toUpperCase().includes('TOTAL')) continue;
+            if (customerName.match(/^[,\s]+$/)) continue;
+            
+            const opening = parseDebtIndianNumber(row[1]);
+            const billed = parseDebtIndianNumber(row[2]);
+            const collected = parseDebtIndianNumber(row[3]);
+            const outstanding = parseDebtIndianNumber(row[4]);
+            
+            if (outstanding <= 0) continue;
+            
+            debtCsvData.push({
+                customerName,
+                opening,
+                billed,
+                collected,
+                outstanding,
+                allocated: 0
+            });
         }
         
-        // Show preview
-        const preview = el('debt-preview-list');
-        preview.innerHTML = customers.slice(0, 20).map(c => 
-          `<div style="padding:5px;border-bottom:1px solid #ddd">${c.name} | ₹${c.outstandingAmount.toLocaleString('en-IN')}</div>`
-        ).join('') + (customers.length > 20 ? `<div style="padding:5px;color:var(--t2)">...and ${customers.length-20} more</div>` : '');
-        el('debt-parse-preview').style.display = 'block';
-        
-        // Show linking form
-        showDebtLinkingForm(customers);
-        
-        hideLoad();
-      }catch(err){
-        toast('Error parsing: '+err.message,'err');
-        hideLoad();
-      }
+        debtCsvData.sort((a, b) => b.outstanding - a.outstanding);
+        saveDebtToLocalStorage();
+        updateDebtAllTabs();
+        toast(`✅ Loaded ${debtCsvData.length} customers`, 'ok');
     };
-    
-    reader.readAsArrayBuffer(file);
-  }catch(e){
-    toast('Error: '+e.message,'err');
-    hideLoad();
-  }
+    reader.readAsText(file);
 }
 
-function showDebtLinkingForm(customers){
-  const form = el('debt-link-form');
-  form.innerHTML = customers.slice(0, 10).map(c => `
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px;padding:10px;background:#f9f9f9;border-radius:5px;align-items:center">
-      <div style="font-size:12px;font-weight:500">${esc(c.name)}</div>
-      <div>
-        <input type="hidden" class="debt-customer-name" value="${esc(c.name)}">
-        <input type="hidden" class="debt-customer-amount" value="${c.outstandingAmount}">
-        <select class="debt-project-select fsel" style="width:100%;font-size:11px">
-          <option value="">Select project…</option>
-          <option value="other">Other-Non Customer</option>
-          ${projData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
-        </select>
-      </div>
-      <button class="btn pri sm" onclick="linkDebtCustomer(this)">Link</button>
-    </div>
-  `).join('');
-}
-
-async function linkDebtCustomer(btn){
-  const row = btn.closest('div');
-  const customerName = row.querySelector('.debt-customer-name').value;
-  const amountBilled = parseFloat(row.querySelector('.debt-customer-amount').value);
-  const projectId = row.querySelector('.debt-project-select').value;
-  
-  if(!projectId){
-    toast('Please select a project','err');
-    return;
-  }
-  
-  showLoad('Linking…');
-  try{
-    const project = projectId === 'other' ? {id:'other',projectName:'Other-Non Customer',poNumber:''} : projData.find(p => p.id === projectId);
+function mergeDebtMultilineCSVRows(rawLines) {
+    const mergedRows = [];
+    let currentRow = '';
+    let insideQuotes = false;
     
-    await db.collection(DEBT_COL).add({
-      customerName: customerName,
-      projectId: projectId,
-      projectName: project.projectName,
-      poNumber: project.poNumber || '',
-      amountBilled: amountBilled,
-      collectibleAmount: 0,
-      forecastDate: '',
-      linkedBy: CU.fullName,
-      createdAt: new Date(),
-      notes: '',
-      status: 'active'
-    });
-    
-    toast('Linked successfully ✓','ok');
-    row.style.opacity = '0.5';
-    btn.disabled = true;
-    
-  }catch(e){
-    toast('Error: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
-}
-
-// ── DEBT ENTRY CRUD ───────────────────────────────────────────────────
-async function saveDebtEntry(){
-  const id = el('debt-entry-id').value;
-  const customerName = el('debt-entry-customer').value.trim();
-  const projectId = el('debt-entry-project').value;
-  const amountBilled = parseFloat(el('debt-entry-amount').value) || 0;
-  const collectibleAmount = parseFloat(el('debt-entry-collectible').value) || 0;
-  const forecastDate = el('debt-entry-forecast').value;
-  const notes = el('debt-entry-notes').value;
-  
-  if(!customerName || !projectId || !amountBilled){
-    toast('Please fill all required fields','err');
-    return;
-  }
-  
-  showLoad('Saving…');
-  try{
-    const project = projectId === 'other' ? {projectName:'Other-Non Customer',poNumber:''} : projData.find(p => p.id === projectId);
-    
-    const data = {
-      customerName: customerName,
-      projectId: projectId,
-      projectName: project.projectName,
-      poNumber: project.poNumber || '',
-      amountBilled: amountBilled,
-      collectibleAmount: collectibleAmount,
-      forecastDate: forecastDate ? forecastDate+'T00:00' : '',
-      notes: notes,
-      linkedBy: CU.fullName,
-      updatedAt: new Date(),
-      status: 'active'
-    };
-    
-    if(id){
-      await db.collection(DEBT_COL).doc(id).update(data);
-      toast('Updated ✓','ok');
-    }else{
-      data.createdAt = new Date();
-      await db.collection(DEBT_COL).add(data);
-      toast('Added ✓','ok');
+    for (let i = 0; i < rawLines.length; i++) {
+        let line = rawLines[i];
+        for (let j = 0; j < line.length; j++) {
+            if (line[j] === '"' && (j === 0 || line[j-1] !== '\\')) {
+                insideQuotes = !insideQuotes;
+            }
+        }
+        currentRow += line;
+        if (!insideQuotes) {
+            mergedRows.push(currentRow);
+            currentRow = '';
+        }
     }
     
-    togDebtEntryModal(false);
-    renderDebtTable();
-    
-  }catch(e){
-    toast('Error: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
+    if (currentRow) mergedRows.push(currentRow);
+    return mergedRows;
 }
 
-async function deleteDebtEntry(id){
-  if(!confirm('Delete this entry?'))return;
-  
-  showLoad('Deleting…');
-  try{
-    await db.collection(DEBT_COL).doc(id).delete();
-    toast('Deleted ✓','ok');
-    renderDebtTable();
-  }catch(e){
-    toast('Error: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
+function parseDebtCSVRow(line) {
+    const result = [];
+    let current = '';
+    let insideQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current.trim());
+    return result;
 }
 
-// ── COLLECTION TRACKING ───────────────────────────────────────────────────
-async function saveDebtCollection(){
-  const entryId = el('debt-collection-entry-id').value;
-  const amount = parseFloat(el('debt-collection-amount').value) || 0;
-  const date = el('debt-collection-date').value;
-  const method = el('debt-collection-method').value;
-  const ref = el('debt-collection-ref').value;
-  const remarks = el('debt-collection-remarks').value;
-  
-  if(!amount || !date){
-    toast('Please enter amount and date','err');
-    return;
-  }
-  
-  showLoad('Recording collection…');
-  try{
-    await db.collection(DEBT_COLLECTION_COL).add({
-      debtEntryId: entryId,
-      committedAmount: amount,
-      collectionDate: date+'T00:00',
-      paymentMethod: method,
-      referenceNumber: ref,
-      remarks: remarks,
-      collectedBy: CU.fullName,
-      createdAt: new Date(),
-      status: 'committed'
-    });
-    
-    toast('Collection recorded ✓','ok');
-    togDebtCollectionModal(false);
-    renderDebtTable();
-    renderCollectionsTable();
-    
-  }catch(e){
-    toast('Error: '+e.message,'err');
-  }finally{
-    hideLoad();
-  }
+function parseDebtIndianNumber(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/[₹,]/g, '')) || 0;
 }
 
-// ── TABLE RENDERING ───────────────────────────────────────────────────
-function renderDebtTable(){
-  const q = (el('debt-search')?.value || '').toLowerCase();
-  const status = el('debt-filter-status')?.value || '';
-  
-  let list = debtData.filter(d => {
-    if(status && d.status !== status.toLowerCase())return false;
-    if(q && ![d.customerName, d.poNumber, d.projectName].join(' ').toLowerCase().includes(q))return false;
-    return true;
-  });
-  
-  const tbody = el('debt-active-tbody');
-  const empty = el('debt-empty');
-  
-  if(!list.length){
-    tbody.innerHTML = '';
-    if(empty)empty.style.display = 'block';
-    return;
-  }
-  
-  if(empty)empty.style.display = 'none';
-  
-  tbody.innerHTML = list.map(d => {
-    const collected = debtCollectionData
-      .filter(c => c.debtEntryId === d.id)
-      .reduce((sum, c) => sum + (c.committedAmount || 0), 0);
-    const outstanding = d.amountBilled - collected;
-    const forecastDt = d.forecastDate ? new Date(d.forecastDate).toLocaleDateString('en-IN') : '-';
-    let statusCol = 'Active';
-    let statusColor = '#0070C0';
-    if(outstanding === 0){
-      statusCol = 'Resolved';
-      statusColor = '#1B5E20';
-    }else if(d.forecastDate && new Date(d.forecastDate) < new Date()){
-      statusCol = 'Overdue';
-      statusColor = '#B71C1C';
+function parseDebtCSV() {
+    const fileInput = document.getElementById('debtCsvFile');
+    if (!fileInput.files[0]) {
+        toast('Please select a CSV file', 'err');
+        return;
+    }
+    handleDebtCSVUpload({target: {files: fileInput.files}});
+}
+
+// Update all tabs
+function updateDebtAllTabs() {
+    updateDebtCSVPreview();
+    updateDebtSummary();
+    updateDebtLinking();
+    updateDebtCommitments();
+    updateDebtLeaderboard();
+}
+
+function updateDebtCSVPreview() {
+    const tbody = document.getElementById('debtCsvPreviewBody');
+    if (debtCsvData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--t2)">Upload a CSV file to see preview</td></tr>';
+        return;
     }
     
-    return `<tr>
-      <td style="font-weight:500">${esc(d.customerName)}</td>
-      <td>${esc(d.poNumber || d.projectName)}</td>
-      <td>₹${d.amountBilled.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td>₹${d.collectibleAmount.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td style="color:#1B5E20;font-weight:500">₹${collected.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td style="color:#B71C1C;font-weight:500">₹${outstanding.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td>${forecastDt}</td>
-      <td><span style="background:${statusColor}22;color:${statusColor};padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600">${statusCol}</span></td>
-      <td style="white-space:nowrap">
-        <button class="btn sm" onclick="togDebtCollectionModal(true,'${d.id}')" title="Record Collection">
-          <i class="ti ti-coin"></i>
-        </button>
-        <button class="btn sm" onclick="togDebtEntryModal(true,debtData.find(x=>x.id==='${d.id}'))" title="Edit">
-          <i class="ti ti-edit"></i>
-        </button>
-        <button class="btn sm danger" onclick="deleteDebtEntry('${d.id}')" title="Delete">
-          <i class="ti ti-trash"></i>
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
+    tbody.innerHTML = debtCsvData.map(row => `
+        <tr>
+            <td><strong>${row.customerName}</strong></td>
+            <td style="text-align:right">₹${row.opening.toLocaleString('en-IN')}</td>
+            <td style="text-align:right">₹${row.billed.toLocaleString('en-IN')}</td>
+            <td style="text-align:right">₹${row.collected.toLocaleString('en-IN')}</td>
+            <td style="text-align:right">₹${row.outstanding.toLocaleString('en-IN')}</td>
+        </tr>
+    `).join('');
 }
 
-function renderCollectionsTable(){
-  const search = (el('debt-collection-search')?.value || '').toLowerCase();
-  const dateFrom = el('debt-collection-date-from')?.value || '';
-  const dateTo = el('debt-collection-date-to')?.value || '';
-  
-  let list = debtCollectionData.filter(c => {
-    const entry = debtData.find(d => d.id === c.debtEntryId);
-    if(!entry)return false;
-    if(search && ![entry.customerName, entry.poNumber].join(' ').toLowerCase().includes(search))return false;
-    if(dateFrom && c.collectionDate < dateFrom+'T00:00')return false;
-    if(dateTo && c.collectionDate > dateTo+'T23:59')return false;
-    return true;
-  });
-  
-  const tbody = el('debt-collections-tbody');
-  const empty = el('debt-collections-empty');
-  
-  if(!list.length){
-    tbody.innerHTML = '';
-    if(empty)empty.style.display = 'block';
-    return;
-  }
-  
-  if(empty)empty.style.display = 'none';
-  
-  tbody.innerHTML = list.map(c => {
-    const entry = debtData.find(d => d.id === c.debtEntryId);
-    const dt = new Date(c.collectionDate).toLocaleDateString('en-IN');
+function updateDebtSummary() {
+    if (debtCsvData.length === 0) return;
     
-    return `<tr>
-      <td>${esc(entry.customerName)}</td>
-      <td>${esc(entry.poNumber)}</td>
-      <td>₹${c.committedAmount.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td>${dt}</td>
-      <td>${c.paymentMethod.replace('_',' ')}</td>
-      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${c.remarks || '-'}</td>
-      <td><span style="background:#0070C022;color:#0070C0;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600">${c.status}</span></td>
-      <td>
-        <button class="btn sm danger" onclick="if(confirm('Delete?'))db.collection('${DEBT_COLLECTION_COL}').doc('${c.id}').delete().then(()=>{toast('Deleted ✓','ok');renderCollectionsTable()})" title="Delete">
-          <i class="ti ti-trash"></i>
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
+    const totalOutstanding = debtCsvData.reduce((s, r) => s + r.outstanding, 0);
+    const totalAllocated = debtAllocationsData.reduce((s, a) => s + (a.allocatedAmount || 0), 0);
+    const totalCommitted = debtCommitmentsData.reduce((s, c) => s + (c.allocatedAmount || 0), 0);
+    const totalCollected = debtCommitmentsData.reduce((s, c) => s + (c.collectedAmount || 0), 0);
+    
+    document.getElementById('debtSummaryOutstanding').textContent = `₹${totalOutstanding.toLocaleString('en-IN')}`;
+    document.getElementById('debtSummaryAllocated').textContent = `₹${totalAllocated.toLocaleString('en-IN')}`;
+    document.getElementById('debtSummaryCommitted').textContent = `₹${totalCommitted.toLocaleString('en-IN')}`;
+    document.getElementById('debtSummaryCollected').textContent = `₹${totalCollected.toLocaleString('en-IN')}`;
+    
+    const tbody = document.getElementById('debtSummaryTableBody');
+    tbody.innerHTML = debtCsvData.map(customer => {
+        const allocated = debtAllocationsData
+            .filter(a => a.tallyCustomerName === customer.customerName)
+            .reduce((s, a) => s + (a.allocatedAmount || 0), 0);
+        
+        const committed = debtCommitmentsData
+            .filter(c => c.tallyCustomerName === customer.customerName)
+            .reduce((s, c) => s + (c.allocatedAmount || 0), 0);
+        
+        const status = committed > 0 ? 'committed' : (allocated > 0 ? 'partial' : 'pending');
+        const statusText = committed > 0 ? '✓ Committed' : (allocated > 0 ? 'Partial' : 'Pending');
+        const badgeClass = committed > 0 ? 'b-cmp' : (allocated > 0 ? 'b-wor' : 'b-pnd');
+        
+        return `
+            <tr>
+                <td><strong>${customer.customerName}</strong></td>
+                <td style="text-align:right">₹${customer.outstanding.toLocaleString('en-IN')}</td>
+                <td style="text-align:right">₹${allocated.toLocaleString('en-IN')}</td>
+                <td style="text-align:right">₹${committed.toLocaleString('en-IN')}</td>
+                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+            </tr>
+        `;
+    }).join('');
 }
 
-function renderHistoryTable(){
-  // Group by customer and status=resolved
-  const resolved = {};
-  debtData.forEach(d => {
-    if(d.status === 'resolved'){
-      if(!resolved[d.customerName]){
-        resolved[d.customerName] = {
-          customerName: d.customerName,
-          totalBilled: 0,
-          totalCollected: 0,
-          entries: []
+function updateDebtLinking() {
+    const tbody = document.getElementById('debtLinkingTableBody');
+    if (debtCsvData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--t2)">Upload CSV first</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = debtCsvData.map(customer => {
+        const allocated = debtAllocationsData
+            .filter(a => a.tallyCustomerName === customer.customerName)
+            .reduce((s, a) => s + (a.allocatedAmount || 0), 0);
+        
+        const unallocated = customer.outstanding - allocated;
+        const status = unallocated === 0 ? 'complete' : (allocated > 0 ? 'partial' : 'pending');
+        const statusText = unallocated === 0 ? 'Complete' : (allocated > 0 ? 'Partial' : 'Pending');
+        const badgeClass = unallocated === 0 ? 'b-cmp' : (allocated > 0 ? 'b-wor' : 'b-pnd');
+        
+        return `
+            <tr>
+                <td><strong>${customer.customerName}</strong></td>
+                <td style="text-align:right">₹${customer.outstanding.toLocaleString('en-IN')}</td>
+                <td style="text-align:right">₹${allocated.toLocaleString('en-IN')}</td>
+                <td style="text-align:right">₹${unallocated.toLocaleString('en-IN')}</td>
+                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                <td><button class="btn sm pri" onclick="openDebtLinkModal('${customer.customerName}')"><i class="ti ti-link"></i>Link</button></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateDebtCommitments() {
+    const tbody = document.getElementById('debtCommitmentsTableBody');
+    if (debtAllocationsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--t2)">No allocations yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = debtAllocationsData.map(alloc => {
+        const commitment = debtCommitmentsData.find(c => c.allocationId === alloc.id);
+        const statusText = commitment ? '✓ Committed' : 'Pending';
+        const badgeClass = commitment ? 'b-cmp' : 'b-pnd';
+        const assignedTo = commitment ? commitment.assignedTo : '-';
+        const commitDate = commitment ? new Date(commitment.commitDate).toLocaleDateString('en-IN') : '-';
+        
+        return `
+            <tr>
+                <td><strong>${alloc.tallyCustomerName}</strong></td>
+                <td>${alloc.projectName}</td>
+                <td>${alloc.poNumber}</td>
+                <td style="text-align:right">₹${alloc.allocatedAmount.toLocaleString('en-IN')}</td>
+                <td>${assignedTo}</td>
+                <td>${commitDate}</td>
+                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                <td><button class="btn sm pri" onclick="openDebtCommitmentModal('${alloc.id}')">${commitment ? 'Edit' : 'Set'}</button></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateDebtLeaderboard() {
+    const container = document.getElementById('debtLeaderboardContainer');
+    
+    if (debtCommitmentsData.length === 0) {
+        container.innerHTML = '<div class="empty"><i class="ti ti-trophy eico"></i><div class="etit">No commitments yet</div><div class="edesc">Create commitments to see team performance leaderboard</div></div>';
+        return;
+    }
+    
+    const DEBT_USERS = ['Ravi', 'Jawed', 'Chetan', 'Keshav'];
+    const userStats = {};
+    
+    DEBT_USERS.forEach(user => {
+        userStats[user] = {
+            name: user,
+            assignedCount: 0,
+            committedAmount: 0,
+            collectedAmount: 0
         };
-      }
-      resolved[d.customerName].totalBilled += d.amountBilled;
-      resolved[d.customerName].entries.push(d.id);
+    });
+    
+    debtCommitmentsData.forEach(commitment => {
+        if (userStats[commitment.assignedTo]) {
+            userStats[commitment.assignedTo].assignedCount++;
+            userStats[commitment.assignedTo].committedAmount += commitment.allocatedAmount;
+            userStats[commitment.assignedTo].collectedAmount += commitment.collectedAmount;
+        }
+    });
+    
+    const sorted = Object.values(userStats)
+        .filter(u => u.assignedCount > 0)
+        .sort((a, b) => b.collectedAmount - a.collectedAmount);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<div class="empty"><i class="ti ti-users eico"></i><div class="etit">No assignments yet</div></div>';
+        return;
     }
-  });
-  
-  debtCollectionData.forEach(c => {
-    const entry = debtData.find(d => d.id === c.debtEntryId);
-    if(entry && resolved[entry.customerName]){
-      resolved[entry.customerName].totalCollected += c.committedAmount;
+    
+    container.innerHTML = sorted.map((user, idx) => {
+        const performance = user.committedAmount > 0 
+            ? Math.round((user.collectedAmount / user.committedAmount) * 100) 
+            : 0;
+        
+        const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : ''));
+        
+        return `
+            <div class="ecard">
+                <div class="ech" style="flex-wrap:wrap">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1">
+                        <div style="font-size:20px">${medal}</div>
+                        <div style="flex:1">
+                            <div style="font-weight:600;color:var(--p)">#${idx + 1} ${user.name}</div>
+                            <div style="font-size:11px;color:var(--t2)">Performance: ${performance}%</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:15px;text-align:center">
+                        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;margin-bottom:3px">Assignments</div><div style="font-size:16px;font-weight:600;color:var(--p)">${user.assignedCount}</div></div>
+                        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;margin-bottom:3px">Committed</div><div style="font-size:14px;font-weight:600;color:var(--p)">₹${(user.committedAmount/100000).toFixed(1)}L</div></div>
+                        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;margin-bottom:3px">Collected</div><div style="font-size:14px;font-weight:600;color:#3F704D">₹${(user.collectedAmount/100000).toFixed(1)}L</div></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Modal functions
+function openDebtLinkModal(customerName) {
+    debtCurrentCustomer = debtCsvData.find(c => c.customerName === customerName);
+    if (!debtCurrentCustomer) {
+        toast('Customer not found', 'err');
+        return;
     }
-  });
-  
-  const tbody = el('debt-history-tbody');
-  const empty = el('debt-history-empty');
-  const list = Object.values(resolved);
-  
-  if(!list.length){
-    tbody.innerHTML = '';
-    if(empty)empty.style.display = 'block';
-    return;
-  }
-  
-  if(empty)empty.style.display = 'none';
-  
-  tbody.innerHTML = list.map(h => {
-    const resolvedDt = '-'; // Would need resolved date from entry
-    return `<tr>
-      <td>${esc(h.customerName)}</td>
-      <td>₹${h.totalBilled.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td style="color:#1B5E20">₹${h.totalCollected.toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td><span style="background:#1B5E2022;color:#1B5E20;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600">RESOLVED</span></td>
-      <td>${resolvedDt}</td>
-      <td>0 days</td>
-    </tr>`;
-  }).join('');
+    
+    debtTempAllocations = [...debtAllocationsData.filter(a => a.tallyCustomerName === customerName)];
+    const allocated = debtAllocationsData
+        .filter(a => a.tallyCustomerName === customerName)
+        .reduce((s, a) => s + (a.allocatedAmount || 0), 0);
+    
+    const remaining = debtCurrentCustomer.outstanding - allocated;
+    
+    document.getElementById('debtModalCustomer').value = customerName;
+    document.getElementById('debtModalOutstanding').value = `₹${debtCurrentCustomer.outstanding.toLocaleString('en-IN')}`;
+    document.getElementById('debtModalRemaining').value = `₹${remaining.toLocaleString('en-IN')}`;
+    
+    document.getElementById('debtProjectDropdown').value = '';
+    document.getElementById('debtPoDropdown').value = '';
+    document.getElementById('debtAllocationAmount').value = '';
+    
+    populateDebtProjectDropdown();
+    displayDebtCurrentAllocations();
+    
+    document.getElementById('debtLinkModal').style.display = 'flex';
 }
 
-// ── SUMMARY CALCULATIONS ───────────────────────────────────────────────────
-function updateDebtSummary(){
-  const totalBilled = debtData.reduce((sum, d) => sum + d.amountBilled, 0);
-  const totalCollected = debtCollectionData.reduce((sum, c) => sum + c.committedAmount, 0);
-  const outstanding = totalBilled - totalCollected;
-  const percent = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
-  
-  if(el('debt-total-billed'))el('debt-total-billed').textContent = '₹ ' + totalBilled.toLocaleString('en-IN', {maximumFractionDigits: 0});
-  if(el('debt-total-collected'))el('debt-total-collected').textContent = '₹ ' + totalCollected.toLocaleString('en-IN', {maximumFractionDigits: 0});
-  if(el('debt-total-outstanding'))el('debt-total-outstanding').textContent = '₹ ' + outstanding.toLocaleString('en-IN', {maximumFractionDigits: 0});
-  if(el('debt-collection-percent'))el('debt-collection-percent').textContent = percent + '%';
+function closeDebtLinkModal() {
+    document.getElementById('debtLinkModal').style.display = 'none';
+    debtTempAllocations = [];
 }
 
-// ── FIRESTORE LISTENERS ───────────────────────────────────────────────────
-function startDebtListen(){
-  if(debtUnsub)debtUnsub();
-  debtUnsub = db.collection(DEBT_COL).orderBy('createdAt', 'desc').onSnapshot(
-    snap => {
-      debtData = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      updateDebtSummary();
-      renderDebtTable();
-      if(el('debt-add-btn'))el('debt-add-btn').style.display = CU.canWrite ? '' : 'none';
-    },
-    err => toast('Error loading debts: ' + err.message, 'err')
-  );
+function populateDebtProjectDropdown() {
+    const dropdown = document.getElementById('debtProjectDropdown');
+    dropdown.innerHTML = '<option value="">-- Select Project --</option>';
+    
+    debtProjectsData.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.name} (${project.number})`;
+        dropdown.appendChild(option);
+    });
 }
 
-function startDebtCollectionListen(){
-  if(debtCollectionUnsub)debtCollectionUnsub();
-  debtCollectionUnsub = db.collection(DEBT_COLLECTION_COL).orderBy('createdAt', 'desc').onSnapshot(
-    snap => {
-      debtCollectionData = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      updateDebtSummary();
-      renderDebtTable();
-    },
-    err => toast('Error loading collections: ' + err.message, 'err')
-  );
+function loadDebtProjectPOs() {
+    const projectId = document.getElementById('debtProjectDropdown').value;
+    const poDropdown = document.getElementById('debtPoDropdown');
+    poDropdown.innerHTML = '<option value="">-- Select PO --</option>';
+    
+    if (!projectId) return;
+    
+    const project = debtProjectsData.find(p => p.id === projectId);
+    if (project && project.pos) {
+        project.pos.forEach(po => {
+            const option = document.createElement('option');
+            option.value = po.number;
+            option.textContent = `${po.number} - ₹${po.value.toLocaleString('en-IN')}`;
+            poDropdown.appendChild(option);
+        });
+    }
 }
 
-// ── INITIALIZATION ───────────────────────────────────────────────────────
-function initDebtModule(){
-  startDebtListen();
-  startDebtCollectionListen();
-  
-  // Populate project dropdown in entry modal
-  const projSelect = el('debt-entry-project');
-  if(projSelect){
-    projSelect.innerHTML = `
-      <option value="">Select project</option>
-      <option value="other">Other-Non Customer</option>
-      ${projData.map(p => `<option value="${p.id}">${esc(p.projectName)} (${esc(p.poNumber || 'N/A')})</option>`).join('')}
-    `;
-  }
+function addDebtTempAllocation() {
+    const projectId = document.getElementById('debtProjectDropdown').value;
+    const poNumber = document.getElementById('debtPoDropdown').value;
+    const amount = parseFloat(document.getElementById('debtAllocationAmount').value) || 0;
+    
+    if (!projectId || !poNumber || amount <= 0) {
+        toast('Please fill all fields', 'err');
+        return;
+    }
+    
+    const project = debtProjectsData.find(p => p.id === projectId);
+    
+    debtTempAllocations.push({
+        id: Date.now().toString(),
+        tallyCustomerName: debtCurrentCustomer.customerName,
+        projectId,
+        projectName: project.name,
+        projectNumber: project.number,
+        poNumber,
+        allocatedAmount: amount,
+        createdAt: new Date().toISOString()
+    });
+    
+    document.getElementById('debtProjectDropdown').value = '';
+    document.getElementById('debtPoDropdown').value = '';
+    document.getElementById('debtAllocationAmount').value = '';
+    
+    displayDebtCurrentAllocations();
 }
 
-// Call init when module loads
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', initDebtModule);
-}else{
-  initDebtModule();
+function displayDebtCurrentAllocations() {
+    const div = document.getElementById('debtCurrentAllocationsDiv');
+    if (debtTempAllocations.length === 0) {
+        div.innerHTML = '<div style="color:var(--t2);text-align:center;padding:10px">No allocations for this customer yet</div>';
+        return;
+    }
+    
+    div.innerHTML = debtTempAllocations.map((alloc, idx) => `
+        <div style="background:var(--card);padding:10px;margin-bottom:8px;border-radius:7px;display:flex;justify-content:space-between;align-items:center;border-left:4px solid var(--p)">
+            <div>
+                <div style="font-weight:500">${alloc.projectName}</div>
+                <div style="font-size:11px;color:var(--t2)">PO: ${alloc.poNumber}</div>
+            </div>
+            <div style="font-weight:600;color:var(--p)">₹${alloc.allocatedAmount.toLocaleString('en-IN')}</div>
+        </div>
+    `).join('');
 }
+
+function saveDebtAllocations() {
+    debtAllocationsData = debtAllocationsData.filter(a => a.tallyCustomerName !== debtCurrentCustomer.customerName);
+    debtAllocationsData.push(...debtTempAllocations);
+    
+    saveDebtToLocalStorage();
+    closeDebtLinkModal();
+    updateDebtAllTabs();
+    toast('✅ Allocations saved', 'ok');
+}
+
+function openDebtCommitmentModal(allocationId) {
+    debtCurrentAllocationId = allocationId;
+    const alloc = debtAllocationsData.find(a => a.id === allocationId);
+    const commitment = debtCommitmentsData.find(c => c.allocationId === allocationId);
+    
+    if (!alloc) {
+        toast('Allocation not found', 'err');
+        return;
+    }
+    
+    document.getElementById('debtCommitCustomer').value = alloc.tallyCustomerName;
+    document.getElementById('debtCommitProject').value = alloc.projectName;
+    document.getElementById('debtCommitPO').value = alloc.poNumber;
+    document.getElementById('debtCommitAmount').value = `₹${alloc.allocatedAmount.toLocaleString('en-IN')}`;
+    
+    if (commitment) {
+        document.getElementById('debtCommitAssignedTo').value = commitment.assignedTo;
+        document.getElementById('debtCommitDate').value = commitment.commitDate.split('T')[0];
+        document.getElementById('debtCommitCollectedAmount').value = commitment.collectedAmount;
+    } else {
+        document.getElementById('debtCommitAssignedTo').value = '';
+        document.getElementById('debtCommitDate').value = '';
+        document.getElementById('debtCommitCollectedAmount').value = '';
+    }
+    
+    document.getElementById('debtCommitmentModal').style.display = 'flex';
+}
+
+function closeDebtCommitmentModal() {
+    document.getElementById('debtCommitmentModal').style.display = 'none';
+    debtCurrentAllocationId = null;
+}
+
+function saveDebtCommitment() {
+    const assignedTo = document.getElementById('debtCommitAssignedTo').value;
+    const commitDate = document.getElementById('debtCommitDate').value;
+    const collectedAmount = parseFloat(document.getElementById('debtCommitCollectedAmount').value) || 0;
+    
+    if (!assignedTo || !commitDate) {
+        toast('Please fill all required fields', 'err');
+        return;
+    }
+    
+    const alloc = debtAllocationsData.find(a => a.id === debtCurrentAllocationId);
+    
+    debtCommitmentsData = debtCommitmentsData.filter(c => c.allocationId !== debtCurrentAllocationId);
+    
+    debtCommitmentsData.push({
+        id: Date.now().toString(),
+        allocationId: debtCurrentAllocationId,
+        tallyCustomerName: alloc.tallyCustomerName,
+        projectName: alloc.projectName,
+        poNumber: alloc.poNumber,
+        allocatedAmount: alloc.allocatedAmount,
+        assignedTo,
+        commitDate,
+        collectedAmount,
+        createdAt: new Date().toISOString(),
+        status: collectedAmount > 0 ? 'partial' : 'pending'
+    });
+    
+    saveDebtToLocalStorage();
+    closeDebtCommitmentModal();
+    updateDebtAllTabs();
+    toast('✅ Commitment saved', 'ok');
+}
+
+// Local Storage
+function saveDebtToLocalStorage() {
+    localStorage.setItem('dqap_debt_csvData', JSON.stringify(debtCsvData));
+    localStorage.setItem('dqap_debt_allocations', JSON.stringify(debtAllocationsData));
+    localStorage.setItem('dqap_debt_commitments', JSON.stringify(debtCommitmentsData));
+}
+
+function loadDebtFromLocalStorage() {
+    const saved = localStorage.getItem('dqap_debt_csvData');
+    if (saved) debtCsvData = JSON.parse(saved);
+    
+    const allocsSaved = localStorage.getItem('dqap_debt_allocations');
+    if (allocsSaved) debtAllocationsData = JSON.parse(allocsSaved);
+    
+    const commitsSaved = localStorage.getItem('dqap_debt_commitments');
+    if (commitsSaved) debtCommitmentsData = JSON.parse(commitsSaved);
+}
+
+// Initialize on page load
+loadDebtFromLocalStorage();
+if (window.db) loadDebtProjectsFromFirestore();
+
 </script>
 </body>
 </html>
