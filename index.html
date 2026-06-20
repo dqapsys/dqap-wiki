@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -333,7 +334,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
-    <div class="ni" onclick="go('debt')"            id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
+    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
@@ -461,10 +462,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-debt" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-coin" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Debt Management</div><div class="pg-s">Track customer debts, link to projects, manage collections</div></div>
-    <div class="tr"><button onclick="openDebtManagement()" class="btn pri"><i class="ti ti-external-link"></i>Open in New Window</a></div>
+    <div class="tr"><button type="button" onclick="openDebtManagement()" class="btn pri"><i class="ti ti-external-link"></i>Open in New Window</button></div>
   </div>
   <div class="content">
-    <iframe src="https://dqapsys.github.io/debt-management/" style="width:100%;height:calc(100vh - 180px);border:none;border-radius:var(--rad)" title="Debt Management Portal"></iframe>
+    <iframe id="debt-frame" src="about:blank" style="width:100%;height:calc(100vh - 180px);border:none;border-radius:var(--rad)" title="Debt Management Portal"></iframe>
   </div>
 </div>
 
@@ -2726,28 +2727,30 @@ function doSearch(){
 // ── NAV ───────────────────────────────────────────
   // ── DEBT MANAGEMENT ───────────────────────────────
 function openDebtManagement(){
-  // Get session from sessionStorage (set by Wiki login)
   const sess = sessionStorage.getItem('dqap_sess');
-  
   if(!sess){
     toast('Please login to Wiki first','err');
     return;
   }
-  
+
   try {
-    // Encode session data as URL parameter
-    const encoded = encodeURIComponent(sess);
-    const url = `https://dqapsys.github.io/debt-management/?sess=${encoded}`;
-    
-    // Open in same window to preserve session
-    window.location.href = url;
-    
-    // Alternatively, open in new tab:
-    // window.open(url, '_blank');
+    // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
+    const url = `https://dqapsys.github.io/debt-management/#sess=${encodeURIComponent(sess)}`;
+    const debtWindow = window.open(url, '_blank');
+    if(debtWindow) debtWindow.opener=null;
+    else toast('Please allow pop-ups for the Wiki portal','err');
   } catch(e) {
     console.error('Error opening Debt Management:', e);
     toast('Error opening Debt Management','err');
   }
+}
+
+function loadDebtFrame(){
+  const frame=el('debt-frame');
+  const sess=sessionStorage.getItem('dqap_sess');
+  if(!frame||!sess)return;
+  const url=`https://dqapsys.github.io/debt-management/#sess=${encodeURIComponent(sess)}`;
+  if(frame.src!==url)frame.src=url;
 }
 
 // ── NAVIGATION ────────────────────────────────────
@@ -2770,6 +2773,7 @@ function go(n){
   if(n==='pmo')renderPMO();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='attendance'){attRender();}
+  if(n==='debt'){loadDebtFrame();}
   if(n==='payments'){
     const pu=el('pay-unauth');
     if(CU?.isUser){
