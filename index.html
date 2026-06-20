@@ -31,6 +31,16 @@ let attCurrentUser='u001';
 let attSelectedOOO=null;
 let attCurrentTab='emp';
 // ═══════════════════════════════════════════════════════════════════════════
+// DEBT MANAGEMENT GLOBAL VARIABLES
+// ═══════════════════════════════════════════════════════════════════════════
+let debtCsvData = [];
+let debtAllocationsData = [];
+let debtCommitmentsData = [];
+let debtProjectsData = [];
+let debtCurrentCustomer = null;
+let debtTempAllocations = [];
+let debtCurrentAllocationId = null;
+// ═══════════════════════════════════════════════════════════════════════════
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 // Named users granted edit rights across all modules regardless of their role.
 const EDIT_USERS=["updesh","pratim"];
@@ -4271,13 +4281,6 @@ function attCloseOOO(){
 
 
 // ===== DEBT MANAGEMENT MODULE =====
-let debtCsvData = [];
-let debtAllocationsData = [];
-let debtCommitmentsData = [];
-let debtProjectsData = [];
-let debtCurrentCustomer = null;
-let debtTempAllocations = [];
-let debtCurrentAllocationId = null;
 
 // Tab switching
 function switchDebtTab(tabName) {
@@ -4838,9 +4841,16 @@ function loadDebtFromLocalStorage() {
     if (commitsSaved) debtCommitmentsData = JSON.parse(commitsSaved);
 }
 
-// Initialize on page load
-loadDebtFromLocalStorage();
-if (window.db) loadDebtProjectsFromFirestore();
+// Initialize Debt Management when page is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDebtFromLocalStorage();
+        setTimeout(() => { if (window.db) loadDebtProjectsFromFirestore(); }, 500);
+    });
+} else {
+    loadDebtFromLocalStorage();
+    if (window.db) loadDebtProjectsFromFirestore();
+}
 
 </script>
 </body>
