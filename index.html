@@ -461,7 +461,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-debt" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-coin" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Debt Management</div><div class="pg-s">Track customer debts, link to projects, manage collections</div></div>
-    <div class="tr"><a href="https://dqapsys.github.io/debt-management/" target="_blank" class="btn pri"><i class="ti ti-external-link"></i>Open in New Window</a></div>
+    <div class="tr"><button onclick="openDebtManagement()" class="btn pri"><i class="ti ti-external-link"></i>Open in New Window</a></div>
   </div>
   <div class="content">
     <iframe src="https://dqapsys.github.io/debt-management/" style="width:100%;height:calc(100vh - 180px);border:none;border-radius:var(--rad)" title="Debt Management Portal"></iframe>
@@ -2724,6 +2724,33 @@ function doSearch(){
 }
 
 // ── NAV ───────────────────────────────────────────
+  // ── DEBT MANAGEMENT ───────────────────────────────
+function openDebtManagement(){
+  // Get session from sessionStorage (set by Wiki login)
+  const sess = sessionStorage.getItem('dqap_sess');
+  
+  if(!sess){
+    toast('Please login to Wiki first','err');
+    return;
+  }
+  
+  try {
+    // Encode session data as URL parameter
+    const encoded = encodeURIComponent(sess);
+    const url = `https://dqapsys.github.io/debt-management/?sess=${encoded}`;
+    
+    // Open in same window to preserve session
+    window.location.href = url;
+    
+    // Alternatively, open in new tab:
+    // window.open(url, '_blank');
+  } catch(e) {
+    console.error('Error opening Debt Management:', e);
+    toast('Error opening Debt Management','err');
+  }
+}
+
+// ── NAVIGATION ────────────────────────────────────
 function go(n){
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
   if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
