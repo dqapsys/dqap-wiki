@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -377,6 +376,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-chart-gantt" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="st-pmo">—</div><div class="sl">Active projects</div></div></div>
       <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-replace" style="color:#880E4F;font-size:18px"></i></div><div><div class="sv" id="st-rma">—</div><div class="sl">Open RMAs</div></div></div>
     </div>
+    <!-- CRM ACTIVITY TRACKING WIDGETS -->
+    <div id="crm-stats-card" style="margin-bottom:14px;"></div>
+    <div id="recent-crm-activities" style="margin-bottom:14px;"></div>
+    <!-- END CRM WIDGETS -->
     <div style="display:grid;grid-template-columns:3fr 2fr;gap:14px">
       <div class="card"><div class="ch"><div class="ct"><i class="ti ti-clock" style="font-size:14px"></i>Recent wiki entries</div><button class="btn sm" onclick="go('wiki')">View all <i class="ti ti-arrow-right"></i></button></div><div class="cb" id="d-rec"></div></div>
       <div class="card"><div class="ch"><div class="ct"><i class="ti ti-chart-bar" style="font-size:14px"></i>By category</div></div><div class="cb" id="d-cat"></div></div>
@@ -2685,6 +2688,9 @@ function renderDash(){
   const mx=Math.max(...cc.map(c=>c.k));
   const clr={'Hardware / Electrical':'#E64A19','Networking / Communication':'#0070C0','Commissioning':'#7B1FA2','SCADA / HMI':'#283593','Cabling':'#006064','Programming':'#0070C0','Troubleshooting':'#AD1457','Other':'#546E7A'};
   catEl.innerHTML=cc.map(c=>`<div class="catbar"><div class="cbl">${c.n.split(' /')[0]}</div><div class="cbt"><div class="cbf" style="width:${Math.round(c.k/mx*100)}%;background:${clr[c.n]||'#0070C0'}"></div></div><div class="cbn">${c.k}</div></div>`).join('');
+  
+  // Initialize CRM activity tracking on dashboard load
+  initializeCRMActivityTracking();
 }
 
 // ── WIKI BROWSER ──────────────────────────────────
@@ -2725,8 +2731,184 @@ function doSearch(){
   res.innerHTML=`<div style="margin-bottom:10px;font-size:11.5px;color:var(--t2)">Found <b>${hits.length}</b> result(s) for "<b>${esc(q)}</b>"</div>${hits.map(renderCard).join('')}`;
 }
 
-// ── NAV ───────────────────────────────────────────
-  // ── DEBT MANAGEMENT ───────────────────────────────
+// ── CRM ACTIVITY LOGGING ───────────────────────────────────────
+// Log any activity to Firestore
+async function logCRMActivity(activity) {
+  try {
+    await db.collection('dqap_activity_log').add({
+      user: activity.user || 'Unknown',
+      username: activity.username || '',
+      userId: activity.userId || CU?.username || 'unknown',
+      timestamp: new Date().toISOString(),
+      action: activity.action || 'CRM_EVENT',
+      details: activity.details || {},
+      wikiVersion: APP_VERSION,
+      userAgent: navigator.userAgent.substring(0, 150)
+    });
+  } catch(e) {
+    console.error('Activity log error:', e);
+  }
+}
+
+// Load recent CRM activities for dashboard widget
+async function loadRecentCRMActivities() {
+  try {
+    const container = document.getElementById('recent-crm-activities');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--t2);font-size:11px;">Loading activities...</div>';
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const activities = await db.collection('dqap_activity_log')
+      .where('action', '==', 'CRM_OPENED')
+      .where('timestamp', '>=', thirtyDaysAgo.toISOString())
+      .orderBy('timestamp', 'desc')
+      .limit(10)
+      .get();
+    
+    let html = `
+      <div style="padding:12px;background:var(--pl);border-radius:8px;border-left:3px solid var(--p);margin-bottom:0;">
+        <div style="font-weight:600;margin-bottom:10px;color:var(--p);display:flex;align-items:center;gap:8px;font-size:12px;">
+          <i class="ti ti-chart-line" style="font-size:16px;"></i>
+          CRM Usage — Last 30 Days
+        </div>
+    `;
+    
+    if (activities.empty) {
+      html += '<div style="color:var(--t2);font-size:11px;padding:8px 0;">No CRM activity yet</div>';
+    } else {
+      html += '<div style="font-size:11px;">';
+      activities.forEach(doc => {
+        const data = doc.data();
+        const date = new Date(data.timestamp);
+        const today = new Date();
+        let timeStr = '';
+        
+        if (date.toDateString() === today.toDateString()) {
+          timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+          timeStr = `Today ${timeStr}`;
+        } else {
+          timeStr = date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+        }
+        
+        html += `
+          <div style="padding:8px;border-bottom:.5px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <span style="font-weight:500;">${escapeHtml(data.user || 'Unknown User')}</span>
+              <div style="font-size:10px;color:var(--t2);margin-top:2px;">opened CRM</div>
+            </div>
+            <div style="font-size:10px;color:var(--t2);text-align:right;min-width:60px;">${timeStr}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+  } catch(e) {
+    console.error('Error loading CRM activities:', e);
+    const container = document.getElementById('recent-crm-activities');
+    if (container) container.innerHTML = '<div style="color:var(--t2);font-size:11px;">Error loading activities</div>';
+  }
+}
+
+// Load CRM statistics for dashboard widget
+async function loadCRMStats() {
+  try {
+    const container = document.getElementById('crm-stats-card');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--t2);font-size:11px;">Loading stats...</div>';
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const allOpens = await db.collection('dqap_activity_log')
+      .where('action', '==', 'CRM_OPENED')
+      .where('timestamp', '>=', thirtyDaysAgo.toISOString())
+      .get();
+    
+    // Calculate unique users
+    const users = new Set();
+    const userCounts = {};
+    
+    allOpens.forEach(doc => {
+      const data = doc.data();
+      users.add(data.username || data.userId);
+      const key = data.username || data.userId;
+      userCounts[key] = (userCounts[key] || 0) + 1;
+    });
+    
+    // Find most active user
+    let mostActive = { name: 'N/A', count: 0 };
+    let mostActiveUsername = '';
+    
+    Object.entries(userCounts).forEach(([username, count]) => {
+      if (count > mostActive.count) {
+        mostActive.count = count;
+        mostActiveUsername = username;
+      }
+    });
+    
+    // Get most active user's full name
+    if (mostActiveUsername) {
+      try {
+        const userDoc = await db.collection('dqap_users').doc(mostActiveUsername).get();
+        if (userDoc.exists) {
+          mostActive.name = userDoc.data().fullName || mostActiveUsername;
+        } else {
+          mostActive.name = mostActiveUsername;
+        }
+      } catch(e) {
+        mostActive.name = mostActiveUsername;
+      }
+    }
+    
+    let html = `
+      <div class="stats">
+        <div class="sc" style="background:rgba(0,105,148,0.08);border-left:3px solid var(--p);"><div class="si" style="background:transparent"><i class="ti ti-chart-line" style="color:var(--p);font-size:16px;"></i></div><div><div class="sv" style="color:var(--p);">${allOpens.size}</div><div class="sl">CRM Opens (30d)</div></div></div>
+        <div class="sc" style="background:rgba(63,112,77,0.08);border-left:3px solid var(--success);"><div class="si" style="background:transparent"><i class="ti ti-users-group" style="color:var(--success);font-size:16px;"></i></div><div><div class="sv" style="color:var(--success);">${users.size}</div><div class="sl">Active Users</div></div></div>
+        <div class="sc" style="background:rgba(230,81,0,0.08);border-left:3px solid var(--warning);"><div class="si" style="background:transparent"><i class="ti ti-trophy" style="color:var(--warning);font-size:16px;"></i></div><div><div class="sv" style="color:var(--warning);">${mostActive.count}</div><div class="sl">by ${escapeHtml(mostActive.name)}</div></div></div>
+      </div>
+    `;
+    
+    container.innerHTML = html;
+  } catch(e) {
+    console.error('Error loading CRM stats:', e);
+    const container = document.getElementById('crm-stats-card');
+    if (container) container.innerHTML = '<div style="color:var(--t2);font-size:11px;">Error loading stats</div>';
+  }
+}
+
+// Initialize CRM activity tracking
+function initializeCRMActivityTracking() {
+  loadRecentCRMActivities();
+  loadCRMStats();
+  
+  // Refresh every 5 minutes
+  setInterval(() => {
+    loadRecentCRMActivities();
+    loadCRMStats();
+  }, 5 * 60 * 1000);
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// ── DEBT MANAGEMENT ───────────────────────────────────
 function openDebtManagement(){
   const sess = sessionStorage.getItem('dqap_sess');
   if(!sess){
@@ -2745,6 +2927,8 @@ function openDebtManagement(){
     toast('Error opening Debt Management','err');
   }
 }
+
+// ── SALES CRM ───────────────────────────────────────────
 function openSalesCRM(){
   const sess = sessionStorage.getItem('dqap_sess');
   if(!sess){
@@ -2753,8 +2937,22 @@ function openSalesCRM(){
   }
 
   try {
-    // Use URL fragment to pass session (not sent to server)
-    const url = `https://dqapsys.github.io/dqap-crm/?v=1.0#sess=${encodeURIComponent(sess)}`;
+    const sessData = JSON.parse(sess);
+    
+    // LOG CRM ACCESS
+    logCRMActivity({
+      user: sessData.fullName,
+      username: sessData.username,
+      userId: sessData.username,
+      action: 'CRM_OPENED',
+      details: {
+        role: sessData.role,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    // Open CRM with session
+    const url = `https://dqapsys.github.io/dqap-crm/?v=2.0#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
