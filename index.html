@@ -335,6 +335,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
+    <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
@@ -2744,7 +2745,24 @@ function openDebtManagement(){
     toast('Error opening Debt Management','err');
   }
 }
+function openSalesCRM(){
+  const sess = sessionStorage.getItem('dqap_sess');
+  if(!sess){
+    toast('Please login to Wiki first','err');
+    return;
+  }
 
+  try {
+    // Use URL fragment to pass session (not sent to server)
+    const url = `https://dqapsys.github.io/dqap-crm/?v=1.0#sess=${encodeURIComponent(sess)}`;
+    const crmWindow = window.open(url, '_blank');
+    if(crmWindow) crmWindow.opener=null;
+    else toast('Please allow pop-ups for the Wiki portal','err');
+  } catch(e) {
+    console.error('Error opening Sales CRM:', e);
+    toast('Error opening Sales CRM','err');
+  }
+}
 function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=sessionStorage.getItem('dqap_sess');
