@@ -2761,7 +2761,7 @@ function openDebtManagement(){
 
   try {
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20260622.2#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20260622.3#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2792,7 +2792,7 @@ function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=sessionStorage.getItem('dqap_sess');
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20260622.2#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20260622.3#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
@@ -3895,8 +3895,9 @@ if('serviceWorker' in navigator){
     if(refreshing)return;refreshing=true;window.location.reload();
   });
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js').then(reg=>{
+    navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(reg=>{
       console.log('SW registered:',reg.scope);
+      if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
       // Force an immediate update check on every load
       reg.update();
       // If a new worker is found, activate it as soon as it's installed
@@ -3914,7 +3915,7 @@ if('serviceWorker' in navigator){
     // Also poll for updates every time the tab regains focus
     document.addEventListener('visibilitychange',()=>{
       if(document.visibilityState==='visible'){
-        navigator.serviceWorker.getRegistration().then(r=>{if(r)r.update();});
+        navigator.serviceWorker.getRegistration('./').then(r=>{if(r)r.update();});
       }
     });
   });
