@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,8 +22,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_73_TASK_RESPONSES
-const APP_VERSION="73_TASK_RESPONSES";
+// DQAP_WIKI_VERSION_72_FINAL
+const APP_VERSION="72_FINAL";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -51,7 +50,6 @@ firebase.initializeApp({
 });
 const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
-const TASK_MONITORS=["Updesh","Pratim"];
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
 const AMC_SCOPES=["CAMC","N-CAMC"];
@@ -205,9 +203,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 /* PMO */
 .pmo-card{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);margin-bottom:12px;overflow:hidden;transition:box-shadow .15s}
 .pmo-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
-.task-notice{background:#F7FBFF;border:.5px solid #90CAF9;border-left:3px solid #0070C0;border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;gap:9px;align-items:flex-start}
-.task-notice.unread{background:#EAF4FF}.task-notice i{color:#0070C0;font-size:16px;margin-top:1px}.task-notice-meta{font-size:10px;color:var(--t2);margin-top:2px}
-.task-response{margin-top:10px;padding:9px 11px;border-radius:8px;background:#fafafa;border:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .pmo-hd{padding:13px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .pmo-title{font-size:13.5px;font-weight:600;color:var(--t1)}
 .pmo-sub{font-size:11px;color:var(--t2);margin-top:2px}
@@ -931,7 +926,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
   </div>
   <div class="content">
-    <div id="task-notifications" style="margin-bottom:14px"></div>
     <!-- Stats -->
     <div class="stats" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
       <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-list-check" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="tk-st-total">—</div><div class="sl">Total</div></div></div>
@@ -2297,6 +2291,70 @@ function sendNotification(e){
   try{emailjs.init(CFG.EJS_KEY);emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{to_email:CFG.NOTIFY_TO,engineer:e.engineer,title:e.title,project:e.project,category:e.category,severity:e.severity,entry_number:e.entryNumber,problem:e.problem,solution:e.solution});}catch(e){}
 }
 
+function sendTaskNotification(action, t){
+  if(!CFG.NOTIFY_ON || !CFG.EJS_KEY) return [];
+
+  // Resolve a person's email from their user record. Name match is trimmed +
+  // case-insensitive so escaped/whitespace/casing differences don't break it.
+  const getUserEmail = (name) => {
+    if (!name || !usersData || usersData.length === 0) return null;
+    const key = String(name).trim().toLowerCase();
+    const u = usersData.find(x => String(x.fullName || '').trim().toLowerCase() === key);
+    return u && u.email ? u.email.trim() : null;
+  };
+
+  // Collect recipients, de-duplicating by lowercase address so the same mailbox
+  // (e.g. "Info@" vs "info@") is never emailed twice.
+  const seen = new Set();
+  const emails = [];
+  const addEmail = (raw) => {
+    const e = (raw || '').trim();
+    if (!e) return;
+    const k = e.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    emails.push(e);
+  };
+
+  addEmail(getUserEmail(t.assignedTo));   // assignee
+  addEmail(getUserEmail(t.assignedBy));   // creator
+  if (t.supervisor && t.supervisor !== t.assignedTo && t.supervisor !== t.assignedBy) {
+    addEmail(getUserEmail(t.supervisor)); // supervisor
+  }
+
+  // Monitoring address is a LAST-RESORT fallback only — used when none of the
+  // people above have an email on file, so notifications are never lost silently.
+  if (emails.length === 0 && CFG.NOTIFY_TO) {
+    CFG.NOTIFY_TO.split(',').forEach(addEmail);
+  }
+
+  if (emails.length === 0) return [];
+
+  const fmtDL=(d)=>{if(!d)return 'Not set';try{return new Date(d.includes('T')?d:d+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});}catch(e){return d;}};
+  const stCol={'Open':{c:'#E65100',bg:'#FFF3E0'},'In Progress':{c:'#0070C0',bg:'#E3F2FD'},'Completed':{c:'#2E7D32',bg:'#E8F5E9'}};
+  const sc=stCol[t.status||'Open']||stCol['Open'];
+  try {
+    emailjs.init(CFG.EJS_KEY);
+    const params = {
+      task_action: action,
+      task_title: t.title || '—',
+      task_assigned_to: t.assignedTo || '—',
+      task_created_by: t.assignedBy || '—',
+      task_supervisor: t.supervisor || '—',
+      task_deadline: fmtDL(t.deadline),
+      task_project: t.project || '—',
+      task_status: t.status || 'Open',
+      task_priority: t.priority || 'Medium',
+      status_color: sc.c,
+      status_bg: sc.bg
+    };
+    emails.forEach(to => {
+      emailjs.send(CFG.EJS_SERVICE, CFG.EJS_TEMPLATE, {...params, to_email: to}).catch(() => {});
+    });
+  } catch (e) {}
+  return emails;
+}
+
 // ── PROJECTS ──────────────────────────────────────
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
@@ -2697,7 +2755,7 @@ function openSalesCRM(){
 
   try {
     // Use URL fragment to pass session (not sent to server)
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260622.2#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260622.3#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -3129,11 +3187,11 @@ function updateTaskNavBadge(){
   const seen=getTaskSeen();
   let n=0;
   taskData.forEach(t=>{
-    const events=(t.notifications||[]).filter(taskEventForCurrentUser);
-    if(events.length){events.forEach(e=>{if(!seen||(e.createdAt||'')>seen)n++;});return;}
+    if(t.status==='Completed')return;
     const mine=(t.assignedTo===CU.fullName)||(t.supervisor===CU.fullName)||(t.assignedBy===CU.fullName);
+    if(!mine)return;
     const ts=t.updatedAt||t.createdAt||'';
-    if(mine&&(!seen||ts>seen))n++;
+    if(!seen||ts>seen)n++;
   });
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
@@ -3150,43 +3208,9 @@ function updateTaskNavBadge(){
 function roleRank(r){return r==='admin'?3:(r==='manager'?2:1);}
 function roleLabel(r){return r==='admin'?'Admin':(r==='manager'?'Manager':'User');}
 function roleBadgeCls(r){return r==='admin'?'b-adm':(r==='manager'?'b-mgr':'b-usr');}
-function currentUserKeys(){
-  return [CU&&CU.fullName,CU&&CU.username,(CU&&CU.fullName||'').split(/\s+/)[0]].filter(Boolean).map(x=>String(x).trim().toLowerCase());
-}
-function taskEventForCurrentUser(e){
-  const keys=currentUserKeys();
-  return (e.recipients||[]).some(r=>keys.includes(String(r).trim().toLowerCase()));
-}
-function isTaskMonitor(){
-  const keys=currentUserKeys();
-  return TASK_MONITORS.some(n=>keys.includes(n.toLowerCase()));
-}
-function uniqueTaskRecipients(names){
-  const seen=new Set();return names.filter(n=>{const k=String(n||'').trim().toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true;});
-}
-function makeTaskEvent(type,t,extra={}){
-  const responseEvent=['accepted','revised','rejected'].includes(type);
-  const recipients=uniqueTaskRecipients([t.assignedTo,responseEvent?t.assignedBy:'',...TASK_MONITORS]);
-  const labels={generated:'New task assigned',updated:'Task updated',accepted:'Task accepted',revised:'Timeline revised',rejected:'Task rejected'};
-  return{type,message:(labels[type]||'Task notification')+': '+(t.title||'Untitled task'),taskTitle:t.title||'',by:(CU&&CU.fullName)||'',recipients,createdAt:new Date().toISOString(),...extra};
-}
-function renderTaskNotifications(){
-  const wrap=el('task-notifications');if(!wrap||!CU)return;
-  const seen=getTaskSeen();
-  const events=[];
-  taskData.forEach(t=>(t.notifications||[]).forEach(e=>{if(taskEventForCurrentUser(e))events.push({...e,taskId:t.id});}));
-  events.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-  const recent=events.slice(0,6);
-  if(!recent.length){wrap.innerHTML='';return;}
-  wrap.innerHTML=`<div class="card"><div class="ch"><div class="ct"><i class="ti ti-bell"></i>Task notifications</div><span style="font-size:10px;color:var(--t2)">Latest ${recent.length}</span></div><div class="cb" style="padding:10px 12px">${recent.map(e=>`<div class="task-notice ${(!seen||(e.createdAt||'')>seen)?'unread':''}"><i class="ti ti-bell-ringing"></i><div><div style="font-size:12px;font-weight:600">${esc(e.message||'Task notification')}</div>${e.reason?`<div style="font-size:11px;margin-top:2px">Reason: ${esc(e.reason)}</div>`:''}${e.revisedDeadline?`<div style="font-size:11px;margin-top:2px">Revised timeline: ${esc(fmtTaskDateTime(e.revisedDeadline))}</div>`:''}<div class="task-notice-meta">${esc(e.by||'System')} · ${esc(fmtTaskDateTime(e.createdAt))}</div></div></div>`).join('')}</div></div>`;
-}
-function fmtTaskDateTime(v){
-  if(!v)return '—';try{return new Date(v.includes('T')?v:v+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});}catch(e){return v;}
-}
 
 function taskDeadlineStatus(deadline,status){
   if(status==='Completed')return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-circle-check',label:'Completed'};
-  if(status==='Rejected')return{color:'#B71C1C',bg:'#FFEBEE',icon:'ti-circle-x',label:'Rejected'};
   if(!deadline)return{color:'#37474F',bg:'#ECEFF1',icon:'ti-calendar',label:'No deadline'};
   const now=new Date();
   const dl=new Date(deadline.includes('T')?deadline:deadline+'T00:00');
@@ -3203,7 +3227,7 @@ function taskDeadlineStatus(deadline,status){
   return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-calendar',label:days+'d left',days};
 }
 function taskStatusBadge(s){
-  const m={'Open':'b-rai','In Progress':'b-apr','Completed':'b-rep','Rejected':'b-del'};
+  const m={'Open':'b-rai','In Progress':'b-apr','Completed':'b-rep'};
   return`<span class="badge ${m[s]||'b-rai'}">${s||'Open'}</span>`;
 }
 function taskPriBadge(p){
@@ -3311,51 +3335,22 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      const existing=taskData.find(x=>x.id===eid)||{};
-      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,responseStatus:'Pending',responseReason:null,revisedDeadline:null,respondedAt:null,respondedBy:null,updatedAt:now};
-      const event=makeTaskEvent('updated',{...existing,...upd});
-      upd.notifications=[...(existing.notifications||[]),event].slice(-100);
+      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now};
       await db.collection(TASK_COL).doc(eid).update(upd);
-      toast('Task updated ✓ · assignee response requested','ok');
+      const existing=taskData.find(x=>x.id===eid)||{};
+      const recips=sendTaskNotification('updated',{...existing,...upd});
+      toast('Task updated ✓'+(recips.length?' · notified '+recips.join(', '):' · no emails on file'),'ok');
     }else{
       const tObj={title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
         assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,
-        status:'Open',responseStatus:'Pending',createdAt:now,updatedAt:now};
-      tObj.notifications=[makeTaskEvent('generated',tObj)];
+        status:'Open',createdAt:now,updatedAt:now};
       await db.collection(TASK_COL).add(tObj);
-      toast('Task assigned ✓ · assignee response requested','ok');
+      const recips=sendTaskNotification('created',tObj);
+      toast('Task assigned ✓'+(recips.length?' · notified '+recips.join(', '):' · no emails on file'),'ok');
     }
     togTaskForm(false);
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
-}
-
-async function respondToTask(id,response){
-  const task=taskData.find(x=>x.id===id);if(!task)return;
-  if(task.assignedTo!==CU.fullName&&!CU.isAdmin){toast('Only the assignee can respond to this task','err');return;}
-  let reason='',revisedDeadline='';
-  if(response==='revised'){
-    revisedDeadline=prompt('Enter the revised timeline (YYYY-MM-DD HH:MM)',String(task.deadline||'').replace('T',' '));
-    if(revisedDeadline===null)return;
-    revisedDeadline=revisedDeadline.trim().replace(' ','T');
-    if(!revisedDeadline||Number.isNaN(new Date(revisedDeadline).getTime())){toast('Enter a valid revised date and time','err');return;}
-    reason=prompt('Reason for revising the timeline (required)','')||'';
-    if(!reason.trim()){toast('A reason is required for timeline revision','err');return;}
-  }
-  if(response==='rejected'){
-    reason=prompt('Reason for rejection (required)','')||'';
-    if(!reason.trim()){toast('A reason is required for rejection','err');return;}
-  }
-  const now=new Date().toISOString();
-  const responseStatus=response==='accepted'?'Accepted':(response==='revised'?'Revised':'Rejected');
-  const event=makeTaskEvent(response,{...task,responseStatus},{reason:reason.trim(),revisedDeadline});
-  const upd={responseStatus,responseReason:reason.trim()||null,revisedDeadline:revisedDeadline||null,respondedAt:now,respondedBy:CU.fullName,updatedAt:now,notifications:[...(task.notifications||[]),event].slice(-100)};
-  if(response==='revised')upd.deadline=revisedDeadline;
-  if(response==='rejected')upd.status='Rejected';
-  if(response==='accepted'&&task.status==='Open')upd.status='In Progress';
-  showLoad('Saving response…');
-  try{await db.collection(TASK_COL).doc(id).update(upd);toast('Task response saved ✓','ok');}
-  catch(e){toast('Response failed: '+e.message,'err');}finally{hideLoad();}
 }
 
 async function updateTaskStatus(id,status){
@@ -3379,11 +3374,13 @@ async function updateTaskStatus(id,status){
       await db.collection(TASK_COL).doc(id).update(d);
       const niceNext=nextDl?new Date(nextDl).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
       toast('Recurring task done ✓ — next due '+niceNext,'ok');
+      sendTaskNotification(existing.frequency.toLowerCase()+' occurrence completed — next due '+niceNext,{...existing,...d});
     }else{
       const d={status,updatedAt:now};
       if(status==='Completed')d.completedAt=now;
       await db.collection(TASK_COL).doc(id).update(d);
       toast('Status updated ✓','ok');
+      sendTaskNotification('status changed to '+status,{...existing,...d});
     }
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
@@ -3396,13 +3393,12 @@ async function deleteTask(id){
 
 // ── TASK RENDER ───────────────────────────────────
 function renderTasks(){
-  renderTaskNotifications();
   const view=el('task-ff-view')?.value||'mine';
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
 
   // Stats over the tasks relevant to this user (mine + by me; admin sees all)
-  const scope=taskData.filter(t=>CU.isAdmin||isTaskMonitor()||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
+  const scope=taskData.filter(t=>CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName);
   el('tk-st-total').textContent=scope.length;
   el('tk-st-open').textContent=scope.filter(t=>t.status==='Open').length;
   el('tk-st-prog').textContent=scope.filter(t=>t.status==='In Progress').length;
@@ -3415,7 +3411,7 @@ function renderTasks(){
     if(view==='mine'&&!(t.assignedTo===CU.fullName||t.supervisor===CU.fullName))return false;
     if(view==='supervising'&&t.supervisor!==CU.fullName)return false;
     if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
-    if(view==='all'&&!(CU.isAdmin||isTaskMonitor()||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
+    if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
     if(statusF&&t.status!==statusF)return false;
     if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -3440,7 +3436,7 @@ function renderTasks(){
     const dchip=ds?`<span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span>`:'';
     const dl=t.deadline?new Date(t.deadline.includes('T')?t.deadline:t.deadline+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';
     const canEditTask=CU.isAdmin||t.assignedBy===CU.fullName||isPrivilegedEditor(CU.username);
-    const canStatus=(CU.isAdmin||t.assignedTo===CU.fullName)&&t.responseStatus&&t.responseStatus!=='Pending'&&t.responseStatus!=='Rejected';
+    const canStatus=CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName;
     const leftBar=ds&&ds.days!==undefined&&ds.days<0&&t.status!=='Completed'?'#B71C1C':(ds&&ds.days!==undefined&&ds.days<=3&&t.status!=='Completed'?'#E65100':(t.status==='Completed'?'#1B5E20':'#0070C0'));
     return`<div class="pmo-card" style="border-left:3px solid ${leftBar}">
       <div style="padding:12px 16px">
@@ -3462,7 +3458,6 @@ function renderTasks(){
               ${dl?`<span><i class="ti ti-calendar-event" style="font-size:11px"></i> ${dl}</span>`:''}
               ${t.timesCompleted?`<span><i class="ti ti-rotate-clockwise" style="font-size:11px"></i> Done ${t.timesCompleted}×${t.lastCompletedAt?' · last '+(t.lastCompletedAt||'').split('T')[0]:''}</span>`:''}
             </div>
-            ${t.responseStatus?`<div class="task-response"><div><b>Assignee response:</b> <span class="badge ${t.responseStatus==='Accepted'?'b-rep':(t.responseStatus==='Rejected'?'b-del':(t.responseStatus==='Revised'?'b-pnd':'b-rai'))}">${esc(t.responseStatus)}</span>${t.responseReason?`<span style="font-size:11px;color:var(--t2);margin-left:6px">${esc(t.responseReason)}</span>`:''}</div>${t.responseStatus==='Pending'&&t.assignedTo===CU.fullName?`<div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn sm grn" onclick="respondToTask('${t.id}','accepted')"><i class="ti ti-check"></i>Accept</button><button class="btn sm ora" onclick="respondToTask('${t.id}','revised')"><i class="ti ti-calendar-time"></i>Revise timeline</button><button class="btn sm danger" onclick="respondToTask('${t.id}','rejected')"><i class="ti ti-x"></i>Reject</button></div>`:''}</div>`:''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
             ${dchip}
