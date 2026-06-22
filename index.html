@@ -2761,7 +2761,7 @@ function openDebtManagement(){
 
   try {
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20260620.8#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20260622.2#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2792,7 +2792,7 @@ function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=sessionStorage.getItem('dqap_sess');
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20260620.8#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20260622.2#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
