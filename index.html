@@ -22,8 +22,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_73_IN_APP_TASK_NOTIFICATIONS
-const APP_VERSION="73_IN_APP_TASK_NOTIFICATIONS";
+// DQAP_WIKI_VERSION_74_MANDATORY_TASK_ACTIONS
+const APP_VERSION="74_MANDATORY_TASK_ACTIONS";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1163,11 +1163,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div style="width:min(680px,96vw);max-height:86vh;overflow:auto;background:#fff;border:3px solid #006994;border-radius:14px;box-shadow:0 26px 90px rgba(0,0,0,.52)">
     <div style="padding:15px 18px;background:linear-gradient(135deg,#006994,#263F65);color:#fff">
       <div style="font-size:10px;font-weight:800;letter-spacing:1px">TASK MANAGEMENT · LIVE NOTIFICATION</div>
-      <div style="font-size:18px;font-weight:700;margin-top:3px">New or updated tasks</div>
+      <div id="wiki-task-notify-title" style="font-size:18px;font-weight:700;margin-top:3px">New or updated tasks</div>
     </div>
     <div style="padding:16px 18px">
       <div id="wiki-task-notify-list"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px">
+      <div id="wiki-task-notify-actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px">
         <button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button>
         <button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>
       </div>
@@ -2779,7 +2779,7 @@ function openSalesCRM(){
 
   try {
     // Use URL fragment to pass session (not sent to server)
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260622.6#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2798,6 +2798,13 @@ function loadDebtFrame(){
 
 // ── NAVIGATION ────────────────────────────────────
 function go(n){
+  const mandatoryTask=mandatoryWikiTaskAction();
+  if(mandatoryTask&&n!=='attendance'){
+    showWikiTaskNotificationModal();
+    toast('Complete the mandatory task action first. Only Attendance is currently available.','err');
+    return;
+  }
+  if(n==='attendance')modalHideWikiTask();
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
   if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
@@ -3216,18 +3223,71 @@ function pendingWikiTaskNotifications(){
     return mine&&(!seen||ts>seen);
   }).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
 }
+function mandatoryWikiTaskAction(){
+  if(!CU)return null;
+  const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending');
+  if(review)return{type:'assigner-review',task:review};
+  const assignee=taskData.find(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.assigneeActionRequiredAt&&!t.assigneeActionResolvedAt);
+  return assignee?{type:'assignee-action',task:assignee}:null;
+}
+function wikiTaskActionCard(t,color,bg){return`<div style="padding:12px;border-left:5px solid ${color};background:${bg};border-radius:8px">
+  <div style="font-size:14px;font-weight:700;color:${color}">${esc(t.title||'Task')}</div>
+  ${t.description?`<div style="font-size:11.5px;margin-top:6px">${esc(t.description)}</div>`:''}
+  <div style="font-size:10.5px;color:var(--t2);margin-top:8px;line-height:1.7">Assignee: <b>${esc(t.assignedTo||'—')}</b> · Assigned by: <b>${esc(t.assignedBy||'—')}</b><br>Deadline: <b>${fmtDate(t.deadline)}</b> · Priority: <b>${esc(t.priority||'Medium')}</b>${t.project?' · Project: <b>'+esc(t.project)+'</b>':''}</div>
+</div>`;}
 function showWikiTaskNotificationModal(){
-  const modal=el('wiki-task-notify-modal'),list=el('wiki-task-notify-list');if(!modal||!list||!CU)return;
+  const modal=el('wiki-task-notify-modal'),list=el('wiki-task-notify-list'),title=el('wiki-task-notify-title'),actions=el('wiki-task-notify-actions');if(!modal||!list||!CU)return;
+  const mandatory=mandatoryWikiTaskAction();
+  const attendanceOpen=el('v-attendance')&&el('v-attendance').style.display!=='none';
+  if(mandatory){
+    if(attendanceOpen){modal.style.display='none';return;}
+    const t=mandatory.task;
+    if(mandatory.type==='assignee-action'){
+      title.textContent='Mandatory task action required';
+      list.innerHTML=`<div style="font-size:11px;font-weight:700;color:#B71C1C;margin-bottom:9px">Complete this task or submit a deadline-change request before using any module other than Attendance.</div>${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"></div>`;
+      actions.innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()"><i class="ti ti-user-check"></i>Attendance</button><button class="btn" onclick="showWikiDeadlineRequestForm('${t.id}')">Request Deadline Change</button><button class="btn pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>`;
+    }else{
+      title.textContent='Deadline change approval required';
+      list.innerHTML=`${wikiTaskActionCard(t,'#6A1B9A','#F3E5F5')}<div style="margin-top:10px;padding:10px;background:#FFF3E0;border:1px solid #FFB74D;border-radius:7px;color:#E65100"><b>Requested deadline: ${fmtDate(t.proposedDeadline)}</b><br>Reason: ${esc(t.deadlineChangeReason||'—')}</div><div style="margin-top:10px"><label class="fl r">Decision remarks</label><textarea class="fi" id="wiki-deadline-review-remarks" placeholder="Remarks are mandatory"></textarea></div>`;
+      actions.innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()"><i class="ti ti-user-check"></i>Attendance</button><button class="btn" style="color:#B71C1C;border-color:#B71C1C" onclick="reviewWikiDeadlineRequest('${t.id}','rejected')">Reject</button><button class="btn pri" onclick="reviewWikiDeadlineRequest('${t.id}','approved')">Approve</button>`;
+    }
+    modal.style.display='flex';return;
+  }
   const tasks=pendingWikiTaskNotifications();
   if(!tasks.length){modal.style.display='none';return;}
+  title.textContent='New or updated tasks';
+  actions.innerHTML='<button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button><button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
   const colors={High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
   list.innerHTML=tasks.slice(0,8).map(t=>{const c=t.status==='Completed'?['#1B5E20','#E8F5E9']:(colors[t.priority]||colors.Medium);return`<div style="margin-bottom:9px;padding:11px 12px;border-left:4px solid ${c[0]};background:${c[1]};border-radius:7px">
     <div style="display:flex;justify-content:space-between;gap:8px"><b style="color:${c[0]}">${esc(t.title||'Task')}</b><span class="badge">${esc(t.priority||'Medium')}</span></div>
     ${t.description?`<div style="font-size:11px;margin-top:5px">${esc(t.description)}</div>`:''}
     <div style="font-size:10.5px;color:var(--t2);margin-top:6px">Assignee: <b>${esc(t.assignedTo||'—')}</b> · By: <b>${esc(t.assignedBy||'—')}</b>${t.supervisor?' · Supervisor: <b>'+esc(t.supervisor)+'</b>':''}<br>Deadline: <b>${fmtDate(t.deadline)}</b> · Status: <b>${esc(t.status||'Open')}</b>${t.project?' · Project: <b>'+esc(t.project)+'</b>':''}</div>
+    ${t.deadlineChangeStatus&&t.deadlineChangeStatus!=='pending'?`<div style="margin-top:7px;font-size:10.5px;font-weight:700;color:${t.deadlineChangeStatus==='approved'?'#1B5E20':'#B71C1C'}">Deadline request ${esc(t.deadlineChangeStatus)}${t.deadlineChangeReviewRemarks?' · '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
   </div>`;}).join('')+(tasks.length>8?`<div style="font-size:11px;color:var(--t2)">+ ${tasks.length-8} more task notification(s)</div>`:'');
   modal.style.display='flex';
 }
+function showWikiDeadlineRequestForm(id){
+  const t=taskData.find(x=>x.id===id);if(!t)return;
+  el('wiki-task-action-inputs').innerHTML=`<div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div>`;
+  el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()">Attendance</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
+}
+async function submitWikiDeadlineRequest(id){
+  const t=taskData.find(x=>x.id===id),proposed=g('wiki-proposed-deadline'),reason=g('wiki-deadline-reason');
+  if(!t||t.assignedTo!==CU.fullName||!proposed||!reason){toast('Proposed deadline and reason are mandatory','err');return;}
+  if(proposed===t.deadline){toast('Choose a different deadline','err');return;}
+  const now=new Date().toISOString();showLoad('Sending request…');
+  try{await db.collection(TASK_COL).doc(id).update({deadlineChangeStatus:'pending',proposedDeadline:proposed,deadlineChangeReason:reason,deadlineChangeRequestedBy:CU.fullName,deadlineChangeRequestedAt:now,assigneeActionResolvedAt:now,updatedAt:now});toast('Deadline change request sent to '+t.assignedBy,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function reviewWikiDeadlineRequest(id,decision){
+  const t=taskData.find(x=>x.id===id),remarks=g('wiki-deadline-review-remarks');
+  if(!t||t.assignedBy!==CU.fullName||t.deadlineChangeStatus!=='pending'||!remarks){toast('Decision remarks are mandatory','err');return;}
+  const now=new Date().toISOString(),d={deadlineChangeStatus:decision,deadlineChangeReviewedBy:CU.fullName,deadlineChangeReviewedAt:now,deadlineChangeReviewRemarks:remarks,updatedAt:now};
+  if(decision==='approved')d.deadline=t.proposedDeadline;
+  showLoad('Saving decision…');try{await db.collection(TASK_COL).doc(id).update(d);toast('Deadline request '+decision,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function completeWikiMandatoryTask(id){await updateTaskStatus(id,'Completed');modalHideWikiTask();}
+function modalHideWikiTask(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';}
+function openAttendanceDuringTaskBlock(){modalHideWikiTask();go('attendance');}
 function ackWikiTaskNotifications(){markTasksSeen();el('wiki-task-notify-modal').style.display='none';}
 function openNotifiedTasks(){ackWikiTaskNotifications();go('tasks');}
 function updateTaskNavBadge(){
@@ -3240,6 +3300,7 @@ function updateTaskNavBadge(){
     const ts=t.updatedAt||t.createdAt||'';
     if(!seen||ts>seen)n++;
   });
+  if(mandatoryWikiTaskAction())n=Math.max(n,1);
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
   // Mirror the count onto the installed app's taskbar / dock / home-screen icon
@@ -3382,7 +3443,8 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now};
+      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now,
+        assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
       await db.collection(TASK_COL).doc(eid).update(upd);
       const existing=taskData.find(x=>x.id===eid)||{};
       const recips=sendTaskNotification('updated',{...existing,...upd});
@@ -3391,7 +3453,7 @@ async function saveTask(){
       const tObj={title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
         assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,
-        status:'Open',createdAt:now,updatedAt:now};
+        status:'Open',createdAt:now,updatedAt:now,assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null};
       await db.collection(TASK_COL).add(tObj);
       const recips=sendTaskNotification('created',tObj);
       toast('Task assigned ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
@@ -3416,6 +3478,9 @@ async function updateTaskStatus(id,status){
         updatedAt:now,
         lastCompletedAt:now,
         timesCompleted:(existing.timesCompleted||0)+1,
+        assigneeActionRequiredAt:now,
+        assigneeActionResolvedAt:null,
+        deadlineChangeStatus:null,
         completions:[...(existing.completions||[]),completion].slice(-24)
       };
       await db.collection(TASK_COL).doc(id).update(d);
@@ -3424,7 +3489,7 @@ async function updateTaskStatus(id,status){
       sendTaskNotification(existing.frequency.toLowerCase()+' occurrence completed — next due '+niceNext,{...existing,...d});
     }else{
       const d={status,updatedAt:now};
-      if(status==='Completed')d.completedAt=now;
+      if(status==='Completed'){d.completedAt=now;d.assigneeActionResolvedAt=now;}
       await db.collection(TASK_COL).doc(id).update(d);
       toast('Status updated ✓','ok');
       sendTaskNotification('status changed to '+status,{...existing,...d});
