@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 75.4 — GitHub Pages-safe cache isolation and Debt access update
+// Version 75.5 — GitHub Pages-safe cache isolation and Debt access update
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v75-20260622-4';
+const CACHE_VERSION = 'dqap-wiki-v75-20260622-5';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
