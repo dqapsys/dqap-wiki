@@ -1,6 +1,6 @@
 // DQAP Wiki Service Worker
-// Version 75 — mandatory task actions and CRM build 20260622.8
-const CACHE_VERSION = 'dqap-v75-mandatory-actions-crm-20260622-8';
+// Version 75 — mandatory task actions, CRM 20260622.8, Debt 20260622.2
+const CACHE_VERSION = 'dqap-v75-crm-20260622-8-debt-20260622-2';
 const CACHE_NAME = CACHE_VERSION;
 
 self.addEventListener('install', event => {
