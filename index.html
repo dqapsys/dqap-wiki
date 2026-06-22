@@ -22,8 +22,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_72_FINAL
-const APP_VERSION="72_FINAL";
+// DQAP_WIKI_VERSION_73_IN_APP_TASK_NOTIFICATIONS
+const APP_VERSION="73_IN_APP_TASK_NOTIFICATIONS";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1156,6 +1156,23 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 </main>
+</div>
+
+<!-- Live Task Management notification modal -->
+<div id="wiki-task-notify-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(8,20,40,.78);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(680px,96vw);max-height:86vh;overflow:auto;background:#fff;border:3px solid #006994;border-radius:14px;box-shadow:0 26px 90px rgba(0,0,0,.52)">
+    <div style="padding:15px 18px;background:linear-gradient(135deg,#006994,#263F65);color:#fff">
+      <div style="font-size:10px;font-weight:800;letter-spacing:1px">TASK MANAGEMENT · LIVE NOTIFICATION</div>
+      <div style="font-size:18px;font-weight:700;margin-top:3px">New or updated tasks</div>
+    </div>
+    <div style="padding:16px 18px">
+      <div id="wiki-task-notify-list"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px">
+        <button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button>
+        <button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -2291,7 +2308,7 @@ function sendNotification(e){
   try{emailjs.init(CFG.EJS_KEY);emailjs.send(CFG.EJS_SERVICE,CFG.EJS_TEMPLATE,{to_email:CFG.NOTIFY_TO,engineer:e.engineer,title:e.title,project:e.project,category:e.category,severity:e.severity,entry_number:e.entryNumber,problem:e.problem,solution:e.solution});}catch(e){}
 }
 
-function sendTaskNotification(action, t){
+function sendTaskEmailNotificationLegacy(action, t){
   if(!CFG.NOTIFY_ON || !CFG.EJS_KEY) return [];
 
   // Resolve a person's email from their user record. Name match is trimmed +
@@ -2353,6 +2370,13 @@ function sendTaskNotification(action, t){
     });
   } catch (e) {}
   return emails;
+}
+
+// Task updates are now delivered inside Wiki; email is deliberately disabled.
+function sendTaskNotification(action,t){
+  const recipients=[];
+  [t.assignedTo,t.supervisor,t.assignedBy].forEach(name=>{if(name&&!recipients.includes(name))recipients.push(name);});
+  return recipients;
 }
 
 // ── PROJECTS ──────────────────────────────────────
@@ -2755,7 +2779,7 @@ function openSalesCRM(){
 
   try {
     // Use URL fragment to pass session (not sent to server)
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260622.4#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -3166,8 +3190,9 @@ function startTaskListen(){
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
     const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
-    if(onPage){setTaskSeen(new Date().toISOString());renderTasks();}
+    if(onPage)renderTasks();
     updateTaskNavBadge();
+    showWikiTaskNotificationModal();
   },err=>{});
 }
 function startUsersListen(){
@@ -3182,12 +3207,34 @@ function taskSeenKey(){return 'dqap_task_seen_'+((CU&&CU.username)||'x');}
 function getTaskSeen(){try{return localStorage.getItem(taskSeenKey())||'';}catch(e){return '';}}
 function setTaskSeen(ts){try{localStorage.setItem(taskSeenKey(),ts);}catch(e){}}
 function markTasksSeen(){setTaskSeen(new Date().toISOString());updateTaskNavBadge();}
+function pendingWikiTaskNotifications(){
+  if(!CU)return[];
+  const seen=getTaskSeen();
+  return taskData.filter(t=>{
+    const mine=t.assignedTo===CU.fullName||t.supervisor===CU.fullName||t.assignedBy===CU.fullName;
+    const ts=t.updatedAt||t.createdAt||'';
+    return mine&&(!seen||ts>seen);
+  }).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
+}
+function showWikiTaskNotificationModal(){
+  const modal=el('wiki-task-notify-modal'),list=el('wiki-task-notify-list');if(!modal||!list||!CU)return;
+  const tasks=pendingWikiTaskNotifications();
+  if(!tasks.length){modal.style.display='none';return;}
+  const colors={High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
+  list.innerHTML=tasks.slice(0,8).map(t=>{const c=t.status==='Completed'?['#1B5E20','#E8F5E9']:(colors[t.priority]||colors.Medium);return`<div style="margin-bottom:9px;padding:11px 12px;border-left:4px solid ${c[0]};background:${c[1]};border-radius:7px">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b style="color:${c[0]}">${esc(t.title||'Task')}</b><span class="badge">${esc(t.priority||'Medium')}</span></div>
+    ${t.description?`<div style="font-size:11px;margin-top:5px">${esc(t.description)}</div>`:''}
+    <div style="font-size:10.5px;color:var(--t2);margin-top:6px">Assignee: <b>${esc(t.assignedTo||'—')}</b> · By: <b>${esc(t.assignedBy||'—')}</b>${t.supervisor?' · Supervisor: <b>'+esc(t.supervisor)+'</b>':''}<br>Deadline: <b>${fmtDate(t.deadline)}</b> · Status: <b>${esc(t.status||'Open')}</b>${t.project?' · Project: <b>'+esc(t.project)+'</b>':''}</div>
+  </div>`;}).join('')+(tasks.length>8?`<div style="font-size:11px;color:var(--t2)">+ ${tasks.length-8} more task notification(s)</div>`:'');
+  modal.style.display='flex';
+}
+function ackWikiTaskNotifications(){markTasksSeen();el('wiki-task-notify-modal').style.display='none';}
+function openNotifiedTasks(){ackWikiTaskNotifications();go('tasks');}
 function updateTaskNavBadge(){
   const badge=el('task-nav-badge');if(!badge||!CU)return;
   const seen=getTaskSeen();
   let n=0;
   taskData.forEach(t=>{
-    if(t.status==='Completed')return;
     const mine=(t.assignedTo===CU.fullName)||(t.supervisor===CU.fullName)||(t.assignedBy===CU.fullName);
     if(!mine)return;
     const ts=t.updatedAt||t.createdAt||'';
@@ -3339,7 +3386,7 @@ async function saveTask(){
       await db.collection(TASK_COL).doc(eid).update(upd);
       const existing=taskData.find(x=>x.id===eid)||{};
       const recips=sendTaskNotification('updated',{...existing,...upd});
-      toast('Task updated ✓'+(recips.length?' · notified '+recips.join(', '):' · no emails on file'),'ok');
+      toast('Task updated ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
     }else{
       const tObj={title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
@@ -3347,7 +3394,7 @@ async function saveTask(){
         status:'Open',createdAt:now,updatedAt:now};
       await db.collection(TASK_COL).add(tObj);
       const recips=sendTaskNotification('created',tObj);
-      toast('Task assigned ✓'+(recips.length?' · notified '+recips.join(', '):' · no emails on file'),'ok');
+      toast('Task assigned ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
     }
     togTaskForm(false);
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
