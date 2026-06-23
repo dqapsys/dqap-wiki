@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 77.0 — Wiki shell refresh for integrated CRM Leads and Incentives
+// Version 77.1 — CRM conversion visibility and salesperson incentive settings
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v77-20260623-3';
+const CACHE_VERSION = 'dqap-wiki-v77-20260623-4';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
