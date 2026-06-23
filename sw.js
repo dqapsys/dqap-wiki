@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 76.1 — Wiki shell refresh for Contacts and KAM CRM release
+// Version 77.0 — Wiki shell refresh for integrated CRM Leads and Incentives
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v76-20260623-2';
+const CACHE_VERSION = 'dqap-wiki-v77-20260623-3';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
