@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,8 +24,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_0_DEBT_CRM_WORKFLOW_UPGRADE
-const APP_VERSION="78.0_DEBT_CRM_WORKFLOW_UPGRADE";
+// DQAP_WIKI_VERSION_77_4_COMPACT_PMO_BUDGET
+const APP_VERSION="77.4_COMPACT_PMO_BUDGET";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -239,6 +240,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .pmo-dash-pct{font-size:11px;font-weight:700;text-align:right;padding-left:8px}
 .pmo-seg{flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;overflow:hidden;white-space:nowrap;cursor:default;transition:opacity .15s}
 .pmo-seg:hover{opacity:.75}
+/* Compact PMO/Budget workspaces: fixed-width pipeline-style cards on large screens. */
+#v-pmo .content,#v-budget .content{width:100%;max-width:1480px;margin-left:auto;margin-right:auto}
+.compact-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,440px));gap:14px;align-items:start;justify-content:start}
+.compact-card-grid .pmo-card{margin-bottom:0;min-width:0}
+.compact-card-grid .pmo-card.is-expanded{grid-column:1/-1;width:100%}
+.compact-table-panel{max-width:1480px;margin:0 auto}
 /* MOBILE */
 .mob-bar{display:none;background:linear-gradient(90deg,var(--sb1),var(--sb2));padding:0 14px;height:52px;flex-direction:row;align-items:center;justify-content:space-between;position:sticky;top:0;left:0;right:0;z-index:200;width:100%;flex-shrink:0}
 .mob-left{display:flex;align-items:center;gap:10px;height:100%}
@@ -249,6 +256,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .mob-overlay.open{display:block}
 .sidebar.mob-open{transform:translateX(0)!important}
 @media(max-width:768px){
+  .compact-card-grid{grid-template-columns:1fr}
   #app{display:flex!important;flex-direction:column;min-height:100vh}
   .mob-bar{display:flex}
   .sidebar{transform:translateX(-100%);transition:transform .25s ease;position:fixed;top:0;left:0;z-index:400;height:100vh;width:var(--sw)}
@@ -1724,6 +1732,7 @@ function getPMODashboardStage(stages,stageName){
 
 function renderPMODashboard(list){
   const c=el('pmo-list');
+  c.className='compact-table-panel';
   if(!list.length){
     c.innerHTML=`<div class="card"><div class="cb" style="text-align:center;padding:32px;color:var(--t2)"><i class="ti ti-chart-gantt" style="font-size:36px;display:block;margin-bottom:10px"></i>No projects match the current filter</div></div>`;
     return;
@@ -1857,6 +1866,7 @@ function renderPMO(){
   if(det)det.className='btn'+(pmoDashView==='cards'?' pri':'');
   if(pmoDashView==='chart'){renderPMODashboard(list);return;}
   const c=el('pmo-list');
+  c.className='compact-card-grid';
   if(!list.length){c.innerHTML=`<div class="empty"><i class="ti ti-chart-gantt eico"></i><div class="etit">${pmoData.length?'No projects match':'No PMO projects yet'}</div><div class="edesc">${CU?.isAdmin?'Add your first project using the button above.':'No projects have been added yet.'}</div></div>`;return;}
 
   c.innerHTML=list.map(p=>{
@@ -1945,7 +1955,7 @@ function renderPMO(){
       }
     }
 
-    return`<div class="pmo-card" id="pmc-${id}">
+    return`<div class="pmo-card${isExpanded?' is-expanded':''}" id="pmc-${id}">
       <div style="cursor:pointer;user-select:none" onclick="if(!event.target.closest('button'))togglePMOCard('${id}')">
         <div class="pmo-hd">
           <div style="flex:1;min-width:0">
@@ -2791,7 +2801,7 @@ function openDebtManagement(){
 
   try {
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20260624.1#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2810,7 +2820,7 @@ function openSalesCRM(targetTab=''){
   try {
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260624.1${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260623.4${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2823,7 +2833,7 @@ function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=sessionStorage.getItem('dqap_sess');
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20260624.1#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
@@ -2988,6 +2998,7 @@ function toggleBudgetCard(projName){
 function renderBudgetList(){
   if(CU?.isUser)return;
   const wrap=el('budget-list');if(!wrap)return;
+  wrap.className='compact-card-grid';
   const q=(el('budget-search')?.value||'').toLowerCase().trim();
   let projs=projectsData.slice().sort((a,b)=>a.name.localeCompare(b.name));
   if(q)projs=projs.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.number||'').toLowerCase().includes(q));
@@ -3084,7 +3095,7 @@ function renderBudgetList(){
       </div>`;
     }
 
-    return`<div class="pmo-card" id="bgc-${p.id}">
+    return`<div class="pmo-card${isExpanded?' is-expanded':''}" id="bgc-${p.id}">
       <div style="cursor:pointer;user-select:none" onclick="toggleBudgetCard('${safeName}')">
         <div class="pmo-hd">
           <div style="flex:1;min-width:0">
