@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_77_3_OVERDUE_TASK_ENFORCEMENT
-const APP_VERSION="77.3_OVERDUE_TASK_ENFORCEMENT";
+// DQAP_WIKI_VERSION_78_0_DEBT_CRM_WORKFLOW_UPGRADE
+const APP_VERSION="78.0_DEBT_CRM_WORKFLOW_UPGRADE";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2791,7 +2791,7 @@ function openDebtManagement(){
 
   try {
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20260624.1#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2810,7 +2810,7 @@ function openSalesCRM(targetTab=''){
   try {
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260623.4${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260624.1${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2823,7 +2823,7 @@ function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=sessionStorage.getItem('dqap_sess');
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20260624.1#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
