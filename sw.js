@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 77.1 — CRM conversion visibility and salesperson incentive settings
+// Version 78.0 - Wiki Task Management PWA alerts and desktop note
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v77-20260623-4';
+const CACHE_VERSION = 'dqap-wiki-v78-20260624-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
@@ -76,5 +76,21 @@ self.addEventListener('fetch', event => {
     } catch (error) {
       return (await cache.match(request)) || Response.error();
     }
+  })());
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || './?view=tasks', self.registration.scope).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin === self.location.origin) {
+        await client.focus();
+        client.postMessage({ type: 'OPEN_WIKI_TASKS', taskId: event.notification.data?.taskId || null });
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
   })());
 });
