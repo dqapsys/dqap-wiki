@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 77.1 — CRM conversion visibility and salesperson incentive settings
+// Version 77.3 - overdue task enforcement
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v77-20260623-4';
+const CACHE_VERSION = 'dqap-wiki-v77.3-20260624-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
@@ -38,6 +38,8 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
+  // Never cache partial-content responses used for media/file downloads.
+  if (request.headers.has('range')) return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
@@ -47,17 +49,18 @@ self.addEventListener('fetch', event => {
   const isHtml = request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html');
   if (isHtml) {
     event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
       try {
         const fresh = await fetch(request, { cache: 'no-store' });
         if (fresh.ok) {
-          const cache = await caches.open(CACHE_NAME);
           await cache.put(request, fresh.clone());
         }
         return fresh;
       } catch (error) {
-        return (await caches.match(request)) ||
-          (await caches.match('./')) ||
-          (await caches.match('./index.html')) ||
+        // Search only this Wiki release cache, not caches owned by CRM/Debt.
+        return (await cache.match(request)) ||
+          (await cache.match('./')) ||
+          (await cache.match('./index.html')) ||
           new Response('DQAP Wiki is offline. Reconnect and try again.', {
             status: 503,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }
