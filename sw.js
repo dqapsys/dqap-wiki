@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 77.3 - overdue task enforcement
+// Version 77.4 - compact PMO and Budget layouts
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v77.3-20260624-1';
+const CACHE_VERSION = 'dqap-wiki-v77.4-20260624-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
