@@ -1,7 +1,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_77_1_CRM_CONVERSION_AND_SALES_INCENTIVES
-const APP_VERSION="77.1_CRM_CONVERSION_AND_SALES_INCENTIVES";
+// DQAP_WIKI_VERSION_78_0_TASK_PWA_DESKTOP_NOTE
+const APP_VERSION="78.0_TASK_PWA_DESKTOP_NOTE";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -352,6 +351,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div class="sb-foot">
     <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connecting…</span></div>
     <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span></div>
+    <button id="wiki-task-alert-btn" class="btn sm" onclick="enableWikiTaskAlerts()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.86);margin-bottom:8px"><i class="ti ti-bell"></i>Enable task alerts</button>
     <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase">Colour theme</div>
     <div class="tdots">
       <div class="tdot active" onclick="setTheme('blue')"   title="Ocean Blue"  style="background:#0070C0" data-t="blue"></div>
@@ -1180,6 +1180,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
+let wikiSwRegistration=null,wikiTaskAlertSyncStarted=false,wikiTaskSnapshotLoaded=false;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1244,6 +1245,8 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
+  wikiTaskAlertSyncStarted=false;wikiTaskSnapshotLoaded=false;
+  try{if('clearAppBadge' in navigator)navigator.clearAppBadge().catch(()=>{});}catch(e){}
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
   DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
@@ -1253,6 +1256,7 @@ function logout(){
 }
 
 function startApp(){
+  wikiTaskAlertSyncStarted=false;wikiTaskSnapshotLoaded=false;
   el('sb-user').textContent=CU.fullName;
   const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki · v'+APP_VERSION;
   el('f-date').value=new Date().toISOString().split('T')[0];
@@ -1271,6 +1275,8 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
+  updateWikiTaskAlertButton();
+  if(new URLSearchParams(location.search).get('view')==='tasks')setTimeout(()=>go('tasks'),0);
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -2782,7 +2788,7 @@ function openSalesCRM(targetTab=''){
   try {
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260624.1${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260623.4${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -3194,14 +3200,90 @@ function exportBudgetExcel(){
 }
 
 
-// ── TASK LISTENERS ────────────────────────────────
+// ── TASK PWA ALERTS + LISTENER ────────────────────
+function wikiTaskTimestamp(t){
+  const v=t.updatedAt||t.createdAt||'';
+  if(typeof v==='string')return v;
+  try{if(v&&typeof v.toDate==='function')return v.toDate().toISOString();}catch(e){}
+  return String(v||'');
+}
+function wikiAssignedOpenTasks(){
+  if(!CU)return[];
+  return taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed');
+}
+function wikiRelevantTasks(){
+  if(!CU)return[];
+  return taskData.filter(t=>t.assignedTo===CU.fullName||t.supervisor===CU.fullName||t.assignedBy===CU.fullName);
+}
+function updateWikiTaskAlertButton(){
+  const btn=el('wiki-task-alert-btn');if(!btn)return;
+  if(!('Notification' in window)||!('serviceWorker' in navigator)){
+    btn.innerHTML='<i class="ti ti-bell-off"></i>Task alerts unavailable';btn.disabled=true;btn.style.opacity='.6';return;
+  }
+  const granted=Notification.permission==='granted',denied=Notification.permission==='denied';
+  btn.innerHTML=granted?'<i class="ti ti-bell-check"></i>Task alerts on':denied?'<i class="ti ti-bell-off"></i>Task alerts blocked':'<i class="ti ti-bell"></i>Enable task alerts';
+  btn.disabled=denied;btn.style.opacity=denied?'.6':'1';
+}
+async function enableWikiTaskAlerts(){
+  if(!('Notification' in window)||!('serviceWorker' in navigator)){toast('Desktop alerts are not supported by this browser','err');return;}
+  const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
+  updateWikiTaskAlertButton();
+  if(permission!=='granted'){toast('Allow notifications in browser settings to receive task alerts','err');return;}
+  wikiSwRegistration=wikiSwRegistration||await navigator.serviceWorker.ready;
+  await syncWikiTaskPwaAlerts(true);
+  toast('Task alerts enabled ✓','ok');
+}
+async function syncWikiTaskPwaAlerts(forceSummary=false){
+  if(!CU)return;
+  const relevant=wikiRelevantTasks(),open=wikiAssignedOpenTasks();
+  const alertKey='dqap_task_pwa_alerted_'+CU.username;
+  let alerted={};try{alerted=JSON.parse(localStorage.getItem(alertKey)||'{}')||{};}catch(e){alerted={};}
+  const changed=relevant.filter(t=>wikiTaskTimestamp(t)!==(alerted[t.id]||''));
+  const current={};relevant.forEach(t=>{current[t.id]=wikiTaskTimestamp(t);});
+  try{localStorage.setItem(alertKey,JSON.stringify(current));}catch(e){}
+  const canNotify=wikiSwRegistration&&'Notification' in window&&Notification.permission==='granted';
+  if(canNotify&&forceSummary&&open.length){
+    const overdue=open.filter(t=>t.deadline&&new Date(t.deadline)<new Date()).length;
+    await wikiSwRegistration.showNotification(`DQAP Tasks · ${open.length} pending`,{
+      body:`${overdue?overdue+' overdue · ':''}Open Task Management to review your assigned work.`,
+      icon:'./icon-192.png',badge:'./icon-192.png',tag:'dqap-task-summary-'+CU.username,
+      data:{url:'./?view=tasks',openTasks:true}
+    });
+  }else if(canNotify&&wikiTaskAlertSyncStarted){
+    for(const t of changed.slice(0,3)){
+      const due=t.deadline?' · Due '+fmtDate(t.deadline):'';
+      await wikiSwRegistration.showNotification(t.status==='Completed'?'Task completed':'Task assigned or updated',{
+        body:`${t.title||'Task'} · ${t.status||'Open'}${due}`,
+        icon:'./icon-192.png',badge:'./icon-192.png',tag:'dqap-task-'+t.id,renotify:true,
+        data:{url:'./?view=tasks',taskId:t.id,openTasks:true}
+      });
+    }
+  }
+  wikiTaskAlertSyncStarted=true;
+  if(canNotify){
+    const today=new Date().toISOString().slice(0,10),due=open.filter(t=>t.deadline&&new Date(t.deadline)<=new Date());
+    const dueKey='dqap_task_due_alert_'+CU.username;
+    let dueSeen='';try{dueSeen=localStorage.getItem(dueKey)||'';}catch(e){}
+    if(due.length&&dueSeen!==today){
+      const overdue=due.filter(t=>new Date(t.deadline)<new Date()).length;
+      await wikiSwRegistration.showNotification('DQAP pending-task reminder',{
+        body:`${due.length} due ${due.length===1?'task':'tasks'}${overdue?' · '+overdue+' overdue':''}.`,
+        icon:'./icon-192.png',badge:'./icon-192.png',tag:'dqap-task-due-'+CU.username+'-'+today,
+        data:{url:'./?view=tasks',openTasks:true}
+      });
+      try{localStorage.setItem(dueKey,today);}catch(e){}
+    }
+  }
+}
 function startTaskListen(){
   if(taskUnsub)taskUnsub();
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    wikiTaskSnapshotLoaded=true;
     const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
     if(onPage)renderTasks();
     updateTaskNavBadge();
+    syncWikiTaskPwaAlerts().catch(e=>console.warn('Task alert sync failed:',e));
     showWikiTaskNotificationModal();
   },err=>{});
 }
@@ -3309,7 +3391,8 @@ function updateTaskNavBadge(){
   // Mirror the count onto the installed app's taskbar / dock / home-screen icon
   try{
     if('setAppBadge' in navigator){
-      if(n>0)navigator.setAppBadge(n).catch(()=>{});
+      const appCount=wikiAssignedOpenTasks().length;
+      if(appCount>0)navigator.setAppBadge(appCount).catch(()=>{});
       else navigator.clearAppBadge().catch(()=>{});
     }
   }catch(e){}
@@ -3893,12 +3976,18 @@ function renderAMC(){
 
 if('serviceWorker' in navigator){
   let refreshing=false;
+  navigator.serviceWorker.addEventListener('message',event=>{
+    if(event.data&&event.data.type==='OPEN_WIKI_TASKS'&&CU)go('tasks');
+  });
   // When a new service worker takes control, reload once to get fresh assets
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(refreshing)return;refreshing=true;window.location.reload();
   });
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(reg=>{
+      wikiSwRegistration=reg;
+      updateWikiTaskAlertButton();
+      if(wikiTaskSnapshotLoaded)syncWikiTaskPwaAlerts().catch(()=>{});
       console.log('SW registered:',reg.scope);
       if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
       // Force an immediate update check on every load
