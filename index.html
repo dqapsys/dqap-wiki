@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2781,7 +2782,7 @@ function openSalesCRM(targetTab=''){
   try {
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260623.4${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260624.1${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
