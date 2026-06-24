@@ -1,7 +1,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_77_2_PMO_STAGE_NAME_MAPPING
-const APP_VERSION="77.2_PMO_STAGE_NAME_MAPPING";
+// DQAP_WIKI_VERSION_77_3_OVERDUE_TASK_ENFORCEMENT
+const APP_VERSION="77.3_OVERDUE_TASK_ENFORCEMENT";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1194,7 +1193,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,usersUnsub=null,amcUnsub=null;
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1259,6 +1258,7 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');CU=null;
+  if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
   DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
@@ -3225,6 +3225,7 @@ function exportBudgetExcel(){
 // ── TASK LISTENERS ────────────────────────────────
 function startTaskListen(){
   if(taskUnsub)taskUnsub();
+  if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
     const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
@@ -3232,6 +3233,13 @@ function startTaskListen(){
     updateTaskNavBadge();
     showWikiTaskNotificationModal();
   },err=>{});
+  taskDeadlineTimer=setInterval(()=>{
+    if(!CU)return;
+    const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
+    if(onPage)renderTasks();
+    updateTaskNavBadge();
+    showWikiTaskNotificationModal();
+  },60000);
 }
 function startUsersListen(){
   if(usersUnsub)usersUnsub();
@@ -3254,12 +3262,23 @@ function pendingWikiTaskNotifications(){
     return mine&&(!seen||ts>seen);
   }).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
 }
+function isWikiTaskOverdue(t){
+  if(!t||!t.deadline||t.status==='Completed')return false;
+  const raw=String(t.deadline),deadline=new Date(raw.includes('T')?raw:raw+'T00:00');
+  return Number.isFinite(deadline.getTime())&&deadline.getTime()<Date.now();
+}
 function mandatoryWikiTaskAction(){
   if(!CU)return null;
   const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending');
   if(review)return{type:'assigner-review',task:review};
-  const assignee=taskData.find(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.assigneeActionRequiredAt&&!t.assigneeActionResolvedAt);
-  return assignee?{type:'assignee-action',task:assignee}:null;
+  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending')
+    .sort((a,b)=>{
+      const ao=isWikiTaskOverdue(a),bo=isWikiTaskOverdue(b);
+      if(ao!==bo)return ao?-1:1;
+      return String(a.deadline||'9999').localeCompare(String(b.deadline||'9999'));
+    });
+  const assignee=candidates.find(t=>isWikiTaskOverdue(t)||(t.assigneeActionRequiredAt&&!t.assigneeActionResolvedAt));
+  return assignee?{type:'assignee-action',task:assignee,overdue:isWikiTaskOverdue(assignee)}:null;
 }
 function wikiTaskActionCard(t,color,bg){return`<div style="padding:12px;border-left:5px solid ${color};background:${bg};border-radius:8px">
   <div style="font-size:14px;font-weight:700;color:${color}">${esc(t.title||'Task')}</div>
@@ -3274,8 +3293,8 @@ function showWikiTaskNotificationModal(){
     if(attendanceOpen){modal.style.display='none';return;}
     const t=mandatory.task;
     if(mandatory.type==='assignee-action'){
-      title.textContent='Mandatory task action required';
-      list.innerHTML=`<div style="font-size:11px;font-weight:700;color:#B71C1C;margin-bottom:9px">Complete this task or submit a deadline-change request before using any module other than Attendance.</div>${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"></div>`;
+      title.textContent=mandatory.overdue?'Overdue task action required':'Mandatory task action required';
+      list.innerHTML=`<div style="font-size:11px;font-weight:700;color:#B71C1C;margin-bottom:9px">${mandatory.overdue?'This task is overdue. ':''}Complete it or submit a deadline-change request before using any module other than Attendance.</div>${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"></div>`;
       actions.innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()"><i class="ti ti-user-check"></i>Attendance</button><button class="btn" onclick="showWikiDeadlineRequestForm('${t.id}')">Request Deadline Change</button><button class="btn pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>`;
     }else{
       title.textContent='Deadline change approval required';
