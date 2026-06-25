@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_2_TRUST_BASED_ATTENDANCE
-const APP_VERSION="78.2_TRUST_BASED_ATTENDANCE";
+// DQAP_WIKI_VERSION_78_3_MODULE_CLEANUP
+const APP_VERSION="78.3_MODULE_CLEANUP";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -348,9 +348,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
-    <div class="ni" onclick="openSalesCRM('referrals')" id="ni-leads"><i class="ti ti-users-group"></i>Lead Management<span id="leads-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance</div>
-    <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
@@ -2823,9 +2821,12 @@ function openSalesCRM(targetTab=''){
   }
 
   try {
+    try {
+      localStorage.setItem('dqap_crm_handoff', JSON.stringify({ sess, createdAt: Date.now(), tab: targetTab || '' }));
+    } catch(e) {}
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260624.1${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260625.4${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2844,6 +2845,8 @@ function loadDebtFrame(){
 
 // ── NAVIGATION ────────────────────────────────────
 function go(n){
+  if(n==='leads'){openSalesCRM('referrals');return;}
+  if(n==='payments'){openDebtManagement();return;}
   const mandatoryTask=mandatoryWikiTaskAction();
   if(mandatoryTask&&n!=='attendance'){
     showWikiTaskNotificationModal();
