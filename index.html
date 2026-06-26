@@ -99,7 +99,7 @@ body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-ser
 .sb-logo{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;justify-content:center}
 .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
 .sb-sec{font-size:9px;font-weight:600;opacity:.38;letter-spacing:1.6px;text-transform:uppercase;padding:4px 8px 6px}
-.nav-badge{background:#fff;color:#006994;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.nav-badge{background:#D32F2F;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.78);margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.14);color:#fff}
 .ni.active{background:rgba(255,255,255,.22);color:#fff;font-weight:500}
@@ -347,11 +347,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
-    <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance</div>
-    <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
-    <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
-    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
+    <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO<span id="pmo-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker<span id="rma-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker<span id="budget-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
@@ -1275,6 +1275,7 @@ function logout(){
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
   DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  document.querySelectorAll('.nav-badge').forEach(b=>{b.style.display='none';b.textContent='';});
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -1299,6 +1300,7 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
+  setTimeout(()=>updateAttendanceNavBadge(),500);
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -1332,7 +1334,7 @@ function startPMOListen(){
 function startPayListen(){
   if(payUnsub)payUnsub();
   payUnsub=db.collection(PAY_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
-    payData=sn.docs.map(d=>({id:d.id,...d.data()}));renderPayments();
+    payData=sn.docs.map(d=>({id:d.id,...d.data()}));renderPayments();updateOperationNavBadges();
   },err=>{});
 }
 function startRMAListen(){
@@ -2739,6 +2741,29 @@ function updateDashStats(){
   const activeP=pmoData.filter(p=>p.status==='In Progress').length+pmoData.filter(p=>p.status==='Not Started').length;
   const openRMA=rmaData.filter(r=>r.status==='Raised'||r.status==='Approved').length;
   el('st-pmo').textContent=activeP;el('st-rma').textContent=openRMA;
+  updateOperationNavBadges();
+}
+function setNavBadge(id,count){
+  const badge=el(id);if(!badge)return;
+  const n=Number(count||0);
+  if(n>0){badge.style.display='inline-block';badge.textContent=n>99?'99+':String(n);}
+  else{badge.style.display='none';badge.textContent='';}
+}
+function updateOperationNavBadges(){
+  setNavBadge('pmo-nav-badge',pmoData.filter(p=>p.status==='On Hold'||p.status==='Delayed').length);
+  setNavBadge('rma-nav-badge',rmaData.filter(r=>r.status==='Raised'||r.status==='Approved').length);
+  setNavBadge('budget-nav-badge',budgetCfgData.filter(cfg=>{
+    const projName=cfg.project||cfg.projectName||cfg.name||'';
+    const consumed=budgetData.filter(e=>e.project===projName).reduce((s,e)=>s+(e.total||0),0);
+    const s=budgetStatus(cfg.budgetAllocated||0,consumed);
+    return s==='Over Budget'||s==='Near Limit';
+  }).length);
+  setNavBadge('debt-nav-badge',payData.filter(p=>p.status==='Pending'||p.status==='Partial').length);
+}
+async function updateAttendanceNavBadge(){
+  if(!CU||!db){setNavBadge('attendance-nav-badge',0);return;}
+  const rec=await attGet(attUserKey(),attDateKey());
+  setNavBadge('attendance-nav-badge',rec?0:1);
 }
 function renderDash(){
   const es=DB.entries;
@@ -2861,6 +2886,7 @@ function go(n){
   el('v-'+n).style.display='block';
   const ni=el('ni-'+n);if(ni)ni.classList.add('active');
   closeSidebar();
+  updateOperationNavBadges();updateAttendanceNavBadge();
   if(n==='wiki'){applyF();populateProj();}
   if(n==='dash')renderDash();
   if(n==='add'&&!g('f-eid'))resetForm();
@@ -2951,7 +2977,7 @@ function startBudgetListen(){
   budgetUnsub=db.collection(BUDGET_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     budgetData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetList();
-    renderPMO();
+    renderPMO();updateOperationNavBadges();
   },err=>{});
 }
 function startBudgetCfgListen(){
@@ -2960,7 +2986,7 @@ function startBudgetCfgListen(){
     budgetCfgData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetList();
     if(el('v-projects')&&el('v-projects').style.display!=='none')renderProjectsPage();
-    renderPMO();
+    renderPMO();updateOperationNavBadges();
   },err=>{});
 }
 
@@ -4053,6 +4079,7 @@ async function attRenderEmp(){
   attCurrentUser=attUserKey();
   const today=attDateKey();
   const rec=await attGet(attCurrentUser,today);
+  setNavBadge('attendance-nav-badge',rec?0:1);
   const label=el('att-user-label'); if(label)label.textContent=`${attUserName()} (@${attCurrentUser})`;
   const ns=attTrustStatus();
   const trust=el('att-trust-status');
@@ -4275,7 +4302,7 @@ async function attCheckIn(){
     if(lateCountAfter>=3)toast(`${lateCountAfter} late arrivals this week`,'err');
     else if(halfDayPenalty)toast('Second late arrival this week: half-day absent penalty marked','err');
     else toast(`✓ Checked in at ${tm}${late?' · Late':''}`,'ok');
-    setTimeout(()=>attRenderEmp(),300);
+    setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
   }
@@ -4342,7 +4369,7 @@ async function attSaveOOO(){
     toast(`✓ Marked as ${lab[attSelectedOOO]}`,'ok');
     attSelectedOOO=null;
     attCloseOOO();
-    setTimeout(()=>attRenderEmp(),300);
+    setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
   }
