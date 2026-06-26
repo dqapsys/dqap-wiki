@@ -3311,6 +3311,14 @@ function isWikiTaskOverdue(t){
   const raw=String(t.deadline),deadline=new Date(raw.includes('T')?raw:raw+'T00:00');
   return Number.isFinite(deadline.getTime())&&deadline.getTime()<Date.now();
 }
+function isWikiTaskDueForBlocking(t){
+  if(!t||!t.deadline||t.status==='Completed')return false;
+  const raw=String(t.deadline),deadline=new Date(raw.includes('T')?raw:raw+'T00:00');
+  if(!Number.isFinite(deadline.getTime()))return false;
+  const today=new Date();today.setHours(0,0,0,0);
+  const dueDay=new Date(deadline);dueDay.setHours(0,0,0,0);
+  return dueDay.getTime()<=today.getTime();
+}
 function mandatoryWikiTaskAction(){
   if(!CU)return null;
   const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending');
@@ -3321,7 +3329,7 @@ function mandatoryWikiTaskAction(){
       if(ao!==bo)return ao?-1:1;
       return String(a.deadline||'9999').localeCompare(String(b.deadline||'9999'));
     });
-  const assignee=candidates.find(t=>isWikiTaskOverdue(t)||(t.assigneeActionRequiredAt&&!t.assigneeActionResolvedAt));
+  const assignee=candidates.find(t=>isWikiTaskDueForBlocking(t)&&(isWikiTaskOverdue(t)||(t.assigneeActionRequiredAt&&!t.assigneeActionResolvedAt)));
   return assignee?{type:'assignee-action',task:assignee,overdue:isWikiTaskOverdue(assignee)}:null;
 }
 function wikiTaskActionCard(t,color,bg){return`<div style="padding:12px;border-left:5px solid ${color};background:${bg};border-radius:8px">
@@ -3337,7 +3345,7 @@ function showWikiTaskNotificationModal(){
     if(attendanceOpen){modal.style.display='none';return;}
     const t=mandatory.task;
     if(mandatory.type==='assignee-action'){
-      title.textContent=mandatory.overdue?'Overdue task action required':'Mandatory task action required';
+      title.textContent=mandatory.overdue?'Overdue task action required':'Task due action required';
       list.innerHTML=`<div style="font-size:11px;font-weight:700;color:#B71C1C;margin-bottom:9px">${mandatory.overdue?'This task is overdue. ':''}Complete it or submit a deadline-change request before using any module other than Attendance.</div>${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"></div>`;
       actions.innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()"><i class="ti ti-user-check"></i>Attendance</button><button class="btn" onclick="showWikiDeadlineRequestForm('${t.id}')">Request Deadline Change</button><button class="btn pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>`;
     }else{
