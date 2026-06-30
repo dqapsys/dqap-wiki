@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_5_TASK_TABLE_COMPACT
-const APP_VERSION="78.5_TASK_TABLE_COMPACT";
+// DQAP_WIKI_VERSION_78_6_TASK_TABLE_INLINE
+const APP_VERSION="78.6_TASK_TABLE_INLINE";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -198,6 +198,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .task-table-compact .task-mini{margin-top:2px;display:flex;gap:3px;flex-wrap:wrap}
 .task-table-compact .task-person{font-size:11px}
 .task-table-compact .badge,.task-table-compact .ld-chip{font-size:8.5px!important;padding:1px 6px!important;line-height:1.25!important}
+.task-table-compact td:nth-child(2){white-space:normal}
+.task-table-compact td:nth-child(2)>button{font-size:11.5px!important;text-decoration:none!important;text-underline-offset:0!important}
+.task-table-compact td:nth-child(2)>button:hover{color:#004F8B!important}
+.task-table-compact td:nth-child(2)>div{display:inline-flex!important;margin-top:0!important;margin-left:10px!important;gap:3px!important;vertical-align:middle!important}
 .catbar{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .cbl{font-size:11px;width:95px;flex-shrink:0}.cbt{flex:1;background:var(--bg);border-radius:4px;height:6px;overflow:hidden}.cbf{height:100%;border-radius:4px;transition:width .4s}.cbn{font-size:11px;font-weight:600;color:var(--p);width:18px;text-align:right}
 .empty{text-align:center;padding:40px 20px;color:var(--t2)}
