@@ -2836,7 +2836,7 @@ function openPayMS(){
     return;
   }
   try {
-    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260630.6' : 'https://dqapsys.github.io/PayMS/?v=20260630.6';
+    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260630.7' : 'https://dqapsys.github.io/PayMS/?v=20260630.7';
     const url = `${base}#sess=${encodeURIComponent(sess)}`;
     const paymsWindow = window.open(url, '_blank');
     if(paymsWindow) paymsWindow.opener=null;
