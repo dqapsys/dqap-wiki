@@ -2831,7 +2831,8 @@ function openSalesCRM(targetTab=''){
 }
 function openPayMS(){
   try {
-    const paymsWindow = window.open('PayMS/index_PayMS.html?v=20260630.2', '_blank');
+    const url = location.protocol === 'file:' ? 'PayMS/index.html?v=20260630.5' : 'https://dqapsys.github.io/PayMS/?v=20260630.5';
+    const paymsWindow = window.open(url, '_blank');
     if(paymsWindow) paymsWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
   } catch(e) {
