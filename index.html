@@ -2830,8 +2830,14 @@ function openSalesCRM(targetTab=''){
   }
 }
 function openPayMS(){
+  const sess = sessionStorage.getItem('dqap_sess');
+  if(!sess){
+    toast('Please login to Wiki first','err');
+    return;
+  }
   try {
-    const url = location.protocol === 'file:' ? 'PayMS/index.html?v=20260630.5' : 'https://dqapsys.github.io/PayMS/?v=20260630.5';
+    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260630.6' : 'https://dqapsys.github.io/PayMS/?v=20260630.6';
+    const url = `${base}#sess=${encodeURIComponent(sess)}`;
     const paymsWindow = window.open(url, '_blank');
     if(paymsWindow) paymsWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
