@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
 // Version 77.4 - compact PMO and Budget layouts
 const CACHE_PREFIX = 'dqap-wiki-';
-const APP_VERSION="78.5_TASK_TABLE_COMPACT";
+const APP_VERSION="78.6_TASK_TABLE_INLINE";
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
