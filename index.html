@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_3_MODULE_CLEANUP
-const APP_VERSION="78.3_MODULE_CLEANUP";
+// DQAP_WIKI_VERSION_78_4_TASK_TABLE_CRITICAL
+const APP_VERSION="78.4_TASK_TABLE_CRITICAL";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -976,7 +976,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
             <div class="fg"><label class="fl">Supervision <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — oversees)</span></label><select class="fs" id="task-supervisor"><option value="">— None —</option></select></div>
             <div class="fg"><label class="fl r">Deadline <span style="font-size:9px;color:var(--t2);font-weight:400">(date &amp; time, 24h)</span></label><input type="datetime-local" class="fi" id="task-deadline"></div>
             <div class="fg"><label class="fl r">Frequency <span style="font-size:9px;color:var(--t2);font-weight:400">(recurs automatically)</span></label><select class="fs" id="task-frequency"><option>One Time</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annually</option></select></div>
-            <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Low</option></select></div>
+            <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div>
             <div class="fg"><label class="fl">Link to project</label><select class="fs" id="task-project"><option value="">— None —</option></select></div>
           </div>
           <input type="hidden" id="task-eid">
@@ -1204,6 +1204,23 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
+<!-- Task detail modal -->
+<div id="wiki-task-detail-modal" style="display:none;position:fixed;inset:0;z-index:5001;background:rgba(8,20,40,.64);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45)">
+    <div style="padding:15px 18px;background:linear-gradient(135deg,#006994,#263F65);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:1px">TASK DETAILS</div>
+        <div id="wiki-task-detail-title" style="font-size:18px;font-weight:700;margin-top:3px">Task</div>
+      </div>
+      <button class="btn sm" onclick="closeTaskDetails()" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:16px 18px">
+      <div id="wiki-task-detail-body"></div>
+      <div id="wiki-task-detail-actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
@@ -1232,7 +1249,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   buildStagesForm();
   showLoad('Loading DQAP Wiki…');
   await seedAdmin();
-  const s=sessionStorage.getItem('dqap_sess');
+  const s=sessionStorage.getItem('dqap_sess')||localStorage.getItem('dqap_sess_persist');
   if(s){try{const raw=JSON.parse(s);
     const role=raw.role||(raw.isAdmin?'admin':'user');
     CU={...raw,role,isAdmin:role==='admin',isManager:role==='manager',isUser:role==='user',canWrite:role==='admin'||role==='manager'||isPrivilegedEditor(raw.username)};
@@ -1264,13 +1281,14 @@ async function login(){
        isUser:role==='user',
        canWrite:role==='admin'||role==='manager'||isPrivilegedEditor(d.username)};
     sessionStorage.setItem('dqap_sess',JSON.stringify(CU));
+    localStorage.setItem('dqap_sess_persist',JSON.stringify(CU));
     hideLogin();startApp();
   }catch(e){hideLoad();el('l-err').textContent='Connection error: '+e.message;}
 }
 
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
-  sessionStorage.removeItem('dqap_sess');CU=null;
+  sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
@@ -3272,6 +3290,8 @@ function startTaskListen(){
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    ensureTaskCodes(false);
+    setTimeout(()=>ensureTaskCodes(true),1000);
     const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
     if(onPage)renderTasks();
     updateTaskNavBadge();
@@ -3292,6 +3312,26 @@ function startUsersListen(){
   },err=>{});
 }
 
+function genTaskCode(seed=''){
+  const raw=String(seed||'').replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  const rnd=Math.random().toString(36).slice(2,8).toUpperCase();
+  const suffix=(raw||rnd).slice(0,6).padEnd(6,rnd);
+  return 'TASK-'+new Date().getFullYear().toString().slice(-2)+'-'+suffix;
+}
+async function ensureTaskCodes(persist=true){
+  const missing=taskData.filter(t=>!t.taskCode);
+  if(!missing.length)return;
+  missing.forEach(t=>{if(!t.taskCode)t.taskCode=genTaskCode(t.id);});
+  if(!persist)return;
+  try{
+    for(let i=0;i<missing.length;i+=400){
+      const batch=db.batch();
+      missing.slice(i,i+400).forEach(t=>batch.update(db.collection(TASK_COL).doc(t.id),{taskCode:t.taskCode}));
+      await batch.commit();
+    }
+  }catch(e){console.warn('Task ID backfill skipped:',e);}
+}
+
 // ── TASK NAV BADGE (new/updated count) ────────────
 function taskSeenKey(){return 'dqap_task_seen_'+((CU&&CU.username)||'x');}
 function getTaskSeen(){try{return localStorage.getItem(taskSeenKey())||'';}catch(e){return '';}}
@@ -3305,6 +3345,11 @@ function pendingWikiTaskNotifications(){
     const ts=t.updatedAt||t.createdAt||'';
     return mine&&(!seen||ts>seen);
   }).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
+}
+function criticalWikiTasksForUser(){
+  if(!CU)return[];
+  return taskData.filter(t=>t.assignedTo===CU.fullName&&t.priority==='Critical'&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending')
+    .sort((a,b)=>String(a.deadline||'9999').localeCompare(String(b.deadline||'9999')));
 }
 function isWikiTaskOverdue(t){
   if(!t||!t.deadline||t.status==='Completed')return false;
@@ -3355,11 +3400,27 @@ function showWikiTaskNotificationModal(){
     }
     modal.style.display='flex';return;
   }
+  const critical=criticalWikiTasksForUser();
+  if(critical.length&&!attendanceOpen){
+    title.textContent='Critical task requires attention';
+    actions.innerHTML='<button class="btn" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
+    list.innerHTML=`<div style="font-size:11px;font-weight:800;color:#B71C1C;margin-bottom:9px">Critical tasks are displayed until completed or a deadline revision request is submitted.</div>`+
+      critical.slice(0,6).map(t=>`<div style="margin-bottom:10px;padding:12px;border-left:5px solid #B71C1C;background:#FFEBEE;border-radius:8px">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="color:#B71C1C">${esc(t.taskCode||genTaskCode(t.id))} · ${esc(t.title||'Task')}</b>${taskPriBadge(t.priority)}</div>
+        ${t.description?`<div style="font-size:11.5px;margin-top:6px">${esc(t.description)}</div>`:''}
+        <div style="font-size:10.5px;color:var(--t2);margin-top:8px">Assigned by: <b>${esc(t.assignedBy||'—')}</b> · Deadline: <b>${fmtDate(t.deadline)}</b>${t.project?' · Project: <b>'+esc(t.project)+'</b>':''}</div>
+        <div style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:9px">
+          <button class="btn sm" onclick="showWikiCriticalDeadlineRequestForm('${t.id}')">Request Deadline Change</button>
+          <button class="btn sm pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>
+        </div>
+      </div>`).join('')+(critical.length>6?`<div style="font-size:11px;color:var(--t2)">+ ${critical.length-6} more critical task(s)</div>`:'');
+    modal.style.display='flex';return;
+  }
   const tasks=pendingWikiTaskNotifications();
   if(!tasks.length){modal.style.display='none';return;}
   title.textContent='New or updated tasks';
   actions.innerHTML='<button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button><button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
-  const colors={High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
+  const colors={Critical:['#B71C1C','#FFEBEE'],High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
   list.innerHTML=tasks.slice(0,8).map(t=>{const c=t.status==='Completed'?['#1B5E20','#E8F5E9']:(colors[t.priority]||colors.Medium);return`<div style="margin-bottom:9px;padding:11px 12px;border-left:4px solid ${c[0]};background:${c[1]};border-radius:7px">
     <div style="display:flex;justify-content:space-between;gap:8px"><b style="color:${c[0]}">${esc(t.title||'Task')}</b><span class="badge">${esc(t.priority||'Medium')}</span></div>
     ${t.description?`<div style="font-size:11px;margin-top:5px">${esc(t.description)}</div>`:''}
@@ -3372,6 +3433,12 @@ function showWikiDeadlineRequestForm(id){
   const t=taskData.find(x=>x.id===id);if(!t)return;
   el('wiki-task-action-inputs').innerHTML=`<div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div>`;
   el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()">Attendance</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
+}
+function showWikiCriticalDeadlineRequestForm(id){
+  const t=taskData.find(x=>x.id===id);if(!t)return;
+  el('wiki-task-notify-title').textContent='Request deadline revision';
+  el('wiki-task-notify-list').innerHTML=`${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"><div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div></div>`;
+  el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="showWikiTaskNotificationModal()">Back</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
 }
 async function submitWikiDeadlineRequest(id){
   const t=taskData.find(x=>x.id===id),proposed=g('wiki-proposed-deadline'),reason=g('wiki-deadline-reason');
@@ -3402,7 +3469,7 @@ function updateTaskNavBadge(){
     const ts=t.updatedAt||t.createdAt||'';
     if(!seen||ts>seen)n++;
   });
-  if(mandatoryWikiTaskAction())n=Math.max(n,1);
+  if(mandatoryWikiTaskAction()||criticalWikiTasksForUser().length)n=Math.max(n,criticalWikiTasksForUser().length||1);
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
   // Mirror the count onto the installed app's taskbar / dock / home-screen icon
@@ -3442,7 +3509,7 @@ function taskStatusBadge(s){
 }
 function taskPriBadge(p){
   if(!p)return'';
-  const m={'High':{bg:'#FFEBEE',c:'#B71C1C'},'Medium':{bg:'#FFF3E0',c:'#E65100'},'Low':{bg:'#ECEFF1',c:'#37474F'}};
+  const m={'Critical':{bg:'#B71C1C',c:'#fff'},'High':{bg:'#FFEBEE',c:'#B71C1C'},'Medium':{bg:'#FFF3E0',c:'#E65100'},'Low':{bg:'#ECEFF1',c:'#37474F'}};
   const s=m[p]||m['Medium'];
   return`<span style="font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:${s.bg};color:${s.c}">${p}</span>`;
 }
@@ -3545,18 +3612,19 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now,
-        assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
-      await db.collection(TASK_COL).doc(eid).update(upd);
       const existing=taskData.find(x=>x.id===eid)||{};
+      const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now,
+        taskCode:existing.taskCode||genTaskCode(eid),assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
+      await db.collection(TASK_COL).doc(eid).update(upd);
       const recips=sendTaskNotification('updated',{...existing,...upd});
       toast('Task updated ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
     }else{
-      const tObj={title,description,
+      const ref=db.collection(TASK_COL).doc();
+      const tObj={title,description,taskCode:genTaskCode(ref.id),
         assignedBy:CU.fullName,assignedByRole:CU.role,
         assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,
         status:'Open',createdAt:now,updatedAt:now,assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null};
-      await db.collection(TASK_COL).add(tObj);
+      await ref.set(tObj);
       const recips=sendTaskNotification('created',tObj);
       toast('Task assigned ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
     }
@@ -3606,6 +3674,41 @@ async function deleteTask(id){
 }
 
 // ── TASK RENDER ───────────────────────────────────
+function closeTaskDetails(){const m=el('wiki-task-detail-modal');if(m)m.style.display='none';}
+function openTaskDetails(id){
+  const t=taskData.find(x=>x.id===id);if(!t)return;
+  const modal=el('wiki-task-detail-modal'),title=el('wiki-task-detail-title'),body=el('wiki-task-detail-body'),actions=el('wiki-task-detail-actions');
+  if(!modal||!title||!body||!actions)return;
+  const ds=taskDeadlineStatus(t.deadline,t.status);
+  const canEditTask=CU.isAdmin||t.assignedBy===CU.fullName||isPrivilegedEditor(CU.username);
+  const canStatus=CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName;
+  title.textContent=(t.taskCode||genTaskCode(t.id))+' · '+(t.title||'Task');
+  const line=(label,value)=>`<div style="padding:9px 0;border-bottom:.5px solid var(--bd)"><div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:13px;font-weight:650;color:var(--t1);margin-top:3px">${value||'—'}</div></div>`;
+  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 18px">
+    ${line('Task ID',esc(t.taskCode||genTaskCode(t.id)))}
+    ${line('Priority',taskPriBadge(t.priority))}
+    ${line('Status',taskStatusBadge(t.status))}
+    ${line('Deadline',esc(fmtDate(t.deadline)))}
+    ${line('Task Title',esc(t.title||'Task'))}
+    ${line('Assignee',esc(t.assignedTo||'—'))}
+    ${line('Assigned By',esc(t.assignedBy||'—'))}
+    ${line('Supervisor',esc(t.supervisor||'—'))}
+    ${line('Frequency',esc(t.frequency||'One Time'))}
+    ${line('Project',esc(t.project||'—'))}
+  </div>
+  <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
+    <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Description</div>
+    <div style="font-size:13px;line-height:1.6;margin-top:5px">${esc(t.description||'No additional details.')}</div>
+  </div>
+  ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
+  ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' · Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' · Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' · Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}`;
+  actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
+    ${canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
+    ${canEditTask?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+  modal.style.display='flex';
+}
+
 function renderTasks(){
   const view=el('task-ff-view')?.value||'mine';
   const statusF=el('task-ff-status')?.value||'';
@@ -3627,7 +3730,7 @@ function renderTasks(){
     if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
     if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
     if(statusF&&t.status!==statusF)return false;
-    if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
+    if(q&&![t.taskCode,t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
   });
   // sort: overdue/urgent first, completed last
@@ -3644,6 +3747,23 @@ function renderTasks(){
     wrap.innerHTML=`<div class="empty"><i class="ti ti-checklist eico"></i><div class="etit">No tasks</div><div class="edesc">${CU.canWrite?'Click "Assign task" to create one.':'No tasks assigned to you yet.'}</div></div>`;
     return;
   }
+
+  const tableRows=list.map(t=>{
+    const ds=taskDeadlineStatus(t.deadline,t.status);
+    const dchip=ds?`<span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span>`:'';
+    const dl=t.deadline?new Date(t.deadline.includes('T')?t.deadline:t.deadline+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';
+    const rowBg=t.priority==='Critical'&&t.status!=='Completed'?'#FFF5F5':'';
+    return`<tr style="border-bottom:.5px solid var(--bd);background:${rowBg}">
+      <td style="padding:10px;font-weight:800;color:var(--p);white-space:nowrap">${esc(t.taskCode||genTaskCode(t.id))}</td>
+      <td style="padding:10px;min-width:260px"><button type="button" onclick="openTaskDetails('${t.id}')" style="all:unset;cursor:pointer;color:var(--p);font-weight:800;text-decoration:underline;text-underline-offset:3px">${esc(t.title||'Task')}</button><div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">${taskStatusBadge(t.status)}${taskFreqBadge(t.frequency)}${dchip}</div></td>
+      <td style="padding:10px">${esc(t.assignedTo||'—')}<div style="margin-top:2px"><span class="badge ${roleBadgeCls(t.assignedToRole)}" style="font-size:8.5px;padding:0 5px">${roleLabel(t.assignedToRole)}</span></div></td>
+      <td style="padding:10px">${esc(t.assignedBy||'—')}</td>
+      <td style="padding:10px">${taskPriBadge(t.priority)}</td>
+      <td style="padding:10px;white-space:nowrap">${dl||'—'}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:920px"><thead><tr><th>Task ID</th><th>Task Title</th><th>Assignee</th><th>Assigned By</th><th>Priority</th><th>Deadline</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
+  return;
 
   wrap.innerHTML=list.map(t=>{
     const ds=taskDeadlineStatus(t.deadline,t.status);
