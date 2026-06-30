@@ -1,7 +1,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_6_TASK_TABLE_INLINE
-const APP_VERSION="78.6_TASK_TABLE_INLINE";
+// DQAP_WIKI_VERSION_77_4_COMPACT_PMO_BUDGET
+const APP_VERSION="77.4_COMPACT_PMO_BUDGET";
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -34,8 +33,6 @@ const attUserColors={'u001':'#1565C0','u002':'#2E7D32','u003':'#F57F17','u004':'
 let attCurrentUser='u001';
 let attSelectedOOO=null;
 let attCurrentTab='emp';
-const ATT_CHECKIN_HOUR=9, ATT_CHECKIN_MINUTE=30, ATT_LATE_GRACE_MINUTES=20;
-const ATT_REPORT_USERS=['dev','updesh'];
 // ═══════════════════════════════════════════════════════════════════════════
 // DEBT MANAGEMENT GLOBAL VARIABLES
 // ═══════════════════════════════════════════════════════════════════════════
@@ -100,7 +97,7 @@ body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-ser
 .sb-logo{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;justify-content:center}
 .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
 .sb-sec{font-size:9px;font-weight:600;opacity:.38;letter-spacing:1.6px;text-transform:uppercase;padding:4px 8px 6px}
-.nav-badge{background:#D32F2F;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.nav-badge{background:#fff;color:#006994;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.78);margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.14);color:#fff}
 .ni.active{background:rgba(255,255,255,.22);color:#fff;font-weight:500}
@@ -191,18 +188,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .wtable td{padding:8px 11px;font-size:12px;border-bottom:.5px solid var(--bd);vertical-align:middle}
 .wtable tr:hover td{background:#fafafa}
 .wtable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.task-table-compact{min-width:860px;border-spacing:0}
-.task-table-compact th{padding:6px 10px!important;font-size:8.5px!important;letter-spacing:.45px;background:#f7f9fc;color:#54606f}
-.task-table-compact td{padding:6px 10px!important;font-size:11px!important;line-height:1.25}
-.task-table-compact .task-code{font-size:10.5px;font-weight:800;color:var(--p);white-space:nowrap}
-.task-table-compact .task-title-link{all:unset;cursor:pointer;color:var(--p);font-size:11.5px;font-weight:800;text-decoration:underline;text-underline-offset:2px}
-.task-table-compact .task-mini{margin-top:2px;display:flex;gap:3px;flex-wrap:wrap}
-.task-table-compact .task-person{font-size:11px}
-.task-table-compact .badge,.task-table-compact .ld-chip{font-size:8.5px!important;padding:1px 6px!important;line-height:1.25!important}
-.task-table-compact td:nth-child(2){white-space:normal}
-.task-table-compact td:nth-child(2)>button{font-size:11.5px!important;text-decoration:none!important;text-underline-offset:0!important}
-.task-table-compact td:nth-child(2)>button:hover{color:#004F8B!important}
-.task-table-compact td:nth-child(2)>div{display:inline-flex!important;margin-top:0!important;margin-left:10px!important;gap:3px!important;vertical-align:middle!important}
 .catbar{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .cbl{font-size:11px;width:95px;flex-shrink:0}.cbt{flex:1;background:var(--bg);border-radius:4px;height:6px;overflow:hidden}.cbf{height:100%;border-radius:4px;transition:width .4s}.cbn{font-size:11px;font-weight:600;color:var(--p);width:18px;text-align:right}
 .empty{text-align:center;padding:40px 20px;color:var(--t2)}
@@ -254,6 +239,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .pmo-dash-pct{font-size:11px;font-weight:700;text-align:right;padding-left:8px}
 .pmo-seg{flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;overflow:hidden;white-space:nowrap;cursor:default;transition:opacity .15s}
 .pmo-seg:hover{opacity:.75}
+/* Compact PMO/Budget workspaces: fixed-width pipeline-style cards on large screens. */
+#v-pmo .content,#v-budget .content{width:100%;max-width:1480px;margin-left:auto;margin-right:auto}
+.compact-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,440px));gap:14px;align-items:start;justify-content:start}
+.compact-card-grid .pmo-card{margin-bottom:0;min-width:0}
+.compact-card-grid .pmo-card.is-expanded{grid-column:1/-1;width:100%}
+.compact-table-panel{max-width:1480px;margin:0 auto}
 /* MOBILE */
 .mob-bar{display:none;background:linear-gradient(90deg,var(--sb1),var(--sb2));padding:0 14px;height:52px;flex-direction:row;align-items:center;justify-content:space-between;position:sticky;top:0;left:0;right:0;z-index:200;width:100%;flex-shrink:0}
 .mob-left{display:flex;align-items:center;gap:10px;height:100%}
@@ -264,6 +255,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .mob-overlay.open{display:block}
 .sidebar.mob-open{transform:translateX(0)!important}
 @media(max-width:768px){
+  .compact-card-grid{grid-template-columns:1fr}
   #app{display:flex!important;flex-direction:column;min-height:100vh}
   .mob-bar{display:flex}
   .sidebar{transform:translateX(-100%);transition:transform .25s ease;position:fixed;top:0;left:0;z-index:400;height:100vh;width:var(--sw)}
@@ -360,11 +352,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO<span id="pmo-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker<span id="rma-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker<span id="budget-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
+    <div class="ni" onclick="openSalesCRM('referrals')" id="ni-leads"><i class="ti ti-users-group"></i>Lead Management<span id="leads-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance</div>
+    <div class="ni" onclick="go('payments')"        id="ni-payments"><i class="ti ti-cash"></i>Payment Tracker</div>
+    <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS</div>
+    <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
+    <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
+    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
     <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
@@ -676,27 +671,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     
     <div id="att-emp" style="display:block">
-      <div class="card" style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
-          <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px">Logged in user</div><div id="att-user-label" style="font-size:15px;font-weight:800">—</div></div>
-          <div id="att-trust-status" style="font-size:11px;padding:5px 9px;border-radius:999px;background:#E8F5E9;color:#2E7D32;font-weight:800">Trust-based self marking</div>
-        </div>
-      </div>
+      <div class="card" style="margin-bottom:12px"><select id="att-user" class="fs" style="width:100%;margin-bottom:10px"><option value="u001">👤 Updesh</option><option value="u002">👤 Pratim</option><option value="u003">👤 Keshav</option><option value="u004">👤 Jawed</option><option value="u005">👤 Dev</option><option value="u006">👤 Ravi</option></select></div>
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">—</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()">✓ I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">📍 OOO / Client Visit / WFH</button></div>
-      <div id="att-late-alert" style="display:none;margin-bottom:12px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" onclick="attCheckIn()">✓ Check In</button><button class="btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">📍 Mark OOO</button></div>
       <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Attendance History</div>
       <div id="att-timeline" style="display:grid;gap:4px"></div>
     </div>
     
     <div id="att-adm" style="display:none">
-      <div id="att-report-controls" class="card" style="display:none;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
-          <div><div style="font-weight:700;font-size:13px">Monthly Attendance Report</div><div style="font-size:11px;color:var(--t2)">Visible only to Dev and Updesh</div></div>
-          <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><input id="att-report-month" type="month" class="fi" style="width:auto"><button class="btn pri" onclick="attRenderMonthlyReport()">Generate Report</button></div>
-        </div>
-        <div id="att-monthly-report" style="margin-top:12px"></div>
-      </div>
       <div style="display:grid;gap:8px" id="att-admin"></div>
     </div>
     
@@ -989,7 +971,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
             <div class="fg"><label class="fl">Supervision <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — oversees)</span></label><select class="fs" id="task-supervisor"><option value="">— None —</option></select></div>
             <div class="fg"><label class="fl r">Deadline <span style="font-size:9px;color:var(--t2);font-weight:400">(date &amp; time, 24h)</span></label><input type="datetime-local" class="fi" id="task-deadline"></div>
             <div class="fg"><label class="fl r">Frequency <span style="font-size:9px;color:var(--t2);font-weight:400">(recurs automatically)</span></label><select class="fs" id="task-frequency"><option>One Time</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annually</option></select></div>
-            <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div>
+            <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Low</option></select></div>
             <div class="fg"><label class="fl">Link to project</label><select class="fs" id="task-project"><option value="">— None —</option></select></div>
           </div>
           <input type="hidden" id="task-eid">
@@ -1217,23 +1199,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
 </div>
 
-<!-- Task detail modal -->
-<div id="wiki-task-detail-modal" style="display:none;position:fixed;inset:0;z-index:5001;background:rgba(8,20,40,.64);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:18px">
-  <div style="width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45)">
-    <div style="padding:15px 18px;background:linear-gradient(135deg,#006994,#263F65);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-      <div>
-        <div style="font-size:10px;font-weight:800;letter-spacing:1px">TASK DETAILS</div>
-        <div id="wiki-task-detail-title" style="font-size:18px;font-weight:700;margin-top:3px">Task</div>
-      </div>
-      <button class="btn sm" onclick="closeTaskDetails()" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i></button>
-    </div>
-    <div style="padding:16px 18px">
-      <div id="wiki-task-detail-body"></div>
-      <div id="wiki-task-detail-actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px"></div>
-    </div>
-  </div>
-</div>
-
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
@@ -1262,7 +1227,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   buildStagesForm();
   showLoad('Loading DQAP Wiki…');
   await seedAdmin();
-  const s=sessionStorage.getItem('dqap_sess')||localStorage.getItem('dqap_sess_persist');
+  const s=sessionStorage.getItem('dqap_sess');
   if(s){try{const raw=JSON.parse(s);
     const role=raw.role||(raw.isAdmin?'admin':'user');
     CU={...raw,role,isAdmin:role==='admin',isManager:role==='manager',isUser:role==='user',canWrite:role==='admin'||role==='manager'||isPrivilegedEditor(raw.username)};
@@ -1294,19 +1259,17 @@ async function login(){
        isUser:role==='user',
        canWrite:role==='admin'||role==='manager'||isPrivilegedEditor(d.username)};
     sessionStorage.setItem('dqap_sess',JSON.stringify(CU));
-    localStorage.setItem('dqap_sess_persist',JSON.stringify(CU));
     hideLogin();startApp();
   }catch(e){hideLoad();el('l-err').textContent='Connection error: '+e.message;}
 }
 
 function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
-  sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
+  sessionStorage.removeItem('dqap_sess');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
   DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
-  document.querySelectorAll('.nav-badge').forEach(b=>{b.style.display='none';b.textContent='';});
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -1331,7 +1294,6 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
-  setTimeout(()=>updateAttendanceNavBadge(),500);
 }
 
 // ── LISTENERS ─────────────────────────────────────
@@ -1365,7 +1327,7 @@ function startPMOListen(){
 function startPayListen(){
   if(payUnsub)payUnsub();
   payUnsub=db.collection(PAY_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
-    payData=sn.docs.map(d=>({id:d.id,...d.data()}));renderPayments();updateOperationNavBadges();
+    payData=sn.docs.map(d=>({id:d.id,...d.data()}));renderPayments();
   },err=>{});
 }
 function startRMAListen(){
@@ -1770,6 +1732,7 @@ function getPMODashboardStage(stages,stageName){
 
 function renderPMODashboard(list){
   const c=el('pmo-list');
+  c.className='compact-table-panel';
   if(!list.length){
     c.innerHTML=`<div class="card"><div class="cb" style="text-align:center;padding:32px;color:var(--t2)"><i class="ti ti-chart-gantt" style="font-size:36px;display:block;margin-bottom:10px"></i>No projects match the current filter</div></div>`;
     return;
@@ -1903,6 +1866,7 @@ function renderPMO(){
   if(det)det.className='btn'+(pmoDashView==='cards'?' pri':'');
   if(pmoDashView==='chart'){renderPMODashboard(list);return;}
   const c=el('pmo-list');
+  c.className='compact-card-grid';
   if(!list.length){c.innerHTML=`<div class="empty"><i class="ti ti-chart-gantt eico"></i><div class="etit">${pmoData.length?'No projects match':'No PMO projects yet'}</div><div class="edesc">${CU?.isAdmin?'Add your first project using the button above.':'No projects have been added yet.'}</div></div>`;return;}
 
   c.innerHTML=list.map(p=>{
@@ -1991,7 +1955,7 @@ function renderPMO(){
       }
     }
 
-    return`<div class="pmo-card" id="pmc-${id}">
+    return`<div class="pmo-card${isExpanded?' is-expanded':''}" id="pmc-${id}">
       <div style="cursor:pointer;user-select:none" onclick="if(!event.target.closest('button'))togglePMOCard('${id}')">
         <div class="pmo-hd">
           <div style="flex:1;min-width:0">
@@ -2772,29 +2736,6 @@ function updateDashStats(){
   const activeP=pmoData.filter(p=>p.status==='In Progress').length+pmoData.filter(p=>p.status==='Not Started').length;
   const openRMA=rmaData.filter(r=>r.status==='Raised'||r.status==='Approved').length;
   el('st-pmo').textContent=activeP;el('st-rma').textContent=openRMA;
-  updateOperationNavBadges();
-}
-function setNavBadge(id,count){
-  const badge=el(id);if(!badge)return;
-  const n=Number(count||0);
-  if(n>0){badge.style.display='inline-block';badge.textContent=n>99?'99+':String(n);}
-  else{badge.style.display='none';badge.textContent='';}
-}
-function updateOperationNavBadges(){
-  setNavBadge('pmo-nav-badge',pmoData.filter(p=>p.status==='On Hold'||p.status==='Delayed').length);
-  setNavBadge('rma-nav-badge',rmaData.filter(r=>r.status==='Raised'||r.status==='Approved').length);
-  setNavBadge('budget-nav-badge',budgetCfgData.filter(cfg=>{
-    const projName=cfg.project||cfg.projectName||cfg.name||'';
-    const consumed=budgetData.filter(e=>e.project===projName).reduce((s,e)=>s+(e.total||0),0);
-    const s=budgetStatus(cfg.budgetAllocated||0,consumed);
-    return s==='Over Budget'||s==='Near Limit';
-  }).length);
-  setNavBadge('debt-nav-badge',payData.filter(p=>p.status==='Pending'||p.status==='Partial').length);
-}
-async function updateAttendanceNavBadge(){
-  if(!CU||!db){setNavBadge('attendance-nav-badge',0);return;}
-  const rec=await attGet(attUserKey(),attDateKey());
-  setNavBadge('attendance-nav-badge',rec?0:1);
 }
 function renderDash(){
   const es=DB.entries;
@@ -2860,7 +2801,7 @@ function openDebtManagement(){
 
   try {
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20260624.1#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2877,12 +2818,9 @@ function openSalesCRM(targetTab=''){
   }
 
   try {
-    try {
-      localStorage.setItem('dqap_crm_handoff', JSON.stringify({ sess, createdAt: Date.now(), tab: targetTab || '' }));
-    } catch(e) {}
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260625.4${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260623.4${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2891,18 +2829,26 @@ function openSalesCRM(targetTab=''){
     toast('Error opening Sales CRM','err');
   }
 }
+function openPayMS(){
+  try {
+    const paymsWindow = window.open('PayMS/index_PayMS.html?v=20260630.2', '_blank');
+    if(paymsWindow) paymsWindow.opener=null;
+    else toast('Please allow pop-ups for the Wiki portal','err');
+  } catch(e) {
+    console.error('Error opening PayMS:', e);
+    toast('Error opening PayMS','err');
+  }
+}
 function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=sessionStorage.getItem('dqap_sess');
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20260624.1#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
 // ── NAVIGATION ────────────────────────────────────
 function go(n){
-  if(n==='leads'){openSalesCRM('referrals');return;}
-  if(n==='payments'){openDebtManagement();return;}
   const mandatoryTask=mandatoryWikiTaskAction();
   if(mandatoryTask&&n!=='attendance'){
     showWikiTaskNotificationModal();
@@ -2917,7 +2863,6 @@ function go(n){
   el('v-'+n).style.display='block';
   const ni=el('ni-'+n);if(ni)ni.classList.add('active');
   closeSidebar();
-  updateOperationNavBadges();updateAttendanceNavBadge();
   if(n==='wiki'){applyF();populateProj();}
   if(n==='dash')renderDash();
   if(n==='add'&&!g('f-eid'))resetForm();
@@ -2974,6 +2919,7 @@ function el(id){return document.getElementById(id);}
 function g(id){return(el(id)?.value||'').trim();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtAmt(n){if(!n)return'0';if(n>=10000000)return(n/10000000).toFixed(2)+' Cr';if(n>=100000)return(n/100000).toFixed(2)+' L';return n.toLocaleString('en-IN');}
+
 function bcat(v){if(!v)return'';const m={'Hardware / Electrical':'hw','Networking / Communication':'net','Commissioning':'com','SCADA / HMI':'hmi','PAS':'pro','Cabling':'cab','Programming':'pro','Troubleshooting':'tro','Other':'oth'};return`<span class="badge b-${m[v]||'oth'}">${v.split(' / ')[0]}</span>`;}
 function bsev(v){if(!v)return'';const m={Critical:'cri',High:'hig',Medium:'med',Low:'low'};return`<span class="badge b-${m[v]||'oth'}">${v}</span>`;}
 function bsta(v){if(!v)return'';const m={Resolved:'res',Workaround:'wor',Open:'ope'};return`<span class="badge b-${m[v]||'oth'}">${v}</span>`;}
@@ -3008,7 +2954,7 @@ function startBudgetListen(){
   budgetUnsub=db.collection(BUDGET_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     budgetData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetList();
-    renderPMO();updateOperationNavBadges();
+    renderPMO();
   },err=>{});
 }
 function startBudgetCfgListen(){
@@ -3017,7 +2963,7 @@ function startBudgetCfgListen(){
     budgetCfgData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('v-budget')&&el('v-budget').style.display!=='none')renderBudgetList();
     if(el('v-projects')&&el('v-projects').style.display!=='none')renderProjectsPage();
-    renderPMO();updateOperationNavBadges();
+    renderPMO();
   },err=>{});
 }
 
@@ -3063,6 +3009,7 @@ function toggleBudgetCard(projName){
 function renderBudgetList(){
   if(CU?.isUser)return;
   const wrap=el('budget-list');if(!wrap)return;
+  wrap.className='compact-card-grid';
   const q=(el('budget-search')?.value||'').toLowerCase().trim();
   let projs=projectsData.slice().sort((a,b)=>a.name.localeCompare(b.name));
   if(q)projs=projs.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.number||'').toLowerCase().includes(q));
@@ -3159,7 +3106,7 @@ function renderBudgetList(){
       </div>`;
     }
 
-    return`<div class="pmo-card" id="bgc-${p.id}">
+    return`<div class="pmo-card${isExpanded?' is-expanded':''}" id="bgc-${p.id}">
       <div style="cursor:pointer;user-select:none" onclick="toggleBudgetCard('${safeName}')">
         <div class="pmo-hd">
           <div style="flex:1;min-width:0">
@@ -3303,8 +3250,6 @@ function startTaskListen(){
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);
   taskUnsub=db.collection(TASK_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     taskData=sn.docs.map(d=>({id:d.id,...d.data()}));
-    ensureTaskCodes(false);
-    setTimeout(()=>ensureTaskCodes(true),1000);
     const onPage=el('v-tasks')&&el('v-tasks').style.display!=='none';
     if(onPage)renderTasks();
     updateTaskNavBadge();
@@ -3325,26 +3270,6 @@ function startUsersListen(){
   },err=>{});
 }
 
-function genTaskCode(seed=''){
-  const raw=String(seed||'').replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
-  const rnd=Math.random().toString(36).slice(2,8).toUpperCase();
-  const suffix=(raw||rnd).slice(0,6).padEnd(6,rnd);
-  return 'TASK-'+new Date().getFullYear().toString().slice(-2)+'-'+suffix;
-}
-async function ensureTaskCodes(persist=true){
-  const missing=taskData.filter(t=>!t.taskCode);
-  if(!missing.length)return;
-  missing.forEach(t=>{if(!t.taskCode)t.taskCode=genTaskCode(t.id);});
-  if(!persist)return;
-  try{
-    for(let i=0;i<missing.length;i+=400){
-      const batch=db.batch();
-      missing.slice(i,i+400).forEach(t=>batch.update(db.collection(TASK_COL).doc(t.id),{taskCode:t.taskCode}));
-      await batch.commit();
-    }
-  }catch(e){console.warn('Task ID backfill skipped:',e);}
-}
-
 // ── TASK NAV BADGE (new/updated count) ────────────
 function taskSeenKey(){return 'dqap_task_seen_'+((CU&&CU.username)||'x');}
 function getTaskSeen(){try{return localStorage.getItem(taskSeenKey())||'';}catch(e){return '';}}
@@ -3359,23 +3284,10 @@ function pendingWikiTaskNotifications(){
     return mine&&(!seen||ts>seen);
   }).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
 }
-function criticalWikiTasksForUser(){
-  if(!CU)return[];
-  return taskData.filter(t=>t.assignedTo===CU.fullName&&t.priority==='Critical'&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending')
-    .sort((a,b)=>String(a.deadline||'9999').localeCompare(String(b.deadline||'9999')));
-}
 function isWikiTaskOverdue(t){
   if(!t||!t.deadline||t.status==='Completed')return false;
   const raw=String(t.deadline),deadline=new Date(raw.includes('T')?raw:raw+'T00:00');
   return Number.isFinite(deadline.getTime())&&deadline.getTime()<Date.now();
-}
-function isWikiTaskDueForBlocking(t){
-  if(!t||!t.deadline||t.status==='Completed')return false;
-  const raw=String(t.deadline),deadline=new Date(raw.includes('T')?raw:raw+'T00:00');
-  if(!Number.isFinite(deadline.getTime()))return false;
-  const today=new Date();today.setHours(0,0,0,0);
-  const dueDay=new Date(deadline);dueDay.setHours(0,0,0,0);
-  return dueDay.getTime()<=today.getTime();
 }
 function mandatoryWikiTaskAction(){
   if(!CU)return null;
@@ -3387,8 +3299,8 @@ function mandatoryWikiTaskAction(){
       if(ao!==bo)return ao?-1:1;
       return String(a.deadline||'9999').localeCompare(String(b.deadline||'9999'));
     });
-  const assignee=candidates.find(t=>isWikiTaskDueForBlocking(t)&&(isWikiTaskOverdue(t)||(t.assigneeActionRequiredAt&&!t.assigneeActionResolvedAt)));
-  return assignee?{type:'assignee-action',task:assignee,overdue:isWikiTaskOverdue(assignee)}:null;
+  const assignee=candidates.find(t=>isWikiTaskOverdue(t));
+  return assignee?{type:'assignee-action',task:assignee,overdue:true}:null;
 }
 function wikiTaskActionCard(t,color,bg){return`<div style="padding:12px;border-left:5px solid ${color};background:${bg};border-radius:8px">
   <div style="font-size:14px;font-weight:700;color:${color}">${esc(t.title||'Task')}</div>
@@ -3403,7 +3315,7 @@ function showWikiTaskNotificationModal(){
     if(attendanceOpen){modal.style.display='none';return;}
     const t=mandatory.task;
     if(mandatory.type==='assignee-action'){
-      title.textContent=mandatory.overdue?'Overdue task action required':'Task due action required';
+      title.textContent=mandatory.overdue?'Overdue task action required':'Mandatory task action required';
       list.innerHTML=`<div style="font-size:11px;font-weight:700;color:#B71C1C;margin-bottom:9px">${mandatory.overdue?'This task is overdue. ':''}Complete it or submit a deadline-change request before using any module other than Attendance.</div>${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"></div>`;
       actions.innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()"><i class="ti ti-user-check"></i>Attendance</button><button class="btn" onclick="showWikiDeadlineRequestForm('${t.id}')">Request Deadline Change</button><button class="btn pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>`;
     }else{
@@ -3413,27 +3325,11 @@ function showWikiTaskNotificationModal(){
     }
     modal.style.display='flex';return;
   }
-  const critical=criticalWikiTasksForUser();
-  if(critical.length&&!attendanceOpen){
-    title.textContent='Critical task requires attention';
-    actions.innerHTML='<button class="btn" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
-    list.innerHTML=`<div style="font-size:11px;font-weight:800;color:#B71C1C;margin-bottom:9px">Critical tasks are displayed until completed or a deadline revision request is submitted.</div>`+
-      critical.slice(0,6).map(t=>`<div style="margin-bottom:10px;padding:12px;border-left:5px solid #B71C1C;background:#FFEBEE;border-radius:8px">
-        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="color:#B71C1C">${esc(t.taskCode||genTaskCode(t.id))} · ${esc(t.title||'Task')}</b>${taskPriBadge(t.priority)}</div>
-        ${t.description?`<div style="font-size:11.5px;margin-top:6px">${esc(t.description)}</div>`:''}
-        <div style="font-size:10.5px;color:var(--t2);margin-top:8px">Assigned by: <b>${esc(t.assignedBy||'—')}</b> · Deadline: <b>${fmtDate(t.deadline)}</b>${t.project?' · Project: <b>'+esc(t.project)+'</b>':''}</div>
-        <div style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:9px">
-          <button class="btn sm" onclick="showWikiCriticalDeadlineRequestForm('${t.id}')">Request Deadline Change</button>
-          <button class="btn sm pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>
-        </div>
-      </div>`).join('')+(critical.length>6?`<div style="font-size:11px;color:var(--t2)">+ ${critical.length-6} more critical task(s)</div>`:'');
-    modal.style.display='flex';return;
-  }
   const tasks=pendingWikiTaskNotifications();
   if(!tasks.length){modal.style.display='none';return;}
   title.textContent='New or updated tasks';
   actions.innerHTML='<button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button><button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
-  const colors={Critical:['#B71C1C','#FFEBEE'],High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
+  const colors={High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
   list.innerHTML=tasks.slice(0,8).map(t=>{const c=t.status==='Completed'?['#1B5E20','#E8F5E9']:(colors[t.priority]||colors.Medium);return`<div style="margin-bottom:9px;padding:11px 12px;border-left:4px solid ${c[0]};background:${c[1]};border-radius:7px">
     <div style="display:flex;justify-content:space-between;gap:8px"><b style="color:${c[0]}">${esc(t.title||'Task')}</b><span class="badge">${esc(t.priority||'Medium')}</span></div>
     ${t.description?`<div style="font-size:11px;margin-top:5px">${esc(t.description)}</div>`:''}
@@ -3446,12 +3342,6 @@ function showWikiDeadlineRequestForm(id){
   const t=taskData.find(x=>x.id===id);if(!t)return;
   el('wiki-task-action-inputs').innerHTML=`<div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div>`;
   el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()">Attendance</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
-}
-function showWikiCriticalDeadlineRequestForm(id){
-  const t=taskData.find(x=>x.id===id);if(!t)return;
-  el('wiki-task-notify-title').textContent='Request deadline revision';
-  el('wiki-task-notify-list').innerHTML=`${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"><div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div></div>`;
-  el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="showWikiTaskNotificationModal()">Back</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
 }
 async function submitWikiDeadlineRequest(id){
   const t=taskData.find(x=>x.id===id),proposed=g('wiki-proposed-deadline'),reason=g('wiki-deadline-reason');
@@ -3482,7 +3372,7 @@ function updateTaskNavBadge(){
     const ts=t.updatedAt||t.createdAt||'';
     if(!seen||ts>seen)n++;
   });
-  if(mandatoryWikiTaskAction()||criticalWikiTasksForUser().length)n=Math.max(n,criticalWikiTasksForUser().length||1);
+  if(mandatoryWikiTaskAction())n=Math.max(n,1);
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
   // Mirror the count onto the installed app's taskbar / dock / home-screen icon
@@ -3522,7 +3412,7 @@ function taskStatusBadge(s){
 }
 function taskPriBadge(p){
   if(!p)return'';
-  const m={'Critical':{bg:'#B71C1C',c:'#fff'},'High':{bg:'#FFEBEE',c:'#B71C1C'},'Medium':{bg:'#FFF3E0',c:'#E65100'},'Low':{bg:'#ECEFF1',c:'#37474F'}};
+  const m={'High':{bg:'#FFEBEE',c:'#B71C1C'},'Medium':{bg:'#FFF3E0',c:'#E65100'},'Low':{bg:'#ECEFF1',c:'#37474F'}};
   const s=m[p]||m['Medium'];
   return`<span style="font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:${s.bg};color:${s.c}">${p}</span>`;
 }
@@ -3625,19 +3515,18 @@ async function saveTask(){
     const eid=g('task-eid');
     const now=new Date().toISOString();
     if(eid){
-      const existing=taskData.find(x=>x.id===eid)||{};
       const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now,
-        taskCode:existing.taskCode||genTaskCode(eid),assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
+        assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
       await db.collection(TASK_COL).doc(eid).update(upd);
+      const existing=taskData.find(x=>x.id===eid)||{};
       const recips=sendTaskNotification('updated',{...existing,...upd});
       toast('Task updated ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
     }else{
-      const ref=db.collection(TASK_COL).doc();
-      const tObj={title,description,taskCode:genTaskCode(ref.id),
+      const tObj={title,description,
         assignedBy:CU.fullName,assignedByRole:CU.role,
         assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,
         status:'Open',createdAt:now,updatedAt:now,assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null};
-      await ref.set(tObj);
+      await db.collection(TASK_COL).add(tObj);
       const recips=sendTaskNotification('created',tObj);
       toast('Task assigned ✓'+(recips.length?' · in-app notification for '+recips.join(', '):''),'ok');
     }
@@ -3687,41 +3576,6 @@ async function deleteTask(id){
 }
 
 // ── TASK RENDER ───────────────────────────────────
-function closeTaskDetails(){const m=el('wiki-task-detail-modal');if(m)m.style.display='none';}
-function openTaskDetails(id){
-  const t=taskData.find(x=>x.id===id);if(!t)return;
-  const modal=el('wiki-task-detail-modal'),title=el('wiki-task-detail-title'),body=el('wiki-task-detail-body'),actions=el('wiki-task-detail-actions');
-  if(!modal||!title||!body||!actions)return;
-  const ds=taskDeadlineStatus(t.deadline,t.status);
-  const canEditTask=CU.isAdmin||t.assignedBy===CU.fullName||isPrivilegedEditor(CU.username);
-  const canStatus=CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName;
-  title.textContent=(t.taskCode||genTaskCode(t.id))+' · '+(t.title||'Task');
-  const line=(label,value)=>`<div style="padding:9px 0;border-bottom:.5px solid var(--bd)"><div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:13px;font-weight:650;color:var(--t1);margin-top:3px">${value||'—'}</div></div>`;
-  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 18px">
-    ${line('Task ID',esc(t.taskCode||genTaskCode(t.id)))}
-    ${line('Priority',taskPriBadge(t.priority))}
-    ${line('Status',taskStatusBadge(t.status))}
-    ${line('Deadline',esc(fmtDate(t.deadline)))}
-    ${line('Task Title',esc(t.title||'Task'))}
-    ${line('Assignee',esc(t.assignedTo||'—'))}
-    ${line('Assigned By',esc(t.assignedBy||'—'))}
-    ${line('Supervisor',esc(t.supervisor||'—'))}
-    ${line('Frequency',esc(t.frequency||'One Time'))}
-    ${line('Project',esc(t.project||'—'))}
-  </div>
-  <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
-    <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Description</div>
-    <div style="font-size:13px;line-height:1.6;margin-top:5px">${esc(t.description||'No additional details.')}</div>
-  </div>
-  ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
-  ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' · Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' · Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' · Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}`;
-  actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
-    ${canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
-  modal.style.display='flex';
-}
-
 function renderTasks(){
   const view=el('task-ff-view')?.value||'mine';
   const statusF=el('task-ff-status')?.value||'';
@@ -3743,7 +3597,7 @@ function renderTasks(){
     if(view==='bymes'&&t.assignedBy!==CU.fullName)return false;
     if(view==='all'&&!(CU.isAdmin||t.assignedTo===CU.fullName||t.assignedBy===CU.fullName||t.supervisor===CU.fullName))return false;
     if(statusF&&t.status!==statusF)return false;
-    if(q&&![t.taskCode,t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
+    if(q&&![t.title,t.description,t.assignedTo,t.assignedBy,t.project].join(' ').toLowerCase().includes(q))return false;
     return true;
   });
   // sort: overdue/urgent first, completed last
@@ -3760,23 +3614,6 @@ function renderTasks(){
     wrap.innerHTML=`<div class="empty"><i class="ti ti-checklist eico"></i><div class="etit">No tasks</div><div class="edesc">${CU.canWrite?'Click "Assign task" to create one.':'No tasks assigned to you yet.'}</div></div>`;
     return;
   }
-
-  const tableRows=list.map(t=>{
-    const ds=taskDeadlineStatus(t.deadline,t.status);
-    const dchip=ds?`<span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span>`:'';
-    const dl=t.deadline?new Date(t.deadline.includes('T')?t.deadline:t.deadline+'T00:00').toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';
-    const rowBg=t.priority==='Critical'&&t.status!=='Completed'?'#FFF5F5':'';
-    return`<tr style="border-bottom:.5px solid var(--bd);background:${rowBg}">
-      <td style="padding:10px;font-weight:800;color:var(--p);white-space:nowrap">${esc(t.taskCode||genTaskCode(t.id))}</td>
-      <td style="padding:10px;min-width:260px"><button type="button" onclick="openTaskDetails('${t.id}')" style="all:unset;cursor:pointer;color:var(--p);font-weight:800;text-decoration:underline;text-underline-offset:3px">${esc(t.title||'Task')}</button><div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">${taskStatusBadge(t.status)}${taskFreqBadge(t.frequency)}${dchip}</div></td>
-      <td style="padding:10px">${esc(t.assignedTo||'—')}<div style="margin-top:2px"><span class="badge ${roleBadgeCls(t.assignedToRole)}" style="font-size:8.5px;padding:0 5px">${roleLabel(t.assignedToRole)}</span></div></td>
-      <td style="padding:10px">${esc(t.assignedBy||'—')}</td>
-      <td style="padding:10px">${taskPriBadge(t.priority)}</td>
-      <td style="padding:10px;white-space:nowrap">${dl||'—'}</td>
-    </tr>`;
-  }).join('');
-  wrap.innerHTML=`<div class="wtable-wrap"><table class="wtable task-table-compact"><thead><tr><th>Task ID</th><th>Task Title</th><th>Assignee</th><th>Assigned By</th><th>Priority</th><th>Deadline</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
-  return;
 
   wrap.innerHTML=list.map(t=>{
     const ds=taskDeadlineStatus(t.deadline,t.status);
@@ -4160,168 +3997,179 @@ if('serviceWorker' in navigator){
 // ATTENDANCE MODULE FUNCTIONS (variables declared at top, safe to use here)
 // ══════════════════════════════════════════════════════════════════════════════
 
-function attUserKey(){return String(CU?.username||'').trim().toLowerCase();}
-function attUserName(){return CU?.fullName||CU?.username||'User';}
-function attCanViewReports(){return ATT_REPORT_USERS.includes(attUserKey());}
-function attDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function attDocId(user,date){return `${String(user||'').toLowerCase()}_${date}`;}
-function attMonthKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
-function attCheckinCutoffMinutes(){return ATT_CHECKIN_HOUR*60+ATT_CHECKIN_MINUTE+ATT_LATE_GRACE_MINUTES;}
-function attMinutesNow(d=new Date()){return d.getHours()*60+d.getMinutes();}
-function attWeekStartKey(d=new Date()){
-  const x=new Date(d);const day=x.getDay();const diff=(day===0?-6:1-day);
-  x.setDate(x.getDate()+diff);return attDateKey(x);
-}
-function attIsLate(d=new Date()){return attMinutesNow(d)>attCheckinCutoffMinutes();}
-function attTrustStatus(){
-  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-  return {verified:true,type:String(c?.type||c?.effectiveType||'unknown').toLowerCase(),reason:'Trust-based self marking'};
-}
-function attTeamUsers(){
-  const fromUsers=(usersData||[]).filter(u=>u.username&&u.fullName).map((u,idx)=>({
-    key:String(u.username).toLowerCase(),name:u.fullName,color:Object.values(attUserColors)[idx%Object.values(attUserColors).length]
-  }));
-  if(fromUsers.length)return fromUsers;
-  return Object.entries(attEmployees).map(([key,name],idx)=>({key,name,color:Object.values(attUserColors)[idx%Object.values(attUserColors).length]}));
-}
-async function attFetchRange(start,end,user=null){
-  let q=db.collection(ATTENDANCE_COL).where('date','>=',start).where('date','<=',end);
-  const sn=await q.get();
-  let rows=sn.docs.map(d=>({id:d.id,...d.data()}));
-  if(user)rows=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===String(user).toLowerCase());
-  return rows;
-}
-async function attWeekLateStats(user,date=new Date()){
-  const start=attWeekStartKey(date);const endDate=new Date(start);endDate.setDate(endDate.getDate()+6);
-  const rows=await attFetchRange(start,attDateKey(endDate),user);
-  const late=rows.filter(r=>r.status==='present'&&r.isLate).length;
-  const penalties=Math.floor(late/2);
-  return {late,penalties,start,end:attDateKey(endDate)};
-}
 function attSwitchTab(t){
-  if(t==='adm'&&!attCanViewReports()){toast('Monthly attendance reports are available only to Dev and Updesh','err');t='emp';}
   attCurrentTab=t;
   ['emp','adm','rank','cal'].forEach(x=>{
-    const v=el(`att-${x}`),b=el(`att-btn-${x}`);
+    const v=el(`att-${x}`);
+    const b=el(`att-btn-${x}`);
     if(v)v.style.display=(x===t?'block':'none');
-    if(b){b.style.opacity=(x===t?'1':'0.6');b.style.borderColor=(x===t?'var(--p)':'transparent');b.style.background=(x===t?'var(--pl)':'transparent');}
+    if(b){
+      b.style.opacity=(x===t?'1':'0.6');
+      b.style.borderColor=(x===t?'var(--p)':'transparent');
+      b.style.background=(x===t?'var(--pl)':'transparent');
+    }
   });
   attRender();
 }
+
 async function attRender(){
-  attCurrentUser=attUserKey();
-  const admBtn=el('att-btn-adm'); if(admBtn)admBtn.style.display=attCanViewReports()?'block':'none';
-  if(attCurrentTab==='adm'&&!attCanViewReports())attCurrentTab='emp';
+  const sel=el('att-user');
+  if(sel)attCurrentUser=sel.value;
+  
   if(attCurrentTab==='emp')await attRenderEmp();
   else if(attCurrentTab==='adm')await attRenderAdm();
   else if(attCurrentTab==='rank')await attRenderRank();
 }
+
 async function attRenderEmp(){
-  attCurrentUser=attUserKey();
-  const today=attDateKey();
-  const rec=await attGet(attCurrentUser,today);
-  setNavBadge('attendance-nav-badge',rec?0:1);
-  const label=el('att-user-label'); if(label)label.textContent=`${attUserName()} (@${attCurrentUser})`;
-  const ns=attTrustStatus();
-  const trust=el('att-trust-status');
-  if(trust){trust.textContent='Trust-based self marking';trust.style.background='#E8F5E9';trust.style.color='#2E7D32';}
-  const checkInBtn=el('att-checkin-btn'),oooBtn=el('att-ooo-btn');
+  const now=new Date();
+  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  const rec=await attGet(attCurrentUser,ds);
+  
   if(rec){
-    el('att-today').textContent=rec.status==='present'?`✓ ${rec.checkin_time}${rec.isLate?' · Late':''}${rec.halfDayPenalty?' · Half-day penalty':''}`:`📍 ${rec.oof_reason}`;
-    if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='.5';checkInBtn.title='Attendance already recorded today';}
-    if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='.5';oooBtn.title='Attendance already recorded today';}
+    el('att-today').textContent=rec.status==='present'?`✓ ${rec.checkin_time}`:`📍 ${rec.oof_reason}`;
+    // Lock the buttons - status already set for today
+    const checkInBtn=document.querySelector('button[onclick="attCheckIn()"]');
+    const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
+    if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='0.5';checkInBtn.style.cursor='not-allowed';}
+    if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='0.5';oooBtn.style.cursor='not-allowed';}
+    // Show locked message as toast (not DOM)
+    toast('✓ Status locked for today','ok');
   }else{
     el('att-today').textContent='⏳ Pending';
-    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title='Trust-based office self check-in';}
-    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.title='Mark working outside office';}
+    // Enable buttons
+    const checkInBtn=document.querySelector('button[onclick="attCheckIn()"]');
+    const oooBtn=document.querySelector('button[onclick="attShowOOO()"]');
+    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.style.cursor='pointer';}
+    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.style.cursor='pointer';}
   }
-  const stats=await attWeekLateStats(attCurrentUser);
-  const alert=el('att-late-alert');
-  if(alert){
-    if(stats.late>=2){
-      alert.style.display='block';
-      alert.innerHTML=`<div class="alert danger" style="margin:0"><i class="ti ti-alert-triangle"></i><span>${stats.late} late arrivals this week. Half-day absent penalty: ${stats.penalties}.</span></div>`;
-    }else{alert.style.display='none';alert.innerHTML='';}
-  }
-  const now=new Date();const start=new Date(now);start.setDate(now.getDate()-9);
+  
   let h='';
-  for(let i=0;i<10;i++){
-    const d=new Date(start);d.setDate(start.getDate()+i);const ds=attDateKey(d);const r=await attGet(attCurrentUser,ds);
-    const short=d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+  const dates=['06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17','06-18','06-19'];
+  for(const ds of dates){
+    const r=await attGet(attCurrentUser,ds);
+    const [m,d]=ds.split('-');
     if(r){
-      const bg=r.status==='present'?(r.isLate?'#FFF3E0':'#E8F5E9'):'#E3F2FD';
-      const tx=r.status==='present'?`${r.checkin_time}${r.isLate?' · Late':''}${r.halfDayPenalty?' · Half-day penalty':''}`:`${r.oof_reason}${r.remarks?' · '+esc(r.remarks):''}`;
-      h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;font-weight:600">${r.status==='present'?'✓':'📍'} ${tx}</div></div>`;
-    }else h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;color:var(--t2)">—</div></div>`;
+      const bg=r.status==='present'?'#E8F5E9':'#E3F2FD';
+      const ic=r.status==='present'?'✓':'📍';
+      const tx=r.checkin_time||r.oof_reason;
+      h+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;font-weight:500">${ic} ${tx}</div></div>`;
+    }else{
+      h+=`<div class="card" style="display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:600;color:var(--t2)">Jun ${d}</div><div style="font-size:12px;color:var(--t2)">—</div></div>`;
+    }
   }
-  const tl=el('att-timeline'); if(tl)tl.innerHTML=h;
-}
-async function attRenderAdm(){
-  const controls=el('att-report-controls');
-  if(controls)controls.style.display=attCanViewReports()?'block':'none';
-  const monthInput=el('att-report-month'); if(monthInput&&!monthInput.value)monthInput.value=attMonthKey();
-  const today=attDateKey();
-  const team=attTeamUsers();
-  const rows=await Promise.all(team.map(async u=>({u,rec:await attGet(u.key,today)})));
-  rows.sort((a,b)=>(a.rec?.status||'z').localeCompare(b.rec?.status||'z')||a.u.name.localeCompare(b.u.name));
-  const h=rows.map(({u,rec})=>{
-    const present=rec?.status==='present',ooo=rec?.status==='ooo';
-    const bg=present?(rec.isLate?'#FFF3E0':'#E8F5E9'):(ooo?'#E3F2FD':'#F5F5F5');
-    const badge=present?(rec.isLate?'Late':'Present'):(ooo?rec.oof_reason:'Pending');
-    const status=present?`✓ ${rec.checkin_time}${rec.halfDayPenalty?' · Half-day penalty':''}`:(ooo?`📍 ${rec.oof_reason}`:'⏳ Pending');
-    return `<div class="card" style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
-      <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${status}</div></div>
-      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${present?'#4CAF50':ooo?'#2196F3':'#757575'};color:#fff">${esc(badge)}</span></div>
-    </div>`;
-  }).join('');
-  const adm=el('att-admin'); if(adm)adm.innerHTML=h||'<div class="empty">No users found.</div>';
-}
-async function attRenderRank(){
-  const start=attMonthKey()+'-01';const end=attDateKey(new Date(new Date().getFullYear(),new Date().getMonth()+1,0));
-  const rows=await attFetchRange(start,end);
-  const team=attTeamUsers().map(u=>{const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);const present=mine.filter(r=>r.status==='present').length;const late=mine.filter(r=>r.isLate).length;return {...u,present,late,score:present*10-late*2};}).sort((a,b)=>b.score-a.score);
-  const medals=['🥇','🥈','🥉'];
-  const h=team.map((it,idx)=>`<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present · ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`).join('');
-  const r=el('att-rank-list'); if(r)r.innerHTML=h;
+  const tl=el('att-timeline');
+  if(tl)tl.innerHTML=h;
 }
 
-async function attRenderMonthlyReport(){
-  if(!attCanViewReports()){toast('Monthly reports are available only to Dev and Updesh','err');return;}
-  const input=el('att-report-month');
-  const month=input?.value||attMonthKey();
-  const [yy,mm]=month.split('-').map(Number);
-  const start=`${month}-01`;
-  const end=attDateKey(new Date(yy,mm,0));
-  const rows=await attFetchRange(start,end);
-  const team=attTeamUsers();
-  const data=team.map(u=>{
-    const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);
-    const present=mine.filter(r=>r.status==='present').length;
-    const ooo=mine.filter(r=>r.status==='ooo').length;
-    const late=mine.filter(r=>r.isLate).length;
-    const halfDay=mine.filter(r=>r.halfDayPenalty).length;
-    return {u,present,ooo,late,halfDay,total:mine.length};
-  }).sort((a,b)=>a.u.name.localeCompare(b.u.name));
-  const body=data.map(x=>`<tr>
-    <td style="padding:8px;font-weight:700">${esc(x.u.name)}<br><span style="font-size:10px;color:var(--t2)">@${esc(x.u.key)}</span></td>
-    <td style="padding:8px;text-align:center">${x.present}</td>
-    <td style="padding:8px;text-align:center">${x.ooo}</td>
-    <td style="padding:8px;text-align:center;color:${x.late>=2?'#B71C1C':'var(--t1)'};font-weight:700">${x.late}</td>
-    <td style="padding:8px;text-align:center;color:${x.halfDay?'#B71C1C':'var(--t1)'};font-weight:700">${x.halfDay}</td>
-    <td style="padding:8px;text-align:center">${x.total}</td>
-  </tr>`).join('');
-  const detailRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>`<tr>
-    <td style="padding:7px">${esc(r.date)}</td><td style="padding:7px">${esc(r.fullName||r.username||r.userId)}</td>
-    <td style="padding:7px">${r.status==='present'?'Present':'OOO'}</td>
-    <td style="padding:7px">${esc(r.checkin_time||r.oof_reason||'—')}${r.isLate?' · Late':''}${r.halfDayPenalty?' · Half-day penalty':''}</td>
-  </tr>`).join('');
-  const out=el('att-monthly-report');
-  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:680px"><thead><tr><th>User</th><th>Present</th><th>OOO</th><th>Late</th><th>Half-day penalties</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
-  <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;color:var(--p)">Daily details</summary><div style="overflow-x:auto;margin-top:8px"><table class="wtable" style="min-width:720px"><thead><tr><th>Date</th><th>User</th><th>Status</th><th>Details</th></tr></thead><tbody>${detailRows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--t2)">No daily records</td></tr>'}</tbody></table></div></details>`;
+async function attRenderAdm(){
+  const now=new Date();
+  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  
+  // Fetch today's attendance for all employees
+  const promises=[];
+  const teamStatus={};
+  
+  for(const uid of Object.keys(attEmployees)){
+    promises.push(
+      attGet(uid,ds).then(rec=>{
+        teamStatus[uid]={name:attEmployees[uid],rec};
+      }).catch(()=>{
+        teamStatus[uid]={name:attEmployees[uid],rec:null};
+      })
+    );
+  }
+  
+  await Promise.all(promises);
+  
+  // Build team attendance list
+  let h='<div style="display:grid;gap:8px">';
+  
+  // Sort by status (present first, then OOO, then pending)
+  const sorted=Object.keys(teamStatus).sort((a,b)=>{
+    const recA=teamStatus[a].rec;
+    const recB=teamStatus[b].rec;
+    
+    // Present first
+    if(recA?.status==='present'&&recB?.status!=='present')return -1;
+    if(recA?.status!=='present'&&recB?.status==='present')return 1;
+    
+    // Then OOO
+    if(recA?.status==='ooo'&&recB?.status!=='ooo')return -1;
+    if(recA?.status!=='ooo'&&recB?.status==='ooo')return 1;
+    
+    // Then by name
+    return teamStatus[a].name.localeCompare(teamStatus[b].name);
+  });
+  
+  // Render each team member
+  sorted.forEach(uid=>{
+    const {name,rec}=teamStatus[uid];
+    const color=attUserColors[uid];
+    
+    let statusText='⏳ Pending';
+    let bgColor='#F5F5F5';
+    let badge='—';
+    
+    if(rec){
+      if(rec.status==='present'){
+        statusText=`✓ ${rec.checkin_time}`;
+        bgColor='#E8F5E9';
+        badge='Present';
+      }else if(rec.status==='ooo'){
+        statusText=`📍 ${rec.oof_reason}`;
+        bgColor='#E3F2FD';
+        badge=rec.oof_reason;
+      }
+    }
+    
+    h+=`<div class="card" style="display:grid;grid-template-columns:1fr 100px 120px;gap:12px;align-items:center;padding:12px;background:${bgColor};border-left:4px solid ${color}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">${name.split(' ').map(n=>n[0]).join('')}</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--t1)">${name}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px">${statusText}</div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;font-weight:600;padding:4px 8px;border-radius:4px;background:${rec?.status==='present'?'#4CAF50':rec?.status==='ooo'?'#2196F3':'#757575'};color:#fff">${badge}</div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:var(--t2)">
+        ${rec?new Date(rec.timestamp||rec.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'No record'}
+      </div>
+    </div>`;
+  });
+  
+  h+=`</div>`;
+  
+  const adm=el('att-admin');
+  if(adm)adm.innerHTML=h;
+}
+
+async function attRenderRank(){
+  const sc=[];
+  for(const uid of Object.keys(attEmployees)){
+    let c=0;
+    const dates=['06-10','06-11','06-12','06-13','06-14','06-15','06-16','06-17','06-18','06-19'];
+    for(const ds of dates){
+      const r=await attGet(uid,ds);
+      if(r&&r.status==='present')c++;
+    }
+    sc.push({uid,name:attEmployees[uid],score:c*10});
+  }
+  sc.sort((a,b)=>b.score-a.score);
+  let h='';
+  const m=['🥇','🥈','🥉'];
+  sc.forEach((it,idx)=>{
+    const md=idx<3?m[idx]:'  ';
+    h+=`<div class="card" style="display:grid;grid-template-columns:30px 1fr 50px;gap:10px;align-items:center;padding:10px"><div style="text-align:center">${md}</div><div style="font-weight:500">${it.name}</div><div style="text-align:right;font-weight:600;color:var(--p)">${it.score}%</div></div>`;
+  });
+  const r=el('att-rank-list');
+  if(r)r.innerHTML=h;
 }
 
 async function attRenderEmpCalendar(){
-  const uid=attUserKey();
+  const uid=el('att-user').value;
   const now=new Date();
   const year=now.getFullYear();
   const month=now.getMonth();
@@ -4338,7 +4186,7 @@ async function attRenderEmpCalendar(){
   const promises=[];
   
   for(let d=1;d<=daysInMonth;d++){
-    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
     promises.push(
       attGet(uid,ds).then(rec=>{
         if(rec&&rec.status==='ooo'){
@@ -4374,7 +4222,7 @@ async function attRenderEmpCalendar(){
   
   // Days with OOO
   for(let d=1;d<=daysInMonth;d++){
-    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
     const ooo=oooData[ds];
     const isToday=d===now.getDate();
     
@@ -4412,7 +4260,7 @@ async function attRenderEmpCalendar(){
 
 async function attGet(uid,ds){
   try{
-    const doc=await db.collection(ATTENDANCE_COL).doc(attDocId(uid,ds)).get();
+    const doc=await db.collection(ATTENDANCE_COL).doc(`${uid}_${ds}`).get();
     return doc.exists?doc.data():null;
   }catch(e){
     return null;
@@ -4420,30 +4268,16 @@ async function attGet(uid,ds){
 }
 
 async function attCheckIn(){
-  const network=attTrustStatus();
-  if(!CU){toast('Login required','err');return;}
-  if(!confirm('Confirm office attendance for today?'))return;
   const now=new Date();
   const tm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  const ds=attDateKey(now);
-  const existing=await attGet(attUserKey(),ds);
-  if(existing){toast('Attendance already recorded for today','err');return;}
-  const late=attIsLate(now);
-  const priorStats=await attWeekLateStats(attUserKey(),now);
-  const lateCountAfter=priorStats.late+(late?1:0);
-  const halfDayPenalty=late&&lateCountAfter>=2&&lateCountAfter%2===0;
+  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
   try{
-    await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set({
-      username:attUserKey(),userId:attUserKey(),fullName:attUserName(),date:ds,month:attMonthKey(now),weekStart:attWeekStartKey(now),
-      checkin_time:tm,checkinMinutes:attMinutesNow(now),scheduledCheckin:'09:30',lateAfterMinutes:ATT_LATE_GRACE_MINUTES,
-      status:'present',isLate:late,weeklyLateCount:lateCountAfter,halfDayPenalty,
-      verificationMode:'trust-based-self-marking',networkType:network.type||'unknown',
-      timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:new Date().toISOString()
+    await db.collection(ATTENDANCE_COL).doc(`${attCurrentUser}_${ds}`).set({
+      userId:attCurrentUser,date:ds,checkin_time:tm,status:'present',
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
     });
-    if(lateCountAfter>=3)toast(`${lateCountAfter} late arrivals this week`,'err');
-    else if(halfDayPenalty)toast('Second late arrival this week: half-day absent penalty marked','err');
-    else toast(`✓ Checked in at ${tm}${late?' · Late':''}`,'ok');
-    setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
+    toast(`✓ Checked in at ${tm}`,'ok');
+    setTimeout(()=>attRenderEmp(),300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
   }
@@ -4491,26 +4325,22 @@ async function attSaveOOO(){
     return;
   }
   const now=new Date();
-  const ds=attDateKey(now);
-  const existing=await attGet(attUserKey(),ds);
-  if(existing){toast('Attendance already recorded for today','err');return;}
+  const ds=(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
   const lab={'wfh':'WFH','meeting':'Meeting','travel':'Travel','leave':'Leave','training':'Training','other':'Other'};
   let remarks='';
   if(attSelectedOOO==='meeting'){
     remarks=el('att-remarks')?.value?.trim()||'';
   }
   try{
-    await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set({
-      username:attUserKey(),userId:attUserKey(),fullName:attUserName(),date:ds,month:attMonthKey(now),weekStart:attWeekStartKey(now),
-      status:'ooo',oof_type:attSelectedOOO,oof_reason:lab[attSelectedOOO],
+    await db.collection(ATTENDANCE_COL).doc(`${attCurrentUser}_${ds}`).set({
+      userId:attCurrentUser,date:ds,status:'ooo',oof_type:attSelectedOOO,oof_reason:lab[attSelectedOOO],
       remarks:remarks,
-      verificationMode:'trust-based-ooo',
-      timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:new Date().toISOString()
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
     });
     toast(`✓ Marked as ${lab[attSelectedOOO]}`,'ok');
     attSelectedOOO=null;
     attCloseOOO();
-    setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
+    setTimeout(()=>attRenderEmp(),300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
   }
@@ -4532,17 +4362,16 @@ async function attRenderCalendar(){
   const oooData={};
   const promises=[];
   
-  for(const user of attTeamUsers()){
-    const uid=user.key;
+  for(const uid of Object.keys(attEmployees)){
     for(let d=1;d<=daysInMonth;d++){
-      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
       
       promises.push(
         attGet(uid,ds).then(rec=>{
           if(rec&&rec.status==='ooo'){
             if(!oooData[ds])oooData[ds]=[];
             oooData[ds].push({
-              uid,name:user.name,
+              uid,name:attEmployees[uid],
               type:rec.oof_reason,
               remarks:rec.remarks||''
             });
@@ -4576,7 +4405,7 @@ async function attRenderCalendar(){
   
   // Date cells with OOO entries
   for(let d=1;d<=daysInMonth;d++){
-    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ds=(month+1).toString().padStart(2,'0')+'-'+d.toString().padStart(2,'0');
     const dayOOOs=oooData[ds]||[];
     const isToday=d===now.getDate();
     
@@ -4616,12 +4445,11 @@ async function attRenderCalendar(){
   
   // Build legend HTML (used in both top and side)
   let legendHtml='';
-  for(const user of attTeamUsers()){
-    const uid=user.key;
-    const color=user.color;
+  for(const uid of Object.keys(attEmployees)){
+    const color=attUserColors[uid];
     legendHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:${color}15;border-left:3px solid ${color}">
       <div style="width:10px;height:10px;background:${color};border-radius:2px;flex-shrink:0"></div>
-      <div style="font-size:10px;font-weight:500;min-width:0;word-break:break-word">${esc(user.name)}</div>
+      <div style="font-size:10px;font-weight:500;min-width:0;word-break:break-word">${attEmployees[uid]}</div>
     </div>`;
   }
   
