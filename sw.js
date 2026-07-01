@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 77.4 - compact PMO and Budget layouts
+// Version 78.10 - encoding cleanup for Task Management visible text
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.9-20260701-1';
+const CACHE_VERSION = 'dqap-wiki-v78.10-20260701-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
