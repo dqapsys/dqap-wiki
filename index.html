@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_8_TASK_ATTENDANCE_PAYMS
-const APP_VERSION="78.8_TASK_ATTENDANCE_PAYMS";
+// DQAP_WIKI_VERSION_78_9_ENCODING_CLEANUP
+const APP_VERSION="78.9_ENCODING_CLEANUP";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -297,7 +297,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </style>
 </head>
 <body>
-<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DQAP Wikiâ€¦</div></div>
+<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DQAP Wiki...</div></div>
 
 <!-- LOGIN -->
 <div class="lw" id="lw" style="display:none">
@@ -372,7 +372,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('users')"           id="ni-users"    style="display:none"><i class="ti ti-users"></i>Manage Users</div>
   </div>
   <div class="sb-foot">
-    <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connectingâ€¦</span></div>
+    <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connecting...</span></div>
     <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span></div>
     <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase">Colour theme</div>
     <div class="tdots">
@@ -383,7 +383,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="tdot"        onclick="setTheme('ember')"  title="Ember"       style="background:#DC2626" data-t="ember"></div>
     </div>
     <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px"><i class="ti ti-logout"></i>Sign out</button>
-    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki Â· vâ€”</div>
+    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki - v-</div>
   </div>
 </nav>
 
@@ -655,21 +655,21 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="content">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-      <button class="sc" onclick="attSwitchTab('emp')" id="att-btn-emp" style="border:2px solid var(--p);cursor:pointer;background:var(--pl)"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600">ðŸ‘¤</div><div style="font-size:11px">Check In</div></div></button>
-      <button class="sc" onclick="attSwitchTab('adm')" id="att-btn-adm" style="cursor:pointer;opacity:.6;border:2px solid transparent"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600">âš™ï¸</div><div style="font-size:11px">Admin</div></div></button>
-      <button class="sc" onclick="attSwitchTab('rank')" id="att-btn-rank" style="cursor:pointer;opacity:.6;border:2px solid transparent"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600">ðŸ†</div><div style="font-size:11px">Rank</div></div></button>
-      <button class="sc" onclick="attSwitchTab('cal');attRenderCalendar()" id="att-btn-cal" style="cursor:pointer;opacity:.6;border:2px solid transparent"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600">ðŸ“…</div><div style="font-size:11px">Calendar</div></div></button>
+      <button class="sc" onclick="attSwitchTab('emp')" id="att-btn-emp" style="border:2px solid var(--p);cursor:pointer;background:var(--pl)"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600"><i class="ti ti-user-check"></i></div><div style="font-size:11px">Check In</div></div></button>
+      <button class="sc" onclick="attSwitchTab('adm')" id="att-btn-adm" style="cursor:pointer;opacity:.6;border:2px solid transparent"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600"><i class="ti ti-settings"></i></div><div style="font-size:11px">Admin</div></div></button>
+      <button class="sc" onclick="attSwitchTab('rank')" id="att-btn-rank" style="cursor:pointer;opacity:.6;border:2px solid transparent"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600"><i class="ti ti-trophy"></i></div><div style="font-size:11px">Rank</div></div></button>
+      <button class="sc" onclick="attSwitchTab('cal');attRenderCalendar()" id="att-btn-cal" style="cursor:pointer;opacity:.6;border:2px solid transparent"><div style="flex:1;text-align:left"><div style="font-size:18px;font-weight:600"><i class="ti ti-calendar"></i></div><div style="font-size:11px">Calendar</div></div></button>
     </div>
     
     <div id="att-emp" style="display:block">
       <div class="card" style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
-          <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px">Logged in user</div><div id="att-user-label" style="font-size:15px;font-weight:800">â€”</div></div>
+          <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px">Logged in user</div><div id="att-user-label" style="font-size:15px;font-weight:800">-</div></div>
           <div id="att-trust-status" style="font-size:11px;padding:5px 9px;border-radius:999px;background:#E8F5E9;color:#2E7D32;font-weight:800">Trust-based self marking</div>
         </div>
       </div>
-      <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">â€”</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()">âœ“ I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)">ðŸ“ OOO / Client Visit / WFH</button></div>
+      <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">-</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()"><i class="ti ti-check"></i>I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)"><i class="ti ti-map-pin"></i>OOO / Client Visit / WFH</button></div>
       <div id="att-late-alert" style="display:none;margin-bottom:12px"></div>
       <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Attendance History</div>
       <div id="att-timeline" style="display:grid;gap:4px"></div>
@@ -728,7 +728,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• OOO MODAL â•â• -->
 <div id="att-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;padding:12px;align-items:flex-end;justify-content:center">
   <div style="background:#fff;border-radius:12px 12px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto">
-    <div style="font-size:14px;font-weight:600;margin-bottom:14px">ðŸ“ Mark OOO</div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:14px">Mark OOO</div>
     <div style="display:grid;gap:6px;margin-bottom:16px" id="att-ooo-list"></div>
     <div id="att-remarks-box" style="display:none;margin-bottom:16px">
       <div style="font-weight:600;font-size:12px;margin-bottom:6px">Meeting Details</div>
@@ -1245,7 +1245,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   el('lib-cat').innerHTML='<option value="">Select category</option>'+catOpts;
   el('lib-filter-cat').innerHTML='<option value="">All categories</option>'+catOpts;
   buildStagesForm();
-  showLoad('Loading DQAP Wikiâ€¦');
+  showLoad('Loading DQAP Wiki...');
   await seedAdmin();
   const s=sessionStorage.getItem('dqap_sess')||localStorage.getItem('dqap_sess_persist');
   if(s){try{const raw=JSON.parse(s);
@@ -1267,7 +1267,7 @@ async function login(){
   const u=(el('l-user').value||'').trim().toLowerCase(),p=(el('l-pass').value||'').trim();
   el('l-err').textContent='';
   if(!u||!p){el('l-err').textContent='Please enter username and password.';return;}
-  showLoad('Signing inâ€¦');
+  showLoad('Signing in...');
   try{
     const sn=await db.collection(USERS).where('username','==',u).where('password','==',p).get();
     if(sn.empty){hideLoad();el('l-err').textContent='Incorrect username or password.';return;}
@@ -1298,7 +1298,7 @@ function logout(){
 
 function startApp(){
   el('sb-user').textContent=CU.fullName;
-  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki Â· v'+APP_VERSION;
+  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki - v'+APP_VERSION;
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
@@ -1320,7 +1320,7 @@ function startApp(){
 
 // â”€â”€ LISTENERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function startListen(){
-  showLoad('Connectingâ€¦');sync('sync');
+  showLoad('Connecting...');sync('sync');
   if(unsub)unsub();
   unsub=db.collection(COL).orderBy('createdAt','desc').onSnapshot(
     sn=>{DB.entries=sn.docs.map(d=>({id:d.id,...d.data()}));hideLoad();sync('ok');renderDash();applyF();populateProj();},
@@ -2941,7 +2941,7 @@ function hideLoad(){el('lo').style.display='none';}
 function sync(s){
   const dot=el('sdot'),txt=el('stxt');
   dot.style.background={ok:'#4CAF50',sync:'#FF9800',err:'#F44336'}[s]||'#9E9E9E';
-  txt.textContent={ok:'Live Â· central database',sync:'Connectingâ€¦',err:'Connection error'}[s]||'Offline';
+  txt.textContent={ok:'Live - central database',sync:'Connecting...',err:'Connection error'}[s]||'Offline';
   dot.classList.toggle('pul',s==='sync');
 }
 function toast(m,type=''){const t=document.createElement('div');t.className='toast '+(type==='ok'?'ok':type==='err'?'err':'');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),4000);}
@@ -4215,11 +4215,11 @@ async function attRenderEmp(){
   if(trust){trust.textContent='Trust-based self marking';trust.style.background='#E8F5E9';trust.style.color='#2E7D32';}
   const checkInBtn=el('att-checkin-btn'),oooBtn=el('att-ooo-btn');
   if(rec){
-    el('att-today').textContent=rec.status==='present'?`âœ“ ${rec.checkin_time}${rec.isLate?' Â· Late':''}${rec.halfDayPenalty?' Â· Half-day penalty':''}`:`ðŸ“ ${rec.oof_reason}`;
+    el('att-today').textContent=rec.status==='present'?`Checked in ${rec.checkin_time}${rec.isLate?' - Late':''}${rec.halfDayPenalty?' - Half-day penalty':''}`:`OOO - ${rec.oof_reason}`;
     if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='.5';checkInBtn.title='Attendance already recorded today';}
     if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='.5';oooBtn.title='Attendance already recorded today';}
   }else{
-    el('att-today').textContent='â³ Pending';
+    el('att-today').textContent='Pending';
     if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title='Trust-based office self check-in';}
     if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.title='Mark working outside office';}
   }
@@ -4238,9 +4238,9 @@ async function attRenderEmp(){
     const short=d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     if(r){
       const bg=r.status==='present'?(r.isLate?'#FFF3E0':'#E8F5E9'):'#E3F2FD';
-      const tx=r.status==='present'?`${r.checkin_time}${r.isLate?' Â· Late':''}${r.halfDayPenalty?' Â· Half-day penalty':''}`:`${r.oof_reason}${r.remarks?' Â· '+esc(r.remarks):''}`;
-      h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;font-weight:600">${r.status==='present'?'âœ“':'ðŸ“'} ${tx}</div></div>`;
-    }else h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;color:var(--t2)">â€”</div></div>`;
+      const tx=r.status==='present'?`${r.checkin_time}${r.isLate?' - Late':''}${r.halfDayPenalty?' - Half-day penalty':''}`:`${r.oof_reason}${r.remarks?' - '+esc(r.remarks):''}`;
+      h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;font-weight:600">${r.status==='present'?'In office':'OOO'} - ${tx}</div></div>`;
+    }else h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;color:var(--t2)">-</div></div>`;
   }
   const tl=el('att-timeline'); if(tl)tl.innerHTML=h;
 }
@@ -4256,7 +4256,7 @@ async function attRenderAdm(){
     const present=rec?.status==='present',ooo=rec?.status==='ooo';
     const bg=present?(rec.isLate?'#FFF3E0':'#E8F5E9'):(ooo?'#E3F2FD':'#F5F5F5');
     const badge=present?(rec.isLate?'Late':'Present'):(ooo?rec.oof_reason:'Pending');
-    const status=present?`âœ“ ${rec.checkin_time}${rec.halfDayPenalty?' Â· Half-day penalty':''}`:(ooo?`ðŸ“ ${rec.oof_reason}`:'â³ Pending');
+    const status=present?`Present - ${rec.checkin_time}${rec.halfDayPenalty?' - Half-day penalty':''}`:(ooo?`OOO - ${rec.oof_reason}`:'Pending');
     return `<div class="card" style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
       <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${status}</div></div>
       <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${present?'#4CAF50':ooo?'#2196F3':'#757575'};color:#fff">${esc(badge)}</span></div>
@@ -4268,8 +4268,8 @@ async function attRenderRank(){
   const start=attMonthKey()+'-01';const end=attDateKey(new Date(new Date().getFullYear(),new Date().getMonth()+1,0));
   const rows=await attFetchRange(start,end);
   const team=attTeamUsers().map(u=>{const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);const present=mine.filter(r=>r.status==='present').length;const late=mine.filter(r=>r.isLate).length;return {...u,present,late,score:present*10-late*2};}).sort((a,b)=>b.score-a.score);
-  const medals=['ðŸ¥‡','ðŸ¥ˆ','ðŸ¥‰'];
-  const h=team.map((it,idx)=>`<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present Â· ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`).join('');
+  const medals=['#1','#2','#3'];
+  const h=team.map((it,idx)=>`<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center;font-weight:800;color:var(--p)">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present - ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`).join('');
   const r=el('att-rank-list'); if(r)r.innerHTML=h;
 }
 
@@ -4301,7 +4301,7 @@ async function attRenderMonthlyReport(){
   const detailRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>`<tr>
     <td style="padding:7px">${esc(r.date)}</td><td style="padding:7px">${esc(r.fullName||r.username||r.userId)}</td>
     <td style="padding:7px">${r.status==='present'?'Present':'OOO'}</td>
-    <td style="padding:7px">${esc(r.checkin_time||r.oof_reason||'â€”')}${r.isLate?' Â· Late':''}${r.halfDayPenalty?' Â· Half-day penalty':''}</td>
+    <td style="padding:7px">${esc(r.checkin_time||r.oof_reason||'-')}${r.isLate?' - Late':''}${r.halfDayPenalty?' - Half-day penalty':''}</td>
   </tr>`).join('');
   const out=el('att-monthly-report');
   if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:680px"><thead><tr><th>User</th><th>Present</th><th>OOO</th><th>Late</th><th>Half-day penalties</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
@@ -4373,7 +4373,7 @@ async function attRenderEmpCalendar(){
     if(ooo){
       const color=attUserColors[uid];
       dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
-      dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'â€¦':''):''}</div>`;
+      dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'...':''):''}</div>`;
       dayHtml+=`</div>`;
     }
     dayHtml+=`</div></div>`;
@@ -4430,7 +4430,7 @@ async function attCheckIn(){
     });
     if(lateCountAfter>=3)toast(`${lateCountAfter} late arrivals this week`,'err');
     else if(halfDayPenalty)toast('Second late arrival this week: half-day absent penalty marked','err');
-    else toast(`âœ“ Checked in at ${tm}${late?' Â· Late':''}`,'ok');
+    else toast(`Checked in at ${tm}${late?' - Late':''}`,'ok');
     setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
@@ -4439,7 +4439,7 @@ async function attCheckIn(){
 
 function attShowOOO(){
   const opts=['wfh','meeting','travel','leave','training','other'];
-  const lab={'wfh':'ðŸ  Work from home','meeting':'ðŸ¤ Meeting','travel':'âœˆï¸ Travel','leave':'ðŸ“… Leave','training':'ðŸ† Training','other':'ðŸ“ Other'};
+  const lab={'wfh':'Work from home','meeting':'Meeting','travel':'Travel','leave':'Leave','training':'Training','other':'Other'};
   let h='';
   opts.forEach(o=>{
     h+=`<button class="card" onclick="attPickOOO('${o}')" id="att-opt-${o}" style="padding:10px;text-align:left;cursor:pointer;border:1.5px solid var(--bd);background:transparent;font-weight:500;font-family:inherit;font-size:13px">${lab[o]}</button>`;
@@ -4495,7 +4495,7 @@ async function attSaveOOO(){
       verificationMode:'trust-based-ooo',
       timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:new Date().toISOString()
     });
-    toast(`âœ“ Marked as ${lab[attSelectedOOO]}`,'ok');
+    toast(`Marked as ${lab[attSelectedOOO]}`,'ok');
     attSelectedOOO=null;
     attCloseOOO();
     setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
