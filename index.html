@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_11_BADGES_FASTLOAD_PAYMS_SESSION
-const APP_VERSION="78.11_BADGES_FASTLOAD_PAYMS_SESSION";
+// DQAP_WIKI_VERSION_78_12_ATTENDANCE_CALENDAR_COLORS
+const APP_VERSION="78.12_ATTENDANCE_CALENDAR_COLORS";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4225,6 +4225,10 @@ async function updateAttendanceNavBadge(){
 function attUserKey(){return String(CU?.username||'').trim().toLowerCase();}
 function attUserName(){return CU?.fullName||CU?.username||'User';}
 function attCanViewReports(){return !!CU;}
+function attColorForUser(uid){
+  const key=String(uid||'').toLowerCase();
+  return attTeamUsers().find(u=>u.key===key)?.color||'#1565C0';
+}
 function attDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function attDocId(user,date){return `${String(user||'').toLowerCase()}_${date}`;}
 function attMonthKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
@@ -4403,8 +4407,10 @@ async function attRenderEmpCalendar(){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     promises.push(
       attGet(uid,ds).then(rec=>{
-        if(rec&&rec.status==='ooo'){
-          oooData[ds]={
+          if(rec&&rec.status==='ooo'){
+            oooData[ds]={
+            uid,
+            color:attColorForUser(uid),
             type:rec.oof_reason,
             remarks:rec.remarks||''
           };
@@ -4445,9 +4451,9 @@ async function attRenderEmpCalendar(){
     
     dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
     if(ooo){
-      const color=attUserColors[uid];
-      dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
-      dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'...':''):''}</div>`;
+      const color=ooo.color||attColorForUser(uid);
+      dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;word-break:break-word;line-height:1.25;flex-shrink:0;min-width:0;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
+      dayHtml+=`<div>${esc(ooo.type)}${ooo.remarks?': '+esc(ooo.remarks.substring(0,22))+(ooo.remarks.length>22?'...':''):''}</div>`;
       dayHtml+=`</div>`;
     }
     dayHtml+=`</div></div>`;
@@ -4605,6 +4611,7 @@ async function attRenderCalendar(){
             if(!oooData[ds])oooData[ds]=[];
             oooData[ds].push({
               uid,name:user.name,
+              color:user.color,
               type:rec.oof_reason,
               remarks:rec.remarks||''
             });
@@ -4649,10 +4656,10 @@ async function attRenderCalendar(){
     dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
     if(dayOOOs.length>0){
       dayOOOs.forEach(ooo=>{
-        const color=attUserColors[ooo.uid];
+        const color=ooo.color||attColorForUser(ooo.uid);
         // NO NAME - just type and remarks, color indicates user
-        dayHtml+=`<div style="background:${color};color:#fff;padding:2px 4px;border-radius:3px;font-size:8px;font-weight:500;word-break:break-word;line-height:1.2;flex-shrink:0;min-width:0">`;
-        dayHtml+=`<div style="opacity:.95">${ooo.type}${ooo.remarks?': '+ooo.remarks.substring(0,18)+(ooo.remarks.length>18?'â€¦':''):''}</div>`;
+        dayHtml+=`<div title="${esc(ooo.name)} - ${esc(ooo.type)}${ooo.remarks?' - '+esc(ooo.remarks):''}" style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;word-break:break-word;line-height:1.25;flex-shrink:0;min-width:0;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
+        dayHtml+=`<div>${esc(ooo.type)}${ooo.remarks?': '+esc(ooo.remarks.substring(0,22))+(ooo.remarks.length>22?'...':''):''}</div>`;
         dayHtml+=`</div>`;
       });
     }
@@ -4681,7 +4688,7 @@ async function attRenderCalendar(){
   for(const user of attTeamUsers()){
     const uid=user.key;
     const color=user.color;
-    legendHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:${color}15;border-left:3px solid ${color}">
+    legendHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:${color}1f;border-left:4px solid ${color}">
       <div style="width:10px;height:10px;background:${color};border-radius:2px;flex-shrink:0"></div>
       <div style="font-size:10px;font-weight:500;min-width:0;word-break:break-word">${esc(user.name)}</div>
     </div>`;
