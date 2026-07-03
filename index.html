@@ -23,8 +23,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_10_TASK_ENCODING_CLEANUP
-const APP_VERSION="78.10_TASK_ENCODING_CLEANUP";
+// DQAP_WIKI_VERSION_78_11_BADGES_FASTLOAD_PAYMS_SESSION
+const APP_VERSION="78.11_BADGES_FASTLOAD_PAYMS_SESSION";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -53,6 +53,7 @@ firebase.initializeApp({
 });
 const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
+const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
 const AMC_SCOPES=["CAMC","N-CAMC"];
@@ -99,7 +100,7 @@ body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-ser
 .sb-logo{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;justify-content:center}
 .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
 .sb-sec{font-size:9px;font-weight:600;opacity:.38;letter-spacing:1.6px;text-transform:uppercase;padding:4px 8px 6px}
-.nav-badge{background:#fff;color:#006994;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.nav-badge{background:#D32F2F;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.78);margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.14);color:#fff}
 .ni.active{background:rgba(255,255,255,.22);color:#fff;font-weight:500}
@@ -356,10 +357,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS</div>
+    <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS<span id="payms-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
-    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management</div>
+    <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
@@ -1221,7 +1222,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
+let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
+let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1288,9 +1291,9 @@ function logout(){
   if(!confirm('Sign out of DQAP Wiki?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -1314,13 +1317,15 @@ function startApp(){
     roleBadgeEl.className='badge '+(CU.isAdmin?'b-adm':CU.isManager?'b-mgr':'b-usr');
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
-  startListen();startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();startTaskListen();startUsersListen();startAMCListen();populateEngineers();
+  hideLoad();
+  startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();
+  setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
 }
 
 // â”€â”€ LISTENERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function startListen(){
-  showLoad('Connecting...');sync('sync');
+  sync('sync');
   if(unsub)unsub();
   unsub=db.collection(COL).orderBy('createdAt','desc').onSnapshot(
     sn=>{DB.entries=sn.docs.map(d=>({id:d.id,...d.data()}));hideLoad();sync('ok');renderDash();applyF();populateProj();},
@@ -2815,13 +2820,14 @@ function doSearch(){
 // â”€â”€ NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // â”€â”€ DEBT MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openDebtManagement(){
-  const sess = sessionStorage.getItem('dqap_sess');
+  const sess = currentWikiSession();
   if(!sess){
     toast('Please login to Wiki first','err');
     return;
   }
 
   try {
+    try{localStorage.setItem('dqap_debt_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
     const url = `https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
@@ -2833,16 +2839,17 @@ function openDebtManagement(){
   }
 }
 function openSalesCRM(targetTab=''){
-  const sess = sessionStorage.getItem('dqap_sess');
+  const sess = currentWikiSession();
   if(!sess){
     toast('Please login to Wiki first','err');
     return;
   }
 
   try {
+    try{localStorage.setItem('dqap_crm_handoff',JSON.stringify({session:sess,ts:Date.now(),targetTab}));}catch(e){}
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260623.4${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20260703.1${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -2852,13 +2859,14 @@ function openSalesCRM(targetTab=''){
   }
 }
 function openPayMS(){
-  const sess = sessionStorage.getItem('dqap_sess');
+  const sess = currentWikiSession();
   if(!sess){
     toast('Please login to Wiki first','err');
     return;
   }
   try {
-    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260630.8' : 'https://dqapsys.github.io/PayMS/?v=20260630.8';
+    try{localStorage.setItem('dqap_payms_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
+    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260703.1' : 'https://dqapsys.github.io/PayMS/?v=20260703.1';
     const url = `${base}#sess=${encodeURIComponent(sess)}`;
     const paymsWindow = window.open(url, '_blank');
     if(paymsWindow) paymsWindow.opener=null;
@@ -2870,7 +2878,7 @@ function openPayMS(){
 }
 function loadDebtFrame(){
   const frame=el('debt-frame');
-  const sess=sessionStorage.getItem('dqap_sess');
+  const sess=currentWikiSession();
   if(!frame||!sess)return;
   const url=`https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
@@ -3462,13 +3470,7 @@ function updateTaskNavBadge(){
   if(mandatoryWikiTaskAction()||criticalWikiTasksForUser().length)n=Math.max(n,criticalWikiTasksForUser().length||1);
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
-  // Mirror the count onto the installed app's taskbar / dock / home-screen icon
-  try{
-    if('setAppBadge' in navigator){
-      if(n>0)navigator.setAppBadge(n).catch(()=>{});
-      else navigator.clearAppBadge().catch(()=>{});
-    }
-  }catch(e){}
+  refreshAppBadge();
 }
 
 // â”€â”€ TASK HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4140,6 +4142,78 @@ function setNavBadge(id,count){
   if(n>0){badge.style.display='inline-block';badge.textContent=n>99?'99+':String(n);}
   else{badge.style.display='none';badge.textContent='';}
 }
+function currentWikiSession(){
+  try{return sessionStorage.getItem('dqap_sess')||localStorage.getItem('dqap_sess_persist')||'';}catch(e){return '';}
+}
+function userKey(){return String(CU?.username||'').trim().toLowerCase();}
+function userNameKey(){return String(CU?.fullName||CU?.username||'').trim().toLowerCase();}
+function approvalAppCounts(){
+  const taskBadge=el('task-nav-badge');
+  const taskCount=taskBadge&&taskBadge.style.display!=='none'?Number(taskBadge.textContent.replace('+',''))||0:0;
+  return {
+    task:taskCount,
+    crm:crmApprovalCount(),
+    debt:debtApprovalCount(),
+    payms:paymsApprovalCount()
+  };
+}
+function refreshAppBadge(){
+  const c=approvalAppCounts();
+  setNavBadge('crm-nav-badge',c.crm);
+  setNavBadge('debt-nav-badge',c.debt);
+  setNavBadge('payms-nav-badge',c.payms);
+  const total=c.task+c.crm+c.debt+c.payms;
+  try{
+    if('setAppBadge' in navigator){
+      if(total>0)navigator.setAppBadge(total).catch(()=>{});
+      else navigator.clearAppBadge().catch(()=>{});
+    }
+  }catch(e){}
+}
+function crmApprovalCount(){
+  if(!CU)return 0;
+  const u=userKey();
+  const unread=crmNotificationsData.filter(n=>!n.read).length;
+  const approvals=isPrivilegedEditor(u)||CU.isAdmin?crmApprovalsData.filter(a=>String(a.extensionStatus||'').toLowerCase()==='pending').length:0;
+  return unread+approvals;
+}
+function debtApprovalCount(){
+  if(!CU)return 0;
+  const u=userKey(),name=userNameKey();
+  return debtCommitmentsData.filter(c=>{
+    const assigned=String(c.assignedUsername||'').toLowerCase()===u||String(c.assignedTo||'').toLowerCase()===name;
+    if(!assigned)return false;
+    const collected=debtCollectionsData.some(r=>r.commitmentId===c.id)||Number(c.collected||0)>0;
+    return !collected;
+  }).length;
+}
+function paymsApprovalCount(){
+  if(!CU)return 0;
+  const u=userKey(),name=userNameKey();
+  return paymsRequestsData.filter(r=>{
+    const status=String(r.status||'');
+    if(status==='PENDING_MANAGER')return String(r.managerUsername||'').toLowerCase()===u||String(r.managerName||'').toLowerCase()===name||CU.isManager;
+    if(status==='PENDING_PRATIM')return u==='pratim'||CU.isAdmin;
+    if(status==='PENDING_UPDESH')return u==='updesh'||CU.isAdmin;
+    if(status==='READY_FOR_PAYMENT')return u==='dev'||CU.isAdmin;
+    return false;
+  }).length;
+}
+function startExternalApprovalBadgeListeners(){
+  const u=userKey();if(!u)return;
+  if(crmNotifyUnsub)crmNotifyUnsub();
+  if(crmApprovalUnsub)crmApprovalUnsub();
+  if(paymsReqUnsub)paymsReqUnsub();
+  if(debtCommitUnsub)debtCommitUnsub();
+  if(debtCollectionUnsub)debtCollectionUnsub();
+  crmNotifyUnsub=db.collection(CRM_NOTIFICATIONS_COL).where('recipientUsername','==',u).onSnapshot(sn=>{crmNotificationsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  if(CU.isAdmin||isPrivilegedEditor(u)){
+    crmApprovalUnsub=db.collection(CRM_ACTIVITIES_COL).where('extensionStatus','==','pending').onSnapshot(sn=>{crmApprovalsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  }
+  paymsReqUnsub=db.collection(PAYMS_REQ_COL).where('status','in',['PENDING_MANAGER','PENDING_PRATIM','PENDING_UPDESH','READY_FOR_PAYMENT']).onSnapshot(sn=>{paymsRequestsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  debtCommitUnsub=db.collection(DEBT_COMMITMENTS_COL).onSnapshot(sn=>{debtCommitmentsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  debtCollectionUnsub=db.collection(DEBT_COLLECTIONS_COL).onSnapshot(sn=>{debtCollectionsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+}
 async function updateAttendanceNavBadge(){
   if(!CU||!db){setNavBadge('attendance-nav-badge',0);return;}
   const rec=await attGet(attUserKey(),attDateKey());
@@ -4150,7 +4224,7 @@ async function updateAttendanceNavBadge(){
 
 function attUserKey(){return String(CU?.username||'').trim().toLowerCase();}
 function attUserName(){return CU?.fullName||CU?.username||'User';}
-function attCanViewReports(){return ATT_REPORT_USERS.includes(attUserKey());}
+function attCanViewReports(){return !!CU;}
 function attDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function attDocId(user,date){return `${String(user||'').toLowerCase()}_${date}`;}
 function attMonthKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
@@ -4187,7 +4261,7 @@ async function attWeekLateStats(user,date=new Date()){
   return {late,penalties,start,end:attDateKey(endDate)};
 }
 function attSwitchTab(t){
-  if(t==='adm'&&!attCanViewReports()){toast('Monthly attendance reports are available only to Dev and Updesh','err');t='emp';}
+  if(t==='adm'&&!attCanViewReports()){toast('Login required to view attendance reports','err');t='emp';}
   attCurrentTab=t;
   ['emp','adm','rank','cal'].forEach(x=>{
     const v=el(`att-${x}`),b=el(`att-btn-${x}`);
@@ -4274,7 +4348,7 @@ async function attRenderRank(){
 }
 
 async function attRenderMonthlyReport(){
-  if(!attCanViewReports()){toast('Monthly reports are available only to Dev and Updesh','err');return;}
+  if(!attCanViewReports()){toast('Login required to view attendance reports','err');return;}
   const input=el('att-report-month');
   const month=input?.value||attMonthKey();
   const [yy,mm]=month.split('-').map(Number);
