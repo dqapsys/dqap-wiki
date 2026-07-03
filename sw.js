@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 78.11 - external approval badges, faster Wiki shell, PayMS handoff
+// Version 78.12 - Attendance calendar OOO color-coded details fix
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.11-20260703-1';
+const CACHE_VERSION = 'dqap-wiki-v78.12-20260703-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 
