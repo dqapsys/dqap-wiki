@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 78.15 - Fixed calendar chip width collapse on busy days
+// Version 78.16 - Fixed calendar grid column misplacement
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.15-20260704-1';
+const CACHE_VERSION = 'dqap-wiki-v78.16-20260704-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
