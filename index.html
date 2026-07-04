@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_20_PROJECT_DOC_CHECKLIST_MANAGEMENT
-const APP_VERSION="78.20_PROJECT_DOC_CHECKLIST_MANAGEMENT";
+// DQAP_WIKI_VERSION_78_22_CHARACTER_ENCODING_FIX
+const APP_VERSION="78.22_CHARACTER_ENCODING_FIX";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -85,7 +85,7 @@ const PMO_STAGE_GROUPS={
   "Kick Off":["Kick Off","Site Visit"],
   "Approvals / MFC":["Approvals / MFC","Drawing Submissions & Approval","Engineering Submissions & Approval","Manufacturing Clearance","Third Party Inspection / IRN / DI"],
   "BOM":["BOM","Bill of Material Finalisation","Bill of Material Finalization"],
-  "Procurement":["Procurement","Procurement â€” OEM Ordering","Procurement - OEM Ordering","Procurement â€” 3rd Party Ordering","Procurement - 3rd Party Ordering"],
+  "Procurement":["Procurement","Procurement — OEM Ordering","Procurement - OEM Ordering","Procurement — 3rd Party Ordering","Procurement - 3rd Party Ordering"],
   "Manufacturing":["Manufacturing"],
   "Dispatch":["Dispatch","Material Dispatch"],
   "Cabling / Installation":["Cabling / Installation","Cabling / Install."],
@@ -426,15 +426,15 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• DASHBOARD â•â• -->
 <div id="v-dash" class="view">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DQAP Wiki â€” System Engineering Knowledge Base</div></div>
+    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DQAP Wiki — System Engineering Knowledge Base</div></div>
     <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
   </div>
   <div class="content">
     <div class="stats">
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-clipboard-list" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="st-tot">â€”</div><div class="sl">Wiki entries</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="st-res">â€”</div><div class="sl">Resolved</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-chart-gantt" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="st-pmo">â€”</div><div class="sl">Active projects</div></div></div>
-      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-replace" style="color:#880E4F;font-size:18px"></i></div><div><div class="sv" id="st-rma">â€”</div><div class="sl">Open RMAs</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-clipboard-list" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="st-tot">—</div><div class="sl">Wiki entries</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="st-res">—</div><div class="sl">Resolved</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-chart-gantt" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="st-pmo">—</div><div class="sl">Active projects</div></div></div>
+      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-replace" style="color:#880E4F;font-size:18px"></i></div><div><div class="sv" id="st-rma">—</div><div class="sl">Open RMAs</div></div></div>
     </div>
     <div style="display:grid;grid-template-columns:3fr 2fr;gap:14px">
       <div class="card"><div class="ch"><div class="ct"><i class="ti ti-clock" style="font-size:14px"></i>Recent wiki entries</div><button class="btn sm" onclick="go('wiki')">View all <i class="ti ti-arrow-right"></i></button></div><div class="cb" id="d-rec"></div></div>
@@ -475,19 +475,19 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="g1" style="margin-bottom:14px">
       <div class="fg"><label class="fl r">Problem title</label><input class="fi" id="f-tit" placeholder="Clear, searchable title"></div>
       <div class="g2">
-        <div class="fg"><label class="fl r">Problem description</label><textarea class="fta" id="f-prob" style="min-height:110px" placeholder="Detailed descriptionâ€¦"></textarea></div>
-        <div class="fg"><label class="fl">Symptoms / observations</label><textarea class="fta" id="f-sym" style="min-height:110px" placeholder="Error messages, alarm textsâ€¦"></textarea></div>
+        <div class="fg"><label class="fl r">Problem description</label><textarea class="fta" id="f-prob" style="min-height:110px" placeholder="Detailed description…"></textarea></div>
+        <div class="fg"><label class="fl">Symptoms / observations</label><textarea class="fta" id="f-sym" style="min-height:110px" placeholder="Error messages, alarm texts…"></textarea></div>
       </div>
-      <div class="fg"><label class="fl">Root cause analysis</label><textarea class="fta" id="f-rca" placeholder="Underlying cause, investigation stepsâ€¦"></textarea></div>
+      <div class="fg"><label class="fl">Root cause analysis</label><textarea class="fta" id="f-rca" placeholder="Underlying cause, investigation steps…"></textarea></div>
     </div>
     <div class="fsec-t"><i class="ti ti-circle-check"></i>Solution & follow-up</div>
     <div class="g1">
-      <div class="fg"><label class="fl r">Solution applied (step-by-step)</label><textarea class="fta" id="f-sol" style="min-height:130px" placeholder="Step 1: â€¦&#10;Step 2: â€¦&#10;Step 3: â€¦"></textarea></div>
+      <div class="fg"><label class="fl r">Solution applied (step-by-step)</label><textarea class="fta" id="f-sol" style="min-height:130px" placeholder="Step 1: …&#10;Step 2: …&#10;Step 3: …"></textarea></div>
       <div class="g2">
         <div class="fg"><label class="fl">Preventive measures</label><textarea class="fta" id="f-pre" placeholder="How to avoid this in future?"></textarea></div>
-        <div class="fg"><label class="fl">References & documentation</label><textarea class="fta" id="f-ref" placeholder="Manual section, drawing numbersâ€¦"></textarea></div>
+        <div class="fg"><label class="fl">References & documentation</label><textarea class="fta" id="f-ref" placeholder="Manual section, drawing numbers…"></textarea></div>
       </div>
-      <div class="fg"><label class="fl">Tags / keywords</label><input class="fi" id="f-tag" placeholder="Comma-separated tagsâ€¦"></div>
+      <div class="fg"><label class="fl">Tags / keywords</label><input class="fi" id="f-tag" placeholder="Comma-separated tags…"></div>
     </div>
     <input type="hidden" id="f-eid">
   </div></div></div>
@@ -577,7 +577,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="g1" style="margin-bottom:14px">
       <div class="fg"><label class="fl r">Assigned To (Collector)</label><select id="debtCommitAssignedTo" class="fs"><option value="">-- Select User --</option><option value="Ravi">Ravi - Field Collections</option><option value="Jawed">Jawed - Follow-up</option><option value="Chetan">Chetan - Sales</option><option value="Keshav">Keshav - Admin</option></select></div>
       <div class="fg"><label class="fl r">Commitment Date</label><input type="date" id="debtCommitDate" class="fi"></div>
-      <div class="fg"><label class="fl">Expected Collected Amount (â‚¹)</label><input type="number" id="debtCommitCollectedAmount" class="fi" placeholder="0" min="0" step="0.01"></div>
+      <div class="fg"><label class="fl">Expected Collected Amount (₹)</label><input type="number" id="debtCommitCollectedAmount" class="fi" placeholder="0" min="0" step="0.01"></div>
     </div>
     <div style="display:flex;gap:8px"><button class="btn" onclick="closeDebtCommitmentModal()" style="flex:1">Cancel</button><button class="btn pri" onclick="saveDebtCommitment()" style="flex:1"><i class="ti ti-device-floppy"></i>Save</button></div>
   </div>
@@ -587,7 +587,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-search" class="view" style="display:none">
   <div class="topbar"><div><div class="pg-t"><i class="ti ti-search" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Search wiki</div><div class="pg-s">Full-text search across all entries</div></div></div>
   <div class="content">
-    <div class="card" style="margin-bottom:14px"><div class="cb"><div class="sbox"><i class="ti ti-search sico"></i><input type="text" class="sinput" id="s-in" oninput="doSearch()" placeholder="Search problems, solutions, equipment, error codes, tagsâ€¦"></div></div></div>
+    <div class="card" style="margin-bottom:14px"><div class="cb"><div class="sbox"><i class="ti ti-search sico"></i><input type="text" class="sinput" id="s-in" oninput="doSearch()" placeholder="Search problems, solutions, equipment, error codes, tags…"></div></div></div>
     <div id="s-res"><div class="empty"><i class="ti ti-search eico"></i><div class="etit">Start typing to search</div></div></div>
   </div>
 </div>
@@ -595,7 +595,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• LIBRARY â•â• -->
 <div id="v-library" class="view" style="display:none">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-library" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Library</div><div class="pg-s">Reference documents â€” manuals, standards, drawings, datasheets</div></div>
+    <div><div class="pg-t"><i class="ti ti-library" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Library</div><div class="pg-s">Reference documents — manuals, standards, drawings, datasheets</div></div>
     <div class="tr" id="lib-upload-btn-wrap"><button class="btn pri" onclick="togLibUpload()" id="lib-upload-toggle"><i class="ti ti-upload"></i>Upload document</button></div>
   </div>
   <div class="content">
@@ -608,13 +608,13 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
             <div class="fg"><label class="fl r">Category</label><select class="fs" id="lib-cat"><option value="">Select category</option></select></div>
           </div>
           <div class="g2" style="margin-bottom:11px">
-            <div class="fg"><label class="fl">Description</label><textarea class="fta" id="lib-desc" style="min-height:70px" placeholder="Brief descriptionâ€¦"></textarea></div>
+            <div class="fg"><label class="fl">Description</label><textarea class="fta" id="lib-desc" style="min-height:70px" placeholder="Brief description…"></textarea></div>
             <div class="fg">
               <div class="fg" style="margin-bottom:10px"><label class="fl">Tags / keywords</label><input class="fi" id="lib-tags" placeholder="e.g. Siemens, PROFINET"></div>
               <div class="fg"><label class="fl r">PDF file (max 5 MB)</label><input type="file" class="fi" id="lib-file" accept="application/pdf" onchange="validateLibFile(this)"><div id="lib-file-err" style="font-size:11px;color:#c00;min-height:14px;margin-top:2px"></div></div>
             </div>
           </div>
-          <div id="lib-prog" style="display:none;margin-bottom:10px"><div style="font-size:11px;color:var(--t2);margin-bottom:3px" id="lib-prog-txt">Uploadingâ€¦</div><div class="prog-wrap"><div class="prog-bar" id="lib-prog-bar" style="width:0%"></div></div></div>
+          <div id="lib-prog" style="display:none;margin-bottom:10px"><div style="font-size:11px;color:var(--t2);margin-bottom:3px" id="lib-prog-txt">Uploading…</div><div class="prog-wrap"><div class="prog-bar" id="lib-prog-bar" style="width:0%"></div></div></div>
           <button class="btn pri" onclick="uploadLibDoc()"><i class="ti ti-cloud-upload"></i>Upload to Library</button>
         </div>
       </div>
@@ -622,7 +622,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div id="lib-storage-bar" style="margin-bottom:14px;background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);padding:12px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;flex-wrap:wrap;gap:6px">
         <div style="font-size:11px;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:6px"><i class="ti ti-database" style="font-size:14px;color:var(--p)"></i>Library storage usage</div>
-        <div style="font-size:11px;color:var(--t2)" id="lib-storage-txt">Calculatingâ€¦</div>
+        <div style="font-size:11px;color:var(--t2)" id="lib-storage-txt">Calculating…</div>
       </div>
       <div style="background:#f0f0f0;border-radius:4px;height:8px;overflow:hidden"><div id="lib-storage-fill" style="height:100%;border-radius:4px;transition:width .5s,background .3s;width:0%"></div></div>
       <div style="display:flex;justify-content:space-between;margin-top:5px">
@@ -631,7 +631,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       </div>
     </div>
     <div class="fbar">
-      <div class="sbox" style="flex:1;max-width:320px"><i class="ti ti-search sico"></i><input type="text" class="sinput" id="lib-search" oninput="renderLibrary()" placeholder="Search documentsâ€¦" style="padding:7px 14px 7px 36px;font-size:12.5px"></div>
+      <div class="sbox" style="flex:1;max-width:320px"><i class="ti ti-search sico"></i><input type="text" class="sinput" id="lib-search" oninput="renderLibrary()" placeholder="Search documents…" style="padding:7px 14px 7px 36px;font-size:12.5px"></div>
       <select class="fsel" id="lib-filter-cat" onchange="renderLibrary()"><option value="">All categories</option></select>
       <span id="lib-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
@@ -642,25 +642,24 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• PMO â•â• -->
 <div id="v-pmo" class="view" style="display:none">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-chart-gantt" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>PMO Dashboard</div><div class="pg-s">Project Management â€” live status of all active projects</div></div>
+    <div><div class="pg-t"><i class="ti ti-chart-gantt" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>PMO Dashboard</div><div class="pg-s">Project Management — live status of all active projects</div></div>
     <div class="tr" id="pmo-add-btn-wrap">
       <button class="btn pri" id="pmo-dash-btn" onclick="setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
       <button class="btn" id="pmo-det-btn" onclick="setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
-      <button class="btn" id="pmo-checklist-btn" onclick="openProjectDocTemplateModal()" style="display:none"><i class="ti ti-folder-cog"></i>Manage Checklist</button>
       <button class="btn pri" onclick="go('pmo-add')"><i class="ti ti-plus"></i>New PMO project</button>
     </div>
   </div>
   <div class="content">
     <!-- Summary stats -->
     <div class="stats" style="grid-template-columns:repeat(4,1fr)" id="pmo-stats">
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-building" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmo-st-total">â€”</div><div class="sl">Total projects</div></div></div>
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-player-play" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmo-st-active">â€”</div><div class="sl">Active</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pmo-st-done">â€”</div><div class="sl">Completed</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="pmo-st-delay">â€”</div><div class="sl">Delayed / On Hold</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-building" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmo-st-total">—</div><div class="sl">Total projects</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-player-play" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmo-st-active">—</div><div class="sl">Active</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pmo-st-done">—</div><div class="sl">Completed</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="pmo-st-delay">—</div><div class="sl">Delayed / On Hold</div></div></div>
     </div>
     <div class="fbar">
       <select class="fsel" id="pmo-ff-status" onchange="renderPMO()"><option value="">All statuses</option><option>Not Started</option><option>In Progress</option><option>Completed</option><option>On Hold</option><option>Delayed</option></select>
-      <input class="fi" id="pmo-search" oninput="renderPMO()" placeholder="Search projectsâ€¦" style="max-width:240px;padding:5px 10px">
+      <input class="fi" id="pmo-search" oninput="renderPMO()" placeholder="Search projects…" style="max-width:240px;padding:5px 10px">
       <span id="pmo-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
     <div id="pmo-list"></div>
@@ -683,9 +682,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="fg"><label class="fl r">Status</label>
         <select class="fs" id="pmo-status"><option value="In Progress">In Progress</option><option value="Not Started">Not Started</option><option value="On Hold">On Hold</option><option value="Delayed">Delayed</option><option value="Completed">Completed</option></select></div>
       <div class="fg"><label class="fl">Client / customer</label>
-        <select class="fs" id="pmo-client"><option value="">â€” select project first â€”</option></select></div>
+        <select class="fs" id="pmo-client"><option value="">— select project first —</option></select></div>
       <div class="fg"><label class="fl">Site / location</label>
-        <select class="fs" id="pmo-site"><option value="">â€” select project first â€”</option></select></div>
+        <select class="fs" id="pmo-site"><option value="">— select project first —</option></select></div>
     </div>
     <div class="fsec-t"><i class="ti ti-list-check"></i>Stage completion</div>
     <div id="pmo-stages-form"></div>
@@ -846,7 +845,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
               </select>
             </div>
             
-            <div class="fg"><label class="fl r">Forecast amount (â‚¹)</label><input class="fi" id="pay-amount" type="number" placeholder="e.g. 500000"></div>
+            <div class="fg"><label class="fl r">Forecast amount (₹)</label><input class="fi" id="pay-amount" type="number" placeholder="e.g. 500000"></div>
             <div class="fg"><label class="fl r">Forecast date</label><input type="date" class="fi" id="pay-date"></div>
             <div class="fg"><label class="fl r">Current status</label>
               <select class="fs" id="pay-status"><option value="Pending">Pending</option><option value="Partial">Partial</option><option value="Received">Received</option></select></div>
@@ -860,14 +859,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <!-- Summary -->
     <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-alert-circle" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="pay-st-due">â‚¹ â€”</div><div class="sl">Total Payment Due</div></div></div>
-      <div class="sc"><div class="si" style="background:#E1F5FE"><i class="ti ti-calendar" style="color:#0277BD;font-size:18px"></i></div><div><div class="sv" id="pay-st-forecast">â‚¹ â€”</div><div class="sl">Current Month Forecast</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pay-st-collected">â‚¹ â€”</div><div class="sl">Amount Collected</div></div></div>
-      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-trending-up" style="color:#C2185B;font-size:18px"></i></div><div><div class="sv" id="pay-st-variance">â‚¹ â€”</div><div class="sl">Excess / Shortfall</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-alert-circle" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="pay-st-due">₹ —</div><div class="sl">Total Payment Due</div></div></div>
+      <div class="sc"><div class="si" style="background:#E1F5FE"><i class="ti ti-calendar" style="color:#0277BD;font-size:18px"></i></div><div><div class="sv" id="pay-st-forecast">₹ —</div><div class="sl">Current Month Forecast</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pay-st-collected">₹ —</div><div class="sl">Amount Collected</div></div></div>
+      <div class="sc"><div class="si" style="background:#FCE4EC"><i class="ti ti-trending-up" style="color:#C2185B;font-size:18px"></i></div><div><div class="sv" id="pay-st-variance">₹ —</div><div class="sl">Excess / Shortfall</div></div></div>
     </div>
     <div class="fbar">
       <select class="fsel" id="pay-ff-status" onchange="renderPayments()"><option value="">All statuses</option><option>Pending</option><option>Partial</option><option>Received</option></select>
-      <input class="fi" id="pay-search" oninput="renderPayments()" placeholder="Search customerâ€¦" style="max-width:200px;padding:5px 10px">
+      <input class="fi" id="pay-search" oninput="renderPayments()" placeholder="Search customer…" style="max-width:200px;padding:5px 10px">
       <span id="pay-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
     <div class="card"><div class="wtable-wrap"><table class="wtable" id="pay-table">
@@ -880,7 +879,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• RMA TRACKER â•â• -->
 <div id="v-rma" class="view" style="display:none">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-replace" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>RMA Tracker</div><div class="pg-s">Return Material Authorisation â€” faulty product tracking</div></div>
+    <div><div class="pg-t"><i class="ti ti-replace" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>RMA Tracker</div><div class="pg-s">Return Material Authorisation — faulty product tracking</div></div>
     <div class="tr" id="rma-add-btn-wrap"><button class="btn pri" onclick="togRMAForm(true)"><i class="ti ti-plus"></i>New RMA</button></div>
   </div>
   <div class="content">
@@ -904,7 +903,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
             <div class="fg"><label class="fl r">Status</label>
               <select class="fs" id="rma-status"><option value="Raised">Raised</option><option value="Approved">Approved</option><option value="Replacement Received">Replacement Received</option><option value="Closed">Closed</option></select></div>
           </div>
-          <div class="fg" style="margin-bottom:12px"><label class="fl r">Fault details</label><textarea class="fta" id="rma-fault" placeholder="Describe the fault in detailâ€¦"></textarea></div>
+          <div class="fg" style="margin-bottom:12px"><label class="fl r">Fault details</label><textarea class="fta" id="rma-fault" placeholder="Describe the fault in detail…"></textarea></div>
           <input type="hidden" id="rma-eid">
           <button class="btn pri" onclick="saveRMA()" id="rma-save-btn"><i class="ti ti-device-floppy"></i>Save RMA</button>
         </div>
@@ -912,15 +911,15 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <!-- Summary -->
     <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-replace" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="rma-st-total">â€”</div><div class="sl">Total RMAs</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-clock" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="rma-st-open">â€”</div><div class="sl">Open</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFFDE7"><i class="ti ti-thumb-up" style="color:#F57F17;font-size:18px"></i></div><div><div class="sv" id="rma-st-approved">â€”</div><div class="sl">Approved</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="rma-st-closed">â€”</div><div class="sl">Closed</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-replace" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="rma-st-total">—</div><div class="sl">Total RMAs</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-clock" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="rma-st-open">—</div><div class="sl">Open</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFFDE7"><i class="ti ti-thumb-up" style="color:#F57F17;font-size:18px"></i></div><div><div class="sv" id="rma-st-approved">—</div><div class="sl">Approved</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="rma-st-closed">—</div><div class="sl">Closed</div></div></div>
     </div>
     <div class="fbar">
       <select class="fsel" id="rma-ff-status" onchange="renderRMA()"><option value="">All statuses</option><option>Raised</option><option>Approved</option><option>Replacement Received</option><option>Closed</option></select>
       <select class="fsel" id="rma-ff-proj" onchange="renderRMA()"><option value="">All projects</option></select>
-      <input class="fi" id="rma-search" oninput="renderRMA()" placeholder="Search RMA, PID, engineerâ€¦" style="max-width:220px;padding:5px 10px">
+      <input class="fi" id="rma-search" oninput="renderRMA()" placeholder="Search RMA, PID, engineer…" style="max-width:220px;padding:5px 10px">
       <span id="rma-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
     <div class="card"><div class="wtable-wrap"><table class="wtable">
@@ -934,7 +933,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• BUDGET TRACKER â•â• -->
 <div id="v-budget" class="view" style="display:none">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking â€” PO value vs budget allocated vs actual spend</div></div>
+    <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking — PO value vs budget allocated vs actual spend</div></div>
     <div class="tr" id="budget-add-btn-wrap">
       <button class="btn grn" onclick="exportBudgetExcel()"><i class="ti ti-file-spreadsheet"></i>Export</button>
       <button class="btn pri" onclick="togBudgetForm(true)"><i class="ti ti-plus"></i>Add line item</button>
@@ -992,7 +991,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
     <!-- Project search -->
     <div class="fbar">
-      <input class="fi" id="budget-search" oninput="renderBudgetList()" placeholder="Search projectâ€¦" style="max-width:260px;padding:5px 10px">
+      <input class="fi" id="budget-search" oninput="renderBudgetList()" placeholder="Search project…" style="max-width:260px;padding:5px 10px">
       <span id="budget-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
 
@@ -1071,10 +1070,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
     <!-- Stats -->
     <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-file-certificate" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="amc-st-total">â€”</div><div class="sl">Total contracts</div></div></div>
-      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="amc-st-active">â€”</div><div class="sl">Active</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-clock-exclamation" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="amc-st-due">â€”</div><div class="sl">Visits due soon</div></div></div>
-      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="amc-st-overdue">â€”</div><div class="sl">Visits overdue</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-file-certificate" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="amc-st-total">—</div><div class="sl">Total contracts</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="amc-st-active">—</div><div class="sl">Active</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFF3E0"><i class="ti ti-clock-exclamation" style="color:#E65100;font-size:18px"></i></div><div><div class="sv" id="amc-st-due">—</div><div class="sl">Visits due soon</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="amc-st-overdue">—</div><div class="sl">Visits overdue</div></div></div>
     </div>
 
     <!-- Add/edit contract form -->
@@ -1084,7 +1083,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         <div class="cb">
           <div class="fsec-t"><i class="ti ti-info-circle"></i>Contract details</div>
           <div class="g3" style="margin-bottom:12px">
-            <div class="fg" style="grid-column:span 2"><label class="fl r">Contract name</label><input class="fi" id="amc-name" placeholder="e.g. BPCL Panipat FDAS â€” AMC 2025-26"></div>
+            <div class="fg" style="grid-column:span 2"><label class="fl r">Contract name</label><input class="fi" id="amc-name" placeholder="e.g. BPCL Panipat FDAS — AMC 2025-26"></div>
             <div class="fg"><label class="fl r">Client</label><input class="fi" id="amc-client" placeholder="Customer name"></div>
             <div class="fg"><label class="fl r">Link to project</label><select class="fs" id="amc-project" required><option value="">Select a project (required)</option></select></div>
             <div class="fg"><label class="fl r">Visit frequency</label><select class="fs" id="amc-freq"><option value="">Select frequency</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annual</option></select></div>
@@ -1107,13 +1106,13 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <!-- Visit log form -->
     <div id="amc-visit-panel" style="display:none;margin-bottom:14px">
       <div class="card" style="border:1px solid var(--p)">
-        <div class="ch"><div class="ct"><i class="ti ti-map-pin-check" style="font-size:14px"></i>Log a visit â€” <span id="amc-visit-ctx" style="color:var(--p)"></span></div><button class="btn sm" onclick="closeVisitLog()"><i class="ti ti-x"></i>Cancel</button></div>
+        <div class="ch"><div class="ct"><i class="ti ti-map-pin-check" style="font-size:14px"></i>Log a visit — <span id="amc-visit-ctx" style="color:var(--p)"></span></div><button class="btn sm" onclick="closeVisitLog()"><i class="ti ti-x"></i>Cancel</button></div>
         <div class="cb">
           <div class="g3" style="margin-bottom:12px">
             <div class="fg"><label class="fl r">Visit date</label><input type="date" class="fi" id="amc-visit-date"></div>
             <div class="fg"><label class="fl">Attended by</label><input class="fi" id="amc-visit-by" placeholder="Engineer name"></div>
             <div class="fg"><label class="fl">Next due (auto)</label><input class="fi" id="amc-visit-next" disabled style="background:var(--pl)"></div>
-            <div class="fg" style="grid-column:span 3"><label class="fl">Observations / remarks</label><input class="fi" id="amc-visit-remarks" placeholder="Work done, issues found, parts replacedâ€¦"></div>
+            <div class="fg" style="grid-column:span 3"><label class="fl">Observations / remarks</label><input class="fi" id="amc-visit-remarks" placeholder="Work done, issues found, parts replaced…"></div>
           </div>
           <input type="hidden" id="amc-visit-cid">
           <button class="btn pri" onclick="saveVisit()"><i class="ti ti-check"></i>Record visit</button>
@@ -1126,7 +1125,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <select class="fsel" id="amc-ff-status" onchange="renderAMC()"><option value="">All statuses</option><option>Active</option><option>On Hold</option><option>Expired</option></select>
       <select class="fsel" id="amc-ff-freq" onchange="renderAMC()"><option value="">All frequencies</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annual</option></select>
       <select class="fsel" id="amc-ff-due" onchange="renderAMC()"><option value="">All visits</option><option value="overdue">Overdue only</option><option value="due">Due soon only</option></select>
-      <input class="fi" id="amc-search" oninput="renderAMC()" placeholder="Search contract, clientâ€¦" style="max-width:220px;padding:5px 10px">
+      <input class="fi" id="amc-search" oninput="renderAMC()" placeholder="Search contract, client…" style="max-width:220px;padding:5px 10px">
       <span id="amc-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
 
@@ -1138,7 +1137,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-projects" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-building" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Manage projects</div><div class="pg-s">Add projects with clients and sites</div></div>
-    <div class="tr"><button class="btn pri" onclick="togNewProj()"><i class="ti ti-plus"></i>Add new project</button></div>
+    <div class="tr"><button class="btn" id="pmo-checklist-btn" onclick="openProjectDocTemplateModal()" style="display:none"><i class="ti ti-folder-cog"></i>Manage Checklist</button><button class="btn pri" onclick="togNewProj()"><i class="ti ti-plus"></i>Add new project</button></div>
   </div>
   <div class="content">
     <div id="new-proj-panel" style="display:none;margin-bottom:18px">
@@ -1163,11 +1162,11 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           </div>
 
           <div class="fsec-t"><i class="ti ti-file-invoice"></i>Contract details</div>
-          <label class="fl">Purchase Orders <span style="font-size:9px;color:var(--t2);font-weight:400">(add one or more â€” PO No Â· Date Â· Value â‚¹)</span></label>
+          <label class="fl">Purchase Orders <span style="font-size:9px;color:var(--t2);font-weight:400">(add one or more — PO No · Date · Value ₹)</span></label>
           <div id="np-po-list" style="margin:6px 0"></div>
           <button type="button" class="btn sm pri" onclick="addPORow('np-po-list')" style="margin-bottom:14px"><i class="ti ti-plus"></i>Add PO</button>
           <div class="g3" style="margin-bottom:14px">
-            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional â€” Liquidated Damages)</span></label><input type="date" class="fi" id="np-ld-date"></div>
+            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — Liquidated Damages)</span></label><input type="date" class="fi" id="np-ld-date"></div>
           </div>
 
           <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
@@ -1223,9 +1222,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <div class="fg" style="min-width:180px"><label class="fl r">Access level</label>
             <select class="fs" id="u-role">
-              <option value="user">User â€” read-only</option>
-              <option value="manager">Manager â€” can add &amp; edit</option>
-              <option value="admin">Admin â€” full access</option>
+              <option value="user">User — read-only</option>
+              <option value="manager">Manager — can add &amp; edit</option>
+              <option value="admin">Admin — full access</option>
             </select></div>
           <button class="btn pri" onclick="addUser()" style="align-self:flex-end;margin-bottom:1px"><i class="ti ti-user-plus"></i>Add user</button>
         </div>
@@ -1233,7 +1232,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <div class="card">
       <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
-      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">Loadingâ€¦</td></tr></tbody></table></div>
+      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -1463,7 +1462,7 @@ function populatePMOProjects(){
   const s=el('pmo-proj');if(!s)return;
   const cur=s.value;
   const elig=projectsData.filter(p=>!AMC_SCOPES.includes(p.scope));
-  s.innerHTML='<option value="">Select project</option>'+elig.map(p=>`<option value="${esc(p.id)}" data-name="${esc(p.name)}" data-num="${esc(p.number||'')}" data-client="${esc((p.clients||[])[0]||'')}"${p.id===cur?' selected':''}>${esc(p.number?p.number+' â€” ':'')}${esc(p.name)}${p.scope?' ('+esc(p.scope)+')':''}</option>`).join('');
+  s.innerHTML='<option value="">Select project</option>'+elig.map(p=>`<option value="${esc(p.id)}" data-name="${esc(p.name)}" data-num="${esc(p.number||'')}" data-client="${esc((p.clients||[])[0]||'')}"${p.id===cur?' selected':''}>${esc(p.number?p.number+' — ':'')}${esc(p.name)}${p.scope?' ('+esc(p.scope)+')':''}</option>`).join('');
 }
 function populatePayCustomers(){
   const s=el('pay-customer');if(!s)return;
@@ -1682,8 +1681,8 @@ function onPMOProjChange(){
   
   // Clear everything
   el('pmo-projname').value = '';
-  el('pmo-client').innerHTML = '<option value="">â€” select project first â€”</option>';
-  el('pmo-site').innerHTML = '<option value="">â€” select project first â€”</option>';
+  el('pmo-client').innerHTML = '<option value="">— select project first —</option>';
+  el('pmo-site').innerHTML = '<option value="">— select project first —</option>';
 
   if(!projId) return;
 
@@ -1774,7 +1773,7 @@ async function savePMO(){
   // Status is Completed only when all stages are 100%; auto-set it when they are.
   const finalStatus=allStagesComplete(stages)?'Completed':(status==='Completed'?'In Progress':status);
   const eid=g('pmo-eid');
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const now=new Date().toISOString();
     if(eid){await db.collection(PMO_COL).doc(eid).update({projId,projName,projNum,client,status:finalStatus,stages,overall,updatedAt:now});toast('PMO updated âœ“','ok');}
@@ -1792,7 +1791,7 @@ async function savePMO(){
 
 async function deletePMO(id,name){
   if(!confirm('Delete PMO entry for "'+name+'"?'))return;
-  showLoad('Deletingâ€¦');
+  showLoad('Deleting…');
   try{await db.collection(PMO_COL).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -1814,7 +1813,7 @@ function setPMOView(v){
 }
 
 function normalizePMOStageName(name){
-  return String(name||'').toLowerCase().replace(/[â€“â€”]/g,'-').replace(/[^a-z0-9]+/g,' ').trim();
+  return String(name||'').toLowerCase().replace(/[–—]/g,'-').replace(/[^a-z0-9]+/g,' ').trim();
 }
 function getPMODashboardStage(stages,stageName){
   const accepted=new Set((PMO_STAGE_GROUPS[stageName]||[stageName]).map(normalizePMOStageName));
@@ -1835,7 +1834,7 @@ function renderPMODashboard(list){
   }
   const SEG=70,NAME_W=215,TOTAL_W=50;
   const minW=NAME_W+PMO_STAGES.length*SEG+TOTAL_W;
-  // Both tables share the same fixed layout â€” column widths MUST match.
+  // Both tables share the same fixed layout — column widths MUST match.
   const tbl=`border-collapse:collapse;table-layout:fixed;width:${minW}px`;
 
   // â”€â”€ Fixed header cells: horizontal text, word-wrapped, colour stripe bottom â”€â”€
@@ -1895,7 +1894,7 @@ function renderPMODashboard(list){
     </div>
 
     <div style="border-top:.5px solid var(--bd);padding:10px 14px">
-      <div style="font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Legend â€” hover any cell for detail</div>
+      <div style="font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Legend — hover any cell for detail</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${legend}</div>
     </div>
   </div>`;
@@ -1921,7 +1920,6 @@ function renderProjectDocTemplateAdmin(){
   const body=el('project-doc-template-body');if(!body)return;
   const items=effectiveDocTemplate();
   renderTemplateRowsOnly(items);
-  body.insertAdjacentHTML('afterbegin',`<div class="muted" style="font-size:11px;margin-bottom:10px">This is the default document checklist used whenever a NEW project is created. Changes here don't affect projects that already have folders - use the per-project options in PMO for those.</div>`);
 }
 function readTemplateRowsFromDom(){
   const body=el('project-doc-template-body');
@@ -1950,10 +1948,10 @@ function moveTemplateItem(i,dir){
 function renderTemplateRowsOnly(items){
   const body=el('project-doc-template-body');if(!body)return;
   body.dataset.items=JSON.stringify(items);
-  body.innerHTML=`<div class="muted" style="font-size:11px;margin-bottom:10px">This is the default document checklist used whenever a NEW project is created. Changes here don't affect projects that already have folders - use the per-project options in PMO for those.</div>
+  body.innerHTML=`<div class="muted" style="font-size:11px;margin-bottom:10px">This is the default document checklist used whenever a NEW project is created. Changes here don't affect projects that already have folders - use the per-project options in PMO for those. Drive folders will be numbered to match this order (e.g. "01. ${esc(items[0]?.label||'RFP')}").</div>
     <div id="template-items-list">${items.map((it,i)=>`
       <div class="tpl-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-key="${esc(it.key)}">
-        <span class="muted" style="width:18px;font-size:11px">${i+1}</span>
+        <span class="muted" style="width:22px;font-size:11px">${String(i+1).padStart(2,'0')}</span>
         <input class="tpl-label" value="${esc(it.label)}" style="flex:1">
         <button class="btn sm" onclick="moveTemplateItem(${i},-1)" ${i===0?'disabled':''}><i class="ti ti-arrow-up"></i></button>
         <button class="btn sm" onclick="moveTemplateItem(${i},1)" ${i===items.length-1?'disabled':''}><i class="ti ti-arrow-down"></i></button>
@@ -1974,13 +1972,14 @@ async function commitProjectDocTemplate(){
 async function createProjectDriveFolders(projId,projNumber,projName){
   try{
     const items=effectiveDocTemplate();
+    const numbered=items.map((it,i)=>({key:it.key,label:String(i+1).padStart(2,'0')+'. '+it.label}));
     const resp=await fetch(PROJECT_DOCS_API_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'createProjectFolders',projectName:projName,projectNumber:projNumber,checklist:items.map(i=>i.label)})
+      body:JSON.stringify({action:'createProjectFolders',projectName:projName,projectNumber:projNumber,checklist:numbered.map(i=>i.label)})
     });
     if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Folder creation failed')}
     const data=await resp.json();
-    const driveChecklist=items.map(it=>({key:it.key,label:it.label,folderId:data.subfolders[it.label]}));
+    const driveChecklist=numbered.map(it=>({key:it.key,label:it.label,folderId:data.subfolders[it.label]}));
     await db.collection(PROJ).doc(projId).update({driveFolderId:data.projectFolderId,driveFolderLink:data.projectFolderLink,driveChecklist});
     toast('Drive folders created for '+projName,'ok');
   }catch(e){
@@ -2034,15 +2033,17 @@ async function addProjectDocFolder(projId){
   const label=prompt('Name for the new document category:');
   if(!label||!label.trim())return;
   const p=projectsData.find(x=>x.id===projId);if(!p||!p.driveFolderId)return toast('Project has no Drive folder yet','err');
+  const existing=migratedChecklist(p);
+  const numberedLabel=String(existing.length+1).padStart(2,'0')+'. '+label.trim();
   toast('Creating folder...','ok');
   try{
     const resp=await fetch(PROJECT_DOCS_API_URL,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'createSingleFolder',parentFolderId:p.driveFolderId,name:label.trim()})
+      body:JSON.stringify({action:'createSingleFolder',parentFolderId:p.driveFolderId,name:numberedLabel})
     });
     if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Folder creation failed')}
     const data=await resp.json();
-    const checklist=[...migratedChecklist(p),{key:docKey(label.trim()),label:label.trim(),folderId:data.folderId}];
+    const checklist=[...existing,{key:docKey(label.trim()),label:numberedLabel,folderId:data.folderId}];
     await db.collection(PROJ).doc(projId).update({driveChecklist:checklist});
     toast('Category added','ok');renderPMO();
   }catch(e){toast('Failed: '+e.message,'err');}
@@ -2136,9 +2137,9 @@ function renderPMO(){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
         <span style="font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-wallet" style="font-size:11px"></i> Budget</span>
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-          <span style="font-size:10.5px;color:var(--t2)">â‚¹${fmtAmt(consumed)} of â‚¹${fmtAmt(allocated)}</span>
+          <span style="font-size:10.5px;color:var(--t2)">₹${fmtAmt(consumed)} of ₹${fmtAmt(allocated)}</span>
           ${bbudgetStatus(bgStatus)}
-          ${(()=>{if(gmValue===null)return'';const pos=gmValue>=0;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:700;background:${pos?'#E8F5E9':'#FFEBEE'};color:${pos?'#1B5E20':'#B71C1C'}"><i class="ti ti-trending-${pos?'up':'down'}" style="font-size:10px"></i>GM ${gmPct.toFixed(1)}% Â· â‚¹${fmtAmt(Math.abs(gmValue))}</span>`;})()}
+          ${(()=>{if(gmValue===null)return'';const pos=gmValue>=0;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:700;background:${pos?'#E8F5E9':'#FFEBEE'};color:${pos?'#1B5E20':'#B71C1C'}"><i class="ti ti-trending-${pos?'up':'down'}" style="font-size:10px"></i>GM ${gmPct.toFixed(1)}% · ₹${fmtAmt(Math.abs(gmValue))}</span>`;})()}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:7px">
@@ -2171,7 +2172,7 @@ function renderPMO(){
                 <span style="font-size:11px;color:var(--t2)">%</span>
               </div>
               <input class="fi" id="pmo-ir-${id}-${i}" value="${esc(s.remarks||'')}"
-                placeholder="Remarksâ€¦" style="font-size:11.5px;padding:5px 8px">
+                placeholder="Remarks…" style="font-size:11.5px;padding:5px 8px">
             </div>`).join('')}
           <div style="display:flex;gap:8px;margin-top:14px">
             <button class="btn pri" onclick="savePMOInline('${id}')"><i class="ti ti-device-floppy"></i>Save changes</button>
@@ -2212,7 +2213,7 @@ function renderPMO(){
               <div class="pmo-title" style="min-width:0">${esc(p.projName)}</div>
               ${stBadge}
             </div>
-            <div class="pmo-sub">${p.client?`<i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(p.client)} &nbsp;Â·&nbsp; `:''}Last updated: ${(p.updatedAt||'').split('T')[0]}</div>
+            <div class="pmo-sub">${p.client?`<i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(p.client)} &nbsp;·&nbsp; `:''}Last updated: ${(p.updatedAt||'').split('T')[0]}</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
             <div style="text-align:right">
@@ -2321,7 +2322,7 @@ async function savePayment(){
   if(!amount){toast('Enter forecast amount','err');return;}
   if(!date){toast('Enter forecast date','err');return;}
   
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const now=new Date().toISOString(),eid=g('pay-eid');
     const d={
@@ -2345,7 +2346,7 @@ async function savePayment(){
 }
 
 async function deletePayment(id){
-  if(!confirm('Delete this payment entry?'))return;showLoad('Deletingâ€¦');
+  if(!confirm('Delete this payment entry?'))return;showLoad('Deleting…');
   try{await db.collection(PAY_COL).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -2379,28 +2380,28 @@ function renderPayments(){if(CU?.isUser)return;
   const variance=thisMonthForecast-totalCollected;
   const varianceClass=variance>0?'color:#C2185B':'color:#2E7D32';
   
-  el('pay-st-due').textContent='â‚¹ '+fmtAmt(totalDue);
-  el('pay-st-forecast').textContent='â‚¹ '+fmtAmt(thisMonthForecast);
-  el('pay-st-collected').textContent='â‚¹ '+fmtAmt(totalCollected);
-  el('pay-st-variance').innerHTML=`<span style="${varianceClass}">â‚¹ ${fmtAmt(Math.abs(variance))}</span>`;
+  el('pay-st-due').textContent='₹ '+fmtAmt(totalDue);
+  el('pay-st-forecast').textContent='₹ '+fmtAmt(thisMonthForecast);
+  el('pay-st-collected').textContent='₹ '+fmtAmt(totalCollected);
+  el('pay-st-variance').innerHTML=`<span style="${varianceClass}">₹ ${fmtAmt(Math.abs(variance))}</span>`;
   
   el('pay-count').textContent=`${list.length} of ${payData.length} entries`;
   const tb=el('pay-tbody');
   if(!list.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--t2)">${payData.length?'No entries match':'No payment entries yet'}</td></tr>`;return;}
   tb.innerHTML=list.map((p,i)=>{
-    const custDisplay=`${esc(p.customer||'â€”')}<br><span style="font-size:10px;color:var(--t2)">${esc(p.projectNumber||'â€”')} â€¢ ${esc(p.projectName||'â€”')}</span>`;
+    const custDisplay=`${esc(p.customer||'—')}<br><span style="font-size:10px;color:var(--t2)">${esc(p.projectNumber||'—')} • ${esc(p.projectName||'—')}</span>`;
     return `<tr>
     <td style="font-size:10px;font-weight:600;color:var(--t2)">${i+1}</td>
     <td style="font-weight:500;font-size:11px;word-wrap:break-word;max-width:200px">${custDisplay}</td>
-    <td style="font-size:11px;color:var(--t2)">${esc(p.poNumber||'â€”')}</td>
-    <td style="font-weight:600">â‚¹ ${fmtAmt(p.amount)}</td>
-    <td style="white-space:nowrap">${p.date||'â€”'}</td>
+    <td style="font-size:11px;color:var(--t2)">${esc(p.poNumber||'—')}</td>
+    <td style="font-weight:600">₹ ${fmtAmt(p.amount)}</td>
+    <td style="white-space:nowrap">${p.date||'—'}</td>
     <td>${bpayStatus(p.status)}</td>
-    <td>${esc(p.owner||'â€”')}</td>
-    <td style="font-size:11.5px;color:var(--t2);max-width:100px">${esc(p.remarks||'â€”')}</td>
+    <td>${esc(p.owner||'—')}</td>
+    <td style="font-size:11.5px;color:var(--t2);max-width:100px">${esc(p.remarks||'—')}</td>
     <td><div style="display:flex;gap:3px">
       ${CU?.canWrite?`<button class="btn sm" onclick="togPayForm(true,payData.find(x=>x.id==='${p.id}'))"><i class="ti ti-edit"></i></button>
-      <button class="btn sm danger" onclick="deletePayment('${p.id}')"><i class="ti ti-trash"></i></button>`:'â€”'}
+      <button class="btn sm danger" onclick="deletePayment('${p.id}')"><i class="ti ti-trash"></i></button>`:'—'}
     </div></td></tr>`;
   }).join('');
 }
@@ -2430,7 +2431,7 @@ async function saveRMA(){
   if(!pidNo){toast('PID number is required','err');return;}
   const d={rmaNo,engineer,project:g('rma-proj'),pidNo,pidDesc:g('rma-pid-desc'),dateCode:g('rma-datecode'),createdDate:g('rma-created'),approvedDate:g('rma-approved'),receivedDate:g('rma-received'),jciInvoice:g('rma-invoice'),qty:parseInt(el('rma-qty')?.value)||1,status:g('rma-status'),faultDetails:g('rma-fault'),updatedAt:new Date().toISOString()};
   const eid=g('rma-eid');
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     if(eid){await db.collection(RMA_COL).doc(eid).update(d);toast('RMA updated âœ“','ok');}
     else{d.createdAt=new Date().toISOString();await db.collection(RMA_COL).add(d);toast('RMA added âœ“','ok');}
@@ -2439,7 +2440,7 @@ async function saveRMA(){
 }
 
 async function deleteRMA(id){
-  if(!confirm('Delete this RMA entry?'))return;showLoad('Deletingâ€¦');
+  if(!confirm('Delete this RMA entry?'))return;showLoad('Deleting…');
   try{await db.collection(RMA_COL).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -2466,17 +2467,17 @@ function renderRMA(){
     <td style="font-size:10px;font-weight:600;color:var(--t2)">${i+1}</td>
     <td style="font-weight:600;white-space:nowrap">${esc(r.rmaNo)}</td>
     <td style="white-space:nowrap">${esc(r.engineer)}</td>
-    <td style="white-space:nowrap">${esc(r.project||'â€”')}</td>
+    <td style="white-space:nowrap">${esc(r.project||'—')}</td>
     <td>${esc(r.pidNo)}</td>
-    <td style="max-width:120px">${esc(r.pidDesc||'â€”')}</td>
-    <td>${esc(r.dateCode||'â€”')}</td>
-    <td style="white-space:nowrap">${r.createdDate||'â€”'}</td>
-    <td style="white-space:nowrap">${r.approvedDate||'â€”'}</td>
-    <td style="white-space:nowrap">${r.receivedDate||'â€”'}</td>
-    <td>${esc(r.jciInvoice||'â€”')}</td>
+    <td style="max-width:120px">${esc(r.pidDesc||'—')}</td>
+    <td>${esc(r.dateCode||'—')}</td>
+    <td style="white-space:nowrap">${r.createdDate||'—'}</td>
+    <td style="white-space:nowrap">${r.approvedDate||'—'}</td>
+    <td style="white-space:nowrap">${r.receivedDate||'—'}</td>
+    <td>${esc(r.jciInvoice||'—')}</td>
     <td style="text-align:center">${r.qty||1}</td>
     <td>${brmaStatus(r.status)}</td>
-    <td style="max-width:160px;font-size:11.5px">${esc(r.faultDetails||'â€”')}</td>
+    <td style="max-width:160px;font-size:11.5px">${esc(r.faultDetails||'—')}</td>
     <td><div style="display:flex;gap:3px">
       ${CU?.canWrite?`<button class="btn sm" onclick="togRMAForm(true,rmaData.find(x=>x.id==='${r.id}'))"><i class="ti ti-edit"></i></button>`:''}
       ${CU?.isAdmin?`<button class="btn sm danger" onclick="deleteRMA('${r.id}')"><i class="ti ti-trash"></i></button>`:''}
@@ -2500,7 +2501,7 @@ async function saveEntry(){
   if(!e.category)miss.push('Category');if(!e.severity)miss.push('Severity');if(!e.title)miss.push('Problem title');
   if(!e.problem)miss.push('Problem description');if(!e.solution)miss.push('Solution applied');
   if(miss.length){toast('Required: '+miss.join(', '),'err');return;}
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const now=new Date().toISOString(),eid=g('f-eid');
     if(eid){await db.collection(COL).doc(eid).update({...e,updatedAt:now});toast('Entry updated âœ“','ok');}
@@ -2520,7 +2521,7 @@ function editEntry(id){
   el('save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update entry';go('add');
 }
 async function delEntry(id){
-  if(!confirm('Permanently delete this entry?'))return;showLoad('Deletingâ€¦');
+  if(!confirm('Permanently delete this entry?'))return;showLoad('Deleting…');
   try{await db.collection(COL).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -2543,13 +2544,13 @@ async function uploadLibDoc(){
   if(!title||!cat){toast('Title and category are required','err');return;}
   const file=fileInput.files[0];if(!file){toast('Select a PDF file','err');return;}
   if(el('lib-file-err').textContent)return;
-  el('lib-prog').style.display='block';el('lib-prog-bar').style.width='0%';el('lib-prog-txt').textContent='Uploading '+file.name+'â€¦';
-  showLoad('Uploading to Libraryâ€¦');
+  el('lib-prog').style.display='block';el('lib-prog-bar').style.width='0%';el('lib-prog-txt').textContent='Uploading '+file.name+'…';
+  showLoad('Uploading to Library…');
   try{
     const path=`dqap-library/${Date.now()}_${file.name}`;const ref=storage.ref(path);
     await new Promise((resolve,reject)=>{
       const task=ref.put(file);let last=Date.now();
-      const wd=setInterval(()=>{if(Date.now()-last>15000){clearInterval(wd);task.cancel();reject(new Error('Upload timed out â€” check Firebase Storage rules.'));}},2000);
+      const wd=setInterval(()=>{if(Date.now()-last>15000){clearInterval(wd);task.cancel();reject(new Error('Upload timed out — check Firebase Storage rules.'));}},2000);
       task.on('state_changed',snap=>{last=Date.now();el('lib-prog-bar').style.width=Math.round(snap.bytesTransferred/snap.totalBytes*100)+'%';},
         err=>{clearInterval(wd);reject(err);},
         async()=>{clearInterval(wd);try{const url=await ref.getDownloadURL();await db.collection(LIB).add({title,category:cat,description:desc,tags:tags.split(',').map(t=>t.trim()).filter(Boolean),fileName:file.name,url,path,size:file.size,uploadedBy:CU.fullName,uploadedAt:new Date().toISOString()});resolve();}catch(e){reject(e);}});
@@ -2559,7 +2560,7 @@ async function uploadLibDoc(){
   }catch(e){el('lib-prog').style.display='none';toast('Upload failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function deleteLibDoc(id,path,title){
-  if(!CU?.isAdmin||!confirm('Delete "'+title+'"?'))return;showLoad('Deletingâ€¦');
+  if(!CU?.isAdmin||!confirm('Delete "'+title+'"?'))return;showLoad('Deleting…');
   try{try{await storage.ref(path).delete();}catch(e){}await db.collection(LIB).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -2568,8 +2569,8 @@ function updateStorageBar(){
   const LIMIT_MB=1024,totalBytes=libData.reduce((s,d)=>s+(d.size||0),0),usedMB=totalBytes/1024/1024,pct=Math.min(100,usedMB/LIMIT_MB*100);
   const fill=el('lib-storage-fill'),txt=el('lib-storage-txt'),used=el('lib-storage-used');if(!fill)return;
   fill.style.width=pct.toFixed(1)+'%';fill.style.background=pct>85?'#c00':pct>60?'#E65100':'#1B5E20';
-  used.textContent=usedMB.toFixed(2)+' MB used Â· '+libData.length+' file'+(libData.length!==1?'s':'');
-  txt.textContent=pct.toFixed(1)+'% of 1 GB used Â· '+(LIMIT_MB-usedMB).toFixed(0)+' MB remaining';
+  used.textContent=usedMB.toFixed(2)+' MB used · '+libData.length+' file'+(libData.length!==1?'s':'');
+  txt.textContent=pct.toFixed(1)+'% of 1 GB used · '+(LIMIT_MB-usedMB).toFixed(0)+' MB remaining';
   txt.style.color=pct>85?'#c00':pct>60?'#E65100':'var(--t2)';
 }
 function renderLibrary(){
@@ -2627,7 +2628,7 @@ function sendTaskEmailNotificationLegacy(action, t){
     addEmail(getUserEmail(t.supervisor)); // supervisor
   }
 
-  // Monitoring address is a LAST-RESORT fallback only â€” used when none of the
+  // Monitoring address is a LAST-RESORT fallback only — used when none of the
   // people above have an email on file, so notifications are never lost silently.
   if (emails.length === 0 && CFG.NOTIFY_TO) {
     CFG.NOTIFY_TO.split(',').forEach(addEmail);
@@ -2642,12 +2643,12 @@ function sendTaskEmailNotificationLegacy(action, t){
     emailjs.init(CFG.EJS_KEY);
     const params = {
       task_action: action,
-      task_title: t.title || 'â€”',
-      task_assigned_to: t.assignedTo || 'â€”',
-      task_created_by: t.assignedBy || 'â€”',
-      task_supervisor: t.supervisor || 'â€”',
+      task_title: t.title || '—',
+      task_assigned_to: t.assignedTo || '—',
+      task_created_by: t.assignedBy || '—',
+      task_supervisor: t.supervisor || '—',
       task_deadline: fmtDL(t.deadline),
-      task_project: t.project || 'â€”',
+      task_project: t.project || '—',
       task_status: t.status || 'Open',
       task_priority: t.priority || 'Medium',
       status_color: sc.c,
@@ -2693,7 +2694,7 @@ async function saveNewProject(){
   if(!poTotal){toast('Enter PO value(s)','err');return;}
   if(!budgetAllocated){toast('Budget Allocated is required','err');return;}
   if(!projectManager){toast('Select a Project Manager','err');return;}
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const now=new Date().toISOString();
     const projRef=await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,createdAt:now});
@@ -2720,7 +2721,7 @@ async function removeSubItem(projId,type,val){
   try{await db.collection(PROJ).doc(projId).update({[type]:arr});toast('Removed âœ“','ok');}catch(e){toast('Failed','err');}
 }
 async function deleteProject(projId,name){
-  if(!confirm('Delete project "'+name+'"?'))return;showLoad('Deletingâ€¦');
+  if(!confirm('Delete project "'+name+'"?'))return;showLoad('Deleting…');
   try{await db.collection(PROJ).doc(projId).delete();toast('Deleted âœ“','ok');}catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 function toggleProjCard(id){projExpandedId=(projExpandedId===id)?null:id;renderProjectsPage();}
@@ -2741,7 +2742,7 @@ function addPORow(containerId,po,readOnly){
   row.style.cssText='display:grid;grid-template-columns:1fr 132px 132px 30px;gap:6px;align-items:center;margin-bottom:6px';
   row.innerHTML=`<input class="fi po-f-num" placeholder="PO Number" value="${esc(po.number||'')}" ${dis}>`
     +`<input type="date" class="fi po-f-date" value="${po.date||''}" ${dis}>`
-    +`<input type="number" min="0" class="fi po-f-val" placeholder="Value â‚¹" value="${(po.value!==undefined&&po.value!==null&&po.value!=='')?po.value:''}" ${dis}>`
+    +`<input type="number" min="0" class="fi po-f-val" placeholder="Value ₹" value="${(po.value!==undefined&&po.value!==null&&po.value!=='')?po.value:''}" ${dis}>`
     +(readOnly?'<span></span>':`<button type="button" class="btn sm danger" onclick="this.closest('.po-row').remove()" title="Remove PO"><i class="ti ti-x"></i></button>`);
   c.appendChild(row);
 }
@@ -2768,7 +2769,7 @@ async function saveProjectInline(projId){
   if(!scope){toast('Select a Project Scope','err');return;}
   if(!pos.some(po=>po.number)){toast('Add at least one PO (number)','err');return;}
   if(!poTotal){toast('Enter PO value(s)','err');return;}
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const now=new Date().toISOString();
     await db.collection(PROJ).doc(projId).update({number,scope,ldDate,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',updatedAt:now});
@@ -2813,12 +2814,12 @@ function renderProjectsPage(){
         <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
         <div class="g3" style="margin-bottom:14px">
           <div class="fg"><label class="fl r">Project number</label><input class="fi" id="pe-num-${p.id}" value="${esc(p.number||'')}" ${dis}></div>
-          <div class="fg"><label class="fl">Project name <span style="font-size:9px;color:var(--t2);font-weight:400">(key â€” locked)</span></label><input class="fi" value="${esc(p.name||'')}" disabled style="background:#f5f5f5"></div>
+          <div class="fg"><label class="fl">Project name <span style="font-size:9px;color:var(--t2);font-weight:400">(key — locked)</span></label><input class="fi" value="${esc(p.name||'')}" disabled style="background:#f5f5f5"></div>
           <div class="fg"><label class="fl r">Project Scope</label><select class="fs" id="pe-scope-${p.id}" ${dis}>${scopeOpts(p.scope||'')}</select></div>
         </div>
 
         <div class="fsec-t"><i class="ti ti-file-invoice"></i>Contract details</div>
-        <label class="fl">Purchase Orders <span style="font-size:9px;color:var(--t2);font-weight:400">(PO No Â· Date Â· Value â‚¹)</span></label>
+        <label class="fl">Purchase Orders <span style="font-size:9px;color:var(--t2);font-weight:400">(PO No · Date · Value ₹)</span></label>
         <div id="pe-po-list-${p.id}" style="margin:6px 0"></div>
         ${canEdit?`<button type="button" class="btn sm pri" onclick="addPORow('pe-po-list-${p.id}')" style="margin-bottom:14px"><i class="ti ti-plus"></i>Add PO</button>`:''}
         <div class="g3" style="margin-bottom:14px">
@@ -2838,12 +2839,12 @@ function renderProjectsPage(){
           <div>
             <div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-briefcase" style="font-size:12px"></i> Clients</div>
             <div class="sub-list">${nClients?(p.clients||[]).slice().sort().map(c=>`<div class="sub-item"><span>${esc(c)}</span>${canEdit?`<button class="btn sm danger" onclick="removeSubItem('${p.id}','clients','${c.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>`:''}</div>`).join(''):'<div style="font-size:12px;color:var(--t2)">No clients</div>'}</div>
-            ${canEdit?`<div class="sub-add"><input class="fi" id="add-cli-${p.id}" placeholder="Add clientâ€¦" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','clients','add-cli-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','clients','add-cli-${p.id}')"><i class="ti ti-plus"></i>Add</button></div>`:''}
+            ${canEdit?`<div class="sub-add"><input class="fi" id="add-cli-${p.id}" placeholder="Add client…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','clients','add-cli-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','clients','add-cli-${p.id}')"><i class="ti ti-plus"></i>Add</button></div>`:''}
           </div>
           <div>
             <div style="font-size:10px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="ti ti-map-pin" style="font-size:12px"></i> Sites</div>
             <div class="sub-list">${nSites?(p.sites||[]).slice().sort().map(s=>`<div class="sub-item"><span>${esc(s)}</span>${canEdit?`<button class="btn sm danger" onclick="removeSubItem('${p.id}','sites','${s.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>`:''}</div>`).join(''):'<div style="font-size:12px;color:var(--t2)">No sites</div>'}</div>
-            ${canEdit?`<div class="sub-add"><input class="fi" id="add-site-${p.id}" placeholder="Add siteâ€¦" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','sites','add-site-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','sites','add-site-${p.id}')"><i class="ti ti-plus"></i>Add</button></div>`:''}
+            ${canEdit?`<div class="sub-add"><input class="fi" id="add-site-${p.id}" placeholder="Add site…" onkeydown="if(event.key==='Enter')addSubItem('${p.id}','sites','add-site-${p.id}')"><button class="btn sm pri" onclick="addSubItem('${p.id}','sites','add-site-${p.id}')"><i class="ti ti-plus"></i>Add</button></div>`:''}
           </div>
         </div>
       </div>`;
@@ -2885,14 +2886,14 @@ function renderProjectsPage(){
 
 // â”€â”€ USERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadUsers(){
-  showLoad('Loadingâ€¦');
+  showLoad('Loading…');
   try{
     const sn=await db.collection(USERS).orderBy('createdAt','asc').get();
     const users=sn.docs.map(d=>({id:d.id,...d.data()}));
     el('u-list').innerHTML=users.length?users.map(u=>`<tr>
       <td style="font-weight:500">${esc(u.fullName)}</td>
       <td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td>
-      <td style="font-size:12px;color:var(--t2)">${u.email ? esc(u.email) : '<span style="color:#aaa">â€” not set â€”</span>'}</td>
+      <td style="font-size:12px;color:var(--t2)">${u.email ? esc(u.email) : '<span style="color:#aaa">— not set —</span>'}</td>
       <td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td>
       <td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
@@ -2913,7 +2914,7 @@ async function changeRole(id,currentRole,name){
   if(!choice||!roles.includes(choice.trim().toLowerCase()))return;
   const newRole=choice.trim().toLowerCase();
   if(newRole===currentRole){toast('No change','ok');return;}
-  showLoad('Updating roleâ€¦');
+  showLoad('Updating role…');
   try{
     await db.collection(USERS).doc(id).update({role:newRole,isAdmin:newRole==='admin',updatedAt:new Date().toISOString()});
     toast('Role updated âœ“','ok');await loadUsers();
@@ -2959,7 +2960,7 @@ async function addUser(){
   const email = (el('u-email')?.value || '').trim();
 
   if(!fn||!un||!pw){toast('All fields required','err');return;}if(un.length<3){toast('Username min 3 chars','err');return;}
-  showLoad('Addingâ€¦');
+  showLoad('Adding…');
   try{
     const chk=await db.collection(USERS).where('username','==',un).get();if(!chk.empty){hideLoad();toast('Username taken','err');return;}
     await db.collection(USERS).add({
@@ -2977,8 +2978,8 @@ async function addUser(){
     await loadUsers();
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
-async function delUser(id,username){if(!confirm('Delete "'+username+'"?'))return;showLoad('Deletingâ€¦');try{await db.collection(USERS).doc(id).delete();toast('Deleted','ok');await loadUsers();}catch(e){toast('Failed','err');}finally{hideLoad();}}
-async function resetPwd(id,name){const np=prompt('New password for '+name+':');if(np===null)return;if(!np.trim()||np.trim().length<4){alert('Min 4 chars');return;}showLoad('Updatingâ€¦');try{await db.collection(USERS).doc(id).update({password:np.trim()});toast('Updated âœ“','ok');}catch(e){toast('Failed','err');}finally{hideLoad();}}
+async function delUser(id,username){if(!confirm('Delete "'+username+'"?'))return;showLoad('Deleting…');try{await db.collection(USERS).doc(id).delete();toast('Deleted','ok');await loadUsers();}catch(e){toast('Failed','err');}finally{hideLoad();}}
+async function resetPwd(id,name){const np=prompt('New password for '+name+':');if(np===null)return;if(!np.trim()||np.trim().length<4){alert('Min 4 chars');return;}showLoad('Updating…');try{await db.collection(USERS).doc(id).update({password:np.trim()});toast('Updated âœ“','ok');}catch(e){toast('Failed','err');}finally{hideLoad();}}
 
 // â”€â”€ DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function updateDashStats(){
@@ -2992,7 +2993,7 @@ function renderDash(){
   updateDashStats();
   const rec=el('d-rec'),recent=es.slice(0,6);
   if(!recent.length){rec.innerHTML=`<div class="empty"><i class="ti ti-inbox eico"></i><div class="etit">No entries yet</div><button class="btn pri" style="margin:0 auto" onclick="go('add')"><i class="ti ti-plus"></i>Add first entry</button></div>`;return;}
-  rec.innerHTML=recent.map(e=>`<div style="padding:8px 0;border-bottom:.5px solid var(--bd)"><div class="d-rec-row" style="display:flex;justify-content:space-between;gap:8px"><div style="min-width:0;flex:1"><div style="font-size:9.5px;font-weight:500;color:var(--t2)">${e.entryNumber||''} Â· ${e.date}</div><div style="font-weight:600;font-size:12.5px;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</div><div style="font-size:11px;color:var(--t2)">${esc(e.project)}${e.engineer?' Â· '+esc(e.engineer):''}</div></div><div class="d-rec-badges" style="display:flex;gap:3px;flex-wrap:wrap;flex-shrink:0;max-width:150px;align-content:flex-start">${bcat(e.category)}${bsev(e.severity)}${bsta(e.status)}</div></div></div>`).join('');
+  rec.innerHTML=recent.map(e=>`<div style="padding:8px 0;border-bottom:.5px solid var(--bd)"><div class="d-rec-row" style="display:flex;justify-content:space-between;gap:8px"><div style="min-width:0;flex:1"><div style="font-size:9.5px;font-weight:500;color:var(--t2)">${e.entryNumber||''} · ${e.date}</div><div style="font-weight:600;font-size:12.5px;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</div><div style="font-size:11px;color:var(--t2)">${esc(e.project)}${e.engineer?' · '+esc(e.engineer):''}</div></div><div class="d-rec-badges" style="display:flex;gap:3px;flex-wrap:wrap;flex-shrink:0;max-width:150px;align-content:flex-start">${bcat(e.category)}${bsev(e.severity)}${bsta(e.status)}</div></div></div>`).join('');
   const cats=['Hardware / Electrical','Networking / Communication','Commissioning','SCADA / HMI','Cabling','Programming','Troubleshooting','Other'];
   const cc=cats.map(c=>({n:c,k:es.filter(e=>e.category===c).length})).filter(c=>c.k>0);
   const catEl=el('d-cat');if(!cc.length){catEl.innerHTML=`<div style="text-align:center;color:var(--t2);padding:16px;font-size:12px">No entries yet</div>`;return;}
@@ -3026,7 +3027,7 @@ function renderEntries(entries,cid){
 function renderCard(e){
   const tg=(e.tags||[]).slice(0,4).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
   const dg=[e.systemType?`<div class="di"><div class="dl">System type</div><div class="dv">${esc(e.systemType)}</div></div>`:'',e.software?`<div class="di"><div class="dl">Software</div><div class="dv">${esc(e.software)}</div></div>`:'',e.protocol?`<div class="di"><div class="dl">Protocol</div><div class="dv">${esc(e.protocol)}</div></div>`:'',e.errorCode?`<div class="di"><div class="dl">Error code</div><div class="dv" style="font-family:monospace;font-size:11px;color:#c00">${esc(e.errorCode)}</div></div>`:'',e.phase?`<div class="di"><div class="dl">Phase</div><div class="dv">${esc(e.phase)}</div></div>`:'',e.timeToResolve?`<div class="di"><div class="dl">Time to resolve</div><div class="dv">${esc(e.timeToResolve)}</div></div>`:''].filter(Boolean).join('');
-  return`<div class="ecard" id="ec-${e.id}"><div class="ech" onclick="togCard('${e.id}')"><div style="flex:1;min-width:0"><div class="enum">${e.entryNumber||''} Â· ${e.date}${e.project?' Â· '+esc(e.project):''}${e.client?' Â· '+esc(e.client):''}</div><div class="etitle">${esc(e.title)}</div><div class="emeta"><span><i class="ti ti-user" style="font-size:11px"></i> ${esc(e.engineer)}</span>${e.equipment?`<span><i class="ti ti-cpu" style="font-size:11px"></i> ${esc(e.equipment)}</span>`:''} ${e.location?`<span><i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(e.location)}</span>`:''}</div><div class="ebadges">${bcat(e.category)}${bsev(e.severity)}${bsta(e.status)}${tg}</div></div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0;margin-left:8px"><div style="display:flex;gap:4px"><button class="btn sm" onclick="event.stopPropagation();editEntry('${e.id}')"><i class="ti ti-edit"></i>Edit</button><button class="btn sm danger" onclick="event.stopPropagation();delEntry('${e.id}')"><i class="ti ti-trash"></i></button></div><i class="ti ti-chevron-down" id="arr-${e.id}" style="font-size:14px;color:var(--t2)"></i></div></div><div class="ecb" id="eb-${e.id}">${dg?`<div class="dg">${dg}</div>`:''} ${e.problem?`<div class="dl"><i class="ti ti-alert-circle" style="font-size:11px"></i> Problem</div><div class="dc">${esc(e.problem)}</div>`:''} ${e.symptoms?`<div class="dl"><i class="ti ti-bell" style="font-size:11px"></i> Symptoms</div><div class="dc">${esc(e.symptoms)}</div>`:''} ${e.rootCause?`<div class="dl"><i class="ti ti-microscope" style="font-size:11px"></i> Root cause</div><div class="dc rc">${esc(e.rootCause)}</div>`:''} ${e.solution?`<div class="dl"><i class="ti ti-circle-check" style="font-size:11px"></i> Solution</div><div class="dc sol">${esc(e.solution)}</div>`:''} ${e.preventive?`<div class="dl"><i class="ti ti-shield-check" style="font-size:11px"></i> Preventive</div><div class="dc pre">${esc(e.preventive)}</div>`:''} ${e.references?`<div class="dl"><i class="ti ti-book" style="font-size:11px"></i> References</div><div class="dc ref">${esc(e.references)}</div>`:''} ${(e.tags||[]).length?`<div class="dl"><i class="ti ti-tags" style="font-size:11px"></i> Tags</div><div style="display:flex;flex-wrap:wrap;gap:4px">${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}<div style="font-size:10px;color:var(--t2);margin-top:8px">Created: ${(e.createdAt||'').split('T')[0]} Â· Updated: ${(e.updatedAt||'').split('T')[0]}</div></div></div>`;
+  return`<div class="ecard" id="ec-${e.id}"><div class="ech" onclick="togCard('${e.id}')"><div style="flex:1;min-width:0"><div class="enum">${e.entryNumber||''} · ${e.date}${e.project?' · '+esc(e.project):''}${e.client?' · '+esc(e.client):''}</div><div class="etitle">${esc(e.title)}</div><div class="emeta"><span><i class="ti ti-user" style="font-size:11px"></i> ${esc(e.engineer)}</span>${e.equipment?`<span><i class="ti ti-cpu" style="font-size:11px"></i> ${esc(e.equipment)}</span>`:''} ${e.location?`<span><i class="ti ti-map-pin" style="font-size:11px"></i> ${esc(e.location)}</span>`:''}</div><div class="ebadges">${bcat(e.category)}${bsev(e.severity)}${bsta(e.status)}${tg}</div></div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0;margin-left:8px"><div style="display:flex;gap:4px"><button class="btn sm" onclick="event.stopPropagation();editEntry('${e.id}')"><i class="ti ti-edit"></i>Edit</button><button class="btn sm danger" onclick="event.stopPropagation();delEntry('${e.id}')"><i class="ti ti-trash"></i></button></div><i class="ti ti-chevron-down" id="arr-${e.id}" style="font-size:14px;color:var(--t2)"></i></div></div><div class="ecb" id="eb-${e.id}">${dg?`<div class="dg">${dg}</div>`:''} ${e.problem?`<div class="dl"><i class="ti ti-alert-circle" style="font-size:11px"></i> Problem</div><div class="dc">${esc(e.problem)}</div>`:''} ${e.symptoms?`<div class="dl"><i class="ti ti-bell" style="font-size:11px"></i> Symptoms</div><div class="dc">${esc(e.symptoms)}</div>`:''} ${e.rootCause?`<div class="dl"><i class="ti ti-microscope" style="font-size:11px"></i> Root cause</div><div class="dc rc">${esc(e.rootCause)}</div>`:''} ${e.solution?`<div class="dl"><i class="ti ti-circle-check" style="font-size:11px"></i> Solution</div><div class="dc sol">${esc(e.solution)}</div>`:''} ${e.preventive?`<div class="dl"><i class="ti ti-shield-check" style="font-size:11px"></i> Preventive</div><div class="dc pre">${esc(e.preventive)}</div>`:''} ${e.references?`<div class="dl"><i class="ti ti-book" style="font-size:11px"></i> References</div><div class="dc ref">${esc(e.references)}</div>`:''} ${(e.tags||[]).length?`<div class="dl"><i class="ti ti-tags" style="font-size:11px"></i> Tags</div><div style="display:flex;flex-wrap:wrap;gap:4px">${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}<div style="font-size:10px;color:var(--t2);margin-top:8px">Created: ${(e.createdAt||'').split('T')[0]} · Updated: ${(e.updatedAt||'').split('T')[0]}</div></div></div>`;
 }
 function togCard(id){const c=el('ec-'+id),b=el('eb-'+id),a=el('arr-'+id);if(!c)return;const x=c.classList.toggle('exp');if(b)b.style.display=x?'block':'none';if(a){a.classList.toggle('ti-chevron-down',!x);a.classList.toggle('ti-chevron-up',x);}}
 
@@ -3304,13 +3305,13 @@ function renderBudgetList(){
       // dashboard tiles
       const cCol=status==='Over Budget'?'#B71C1C':status==='Near Limit'?'#E65100':'#1B5E20';
       const gmTile=(()=>{
-        if(gmValue===null)return`<div style="border-radius:8px;padding:8px 10px;border:.5px solid var(--bd)"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1">â€”</div><div style="font-size:9px;color:var(--t2);margin-top:6px">set PO Amount</div></div>`;
+        if(gmValue===null)return`<div style="border-radius:8px;padding:8px 10px;border:.5px solid var(--bd)"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1">—</div><div style="font-size:9px;color:var(--t2);margin-top:6px">set PO Amount</div></div>`;
         const pos=gmValue>=0;const col=pos?'#1B5E20':'#B71C1C';const bg=pos?'#E8F5E9':'#FFEBEE';const bd=pos?'#A5D6A7':'#EF9A9A';
-        return`<div style="border-radius:8px;padding:8px 10px;border:.5px solid ${bd};background:${bg}"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1;color:${col}">${gmPct.toFixed(1)}%</div><div style="font-size:13px;font-weight:600;margin-top:3px;line-height:1;color:${col}">${gmValue<0?'- ':''}â‚¹ ${fmtAmt(Math.abs(gmValue))}</div><div style="font-size:9px;color:var(--t2);margin-top:3px">% Â· â‚¹ value of PO</div></div>`;
+        return`<div style="border-radius:8px;padding:8px 10px;border:.5px solid ${bd};background:${bg}"><div style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--t2)">Gross Margin</div><div style="font-size:20px;font-weight:700;line-height:1;color:${col}">${gmPct.toFixed(1)}%</div><div style="font-size:13px;font-weight:600;margin-top:3px;line-height:1;color:${col}">${gmValue<0?'- ':''}₹ ${fmtAmt(Math.abs(gmValue))}</div><div style="font-size:9px;color:var(--t2);margin-top:3px">% · ₹ value of PO</div></div>`;
       })();
       const headsSummary=BUDGET_HEADS.map(h=>{
         const tot=entries.filter(e=>e.budgetHead===h).reduce((s,e)=>s+(e.total||0),0);
-        return`<div style="background:#fafafa;border-radius:7px;padding:8px 10px;border:.5px solid var(--bd)"><div style="font-size:9.5px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${esc(h)}</div><div style="font-size:13px;font-weight:700">â‚¹ ${fmtAmt(tot)}</div></div>`;
+        return`<div style="background:#fafafa;border-radius:7px;padding:8px 10px;border:.5px solid var(--bd)"><div style="font-size:9.5px;font-weight:600;color:var(--p);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${esc(h)}</div><div style="font-size:13px;font-weight:700">₹ ${fmtAmt(tot)}</div></div>`;
       }).join('');
       const ldRow=p.ldDate?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><span style="font-size:10.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px">LD Deadline</span>${renderLdChip(p.ldDate)}</div>`:'';
 
@@ -3321,33 +3322,33 @@ function renderBudgetList(){
       } else {
         const groups={};BUDGET_HEADS.forEach(h=>{groups[h]=[];});
         entries.forEach(b=>{if(!groups[b.budgetHead])groups[b.budgetHead]=[];groups[b.budgetHead].push(b);});
-        let t='<div class="wtable-wrap"><table class="wtable"><thead><tr><th>#</th><th>Vendor / Description</th><th>Date</th><th>Pln</th><th>Act</th><th>Service (â‚¹)</th><th>Qty</th><th>Materials (â‚¹)</th><th>Equip (â‚¹)</th><th>Freight (â‚¹)</th><th>Misc (â‚¹)</th><th>Total (â‚¹)</th><th>Owner</th><th>Actions</th></tr></thead><tbody>';
+        let t='<div class="wtable-wrap"><table class="wtable"><thead><tr><th>#</th><th>Vendor / Description</th><th>Date</th><th>Pln</th><th>Act</th><th>Service (₹)</th><th>Qty</th><th>Materials (₹)</th><th>Equip (₹)</th><th>Freight (₹)</th><th>Misc (₹)</th><th>Total (₹)</th><th>Owner</th><th>Actions</th></tr></thead><tbody>';
         BUDGET_HEADS.forEach(head=>{
           const rows=groups[head];if(!rows||!rows.length)return;
           const headTotal=rows.reduce((s,r)=>s+(r.total||0),0);
-          t+=`<tr class="bg-head-row"><td colspan="14" style="padding:7px 12px">${esc(head)} â€” â‚¹ ${fmtAmt(headTotal)}</td></tr>`;
+          t+=`<tr class="bg-head-row"><td colspan="14" style="padding:7px 12px">${esc(head)} — ₹ ${fmtAmt(headTotal)}</td></tr>`;
           rows.forEach((b,i)=>{
             t+=`<tr>
               <td style="font-size:10px;color:var(--t2)">${i+1}</td>
-              <td style="font-weight:500">${esc(b.description||'â€”')}</td>
-              <td style="white-space:nowrap">${b.date||'â€”'}</td>
-              <td style="text-align:center">${b.plannedDays||'â€”'}</td>
-              <td style="text-align:center">${b.actualDays||'â€”'}</td>
-              <td style="text-align:right">${b.serviceAmt?fmtAmt(b.serviceAmt):'â€”'}</td>
-              <td style="text-align:center">${b.materialQty||'â€”'}</td>
-              <td style="text-align:right">${b.materialAmt?fmtAmt(b.materialAmt):'â€”'}</td>
-              <td style="text-align:right">${b.equipment?fmtAmt(b.equipment):'â€”'}</td>
-              <td style="text-align:right">${b.freight?fmtAmt(b.freight):'â€”'}</td>
-              <td style="text-align:right">${b.misc?fmtAmt(b.misc):'â€”'}</td>
-              <td style="text-align:right;font-weight:700">â‚¹ ${fmtAmt(b.total||0)}</td>
-              <td>${esc(b.owner||'â€”')}</td>
+              <td style="font-weight:500">${esc(b.description||'—')}</td>
+              <td style="white-space:nowrap">${b.date||'—'}</td>
+              <td style="text-align:center">${b.plannedDays||'—'}</td>
+              <td style="text-align:center">${b.actualDays||'—'}</td>
+              <td style="text-align:right">${b.serviceAmt?fmtAmt(b.serviceAmt):'—'}</td>
+              <td style="text-align:center">${b.materialQty||'—'}</td>
+              <td style="text-align:right">${b.materialAmt?fmtAmt(b.materialAmt):'—'}</td>
+              <td style="text-align:right">${b.equipment?fmtAmt(b.equipment):'—'}</td>
+              <td style="text-align:right">${b.freight?fmtAmt(b.freight):'—'}</td>
+              <td style="text-align:right">${b.misc?fmtAmt(b.misc):'—'}</td>
+              <td style="text-align:right;font-weight:700">₹ ${fmtAmt(b.total||0)}</td>
+              <td>${esc(b.owner||'—')}</td>
               <td><div style="display:flex;gap:3px">
                 ${CU?.canWrite?`<button class="btn sm" onclick="event.stopPropagation();togBudgetForm(true,budgetData.find(x=>x.id==='${b.id}'))"><i class="ti ti-edit"></i></button>`:''}
                 ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deleteBudget('${b.id}')"><i class="ti ti-trash"></i></button>`:''}
               </div></td>
             </tr>`;
           });
-          t+=`<tr class="bg-sub-total"><td colspan="11" style="text-align:right;padding:6px 12px;font-size:11px">Sub-total</td><td style="text-align:right;font-weight:700;color:var(--p)">â‚¹ ${fmtAmt(headTotal)}</td><td colspan="2"></td></tr>`;
+          t+=`<tr class="bg-sub-total"><td colspan="11" style="text-align:right;padding:6px 12px;font-size:11px">Sub-total</td><td style="text-align:right;font-weight:700;color:var(--p)">₹ ${fmtAmt(headTotal)}</td><td colspan="2"></td></tr>`;
         });
         t+='</tbody></table></div>';
         tableHtml=t;
@@ -3355,10 +3356,10 @@ function renderBudgetList(){
 
       detail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px">
-          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">PO Amount</div><div style="font-size:16px;font-weight:700;color:var(--p)">â‚¹ ${poAmount?fmtAmt(poAmount):'â€”'}</div></div>
-          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Allocated</div><div style="font-size:16px;font-weight:700;color:var(--p)">â‚¹ ${allocated?fmtAmt(allocated):'â€”'}</div></div>
-          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Consumed</div><div style="font-size:16px;font-weight:700;color:${cCol}">â‚¹ ${fmtAmt(consumed)}</div></div>
-          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Available</div><div style="font-size:16px;font-weight:700;color:${balance<0?'#B71C1C':'#1B5E20'}">${balance<0?'- ':''}â‚¹ ${fmtAmt(Math.abs(balance))}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">PO Amount</div><div style="font-size:16px;font-weight:700;color:var(--p)">₹ ${poAmount?fmtAmt(poAmount):'—'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Allocated</div><div style="font-size:16px;font-weight:700;color:var(--p)">₹ ${allocated?fmtAmt(allocated):'—'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Consumed</div><div style="font-size:16px;font-weight:700;color:${cCol}">₹ ${fmtAmt(consumed)}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Budget Available</div><div style="font-size:16px;font-weight:700;color:${balance<0?'#B71C1C':'#1B5E20'}">${balance<0?'- ':''}₹ ${fmtAmt(Math.abs(balance))}</div></div>
           ${gmTile}
         </div>
         ${ldRow}
@@ -3383,7 +3384,7 @@ function renderBudgetList(){
               ${bbudgetStatus(status)}
               ${gmBadge}
             </div>
-            <div class="pmo-sub">${allocated?`Allocated â‚¹${fmtAmt(allocated)} Â· Consumed â‚¹${fmtAmt(consumed)}`:'No budget configured'}${ldChip?' &nbsp;Â·&nbsp; ':''}</div>
+            <div class="pmo-sub">${allocated?`Allocated ₹${fmtAmt(allocated)} · Consumed ₹${fmtAmt(consumed)}`:'No budget configured'}${ldChip?' &nbsp;·&nbsp; ':''}</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
             <div style="text-align:right">
@@ -3416,7 +3417,7 @@ function togBudgetForm(show,data,preProj){
     el('budget-date').value=new Date().toISOString().split('T')[0];
     el('budget-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>New line item';
     el('budget-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Save line item';
-    el('budget-total-preview').textContent='â‚¹ 0';
+    el('budget-total-preview').textContent='₹ 0';
     return;
   }
   if(data){
@@ -3449,7 +3450,7 @@ function togBudgetForm(show,data,preProj){
 function calcBudgetTotal(){
   const v=id=>parseFloat(el(id)?.value)||0;
   const tot=v('budget-svc-amt')+v('budget-mat-amt')+v('budget-equip')+v('budget-freight')+v('budget-misc');
-  el('budget-total-preview').textContent='â‚¹ '+fmtAmt(tot);
+  el('budget-total-preview').textContent='₹ '+fmtAmt(tot);
   return tot;
 }
 
@@ -3467,7 +3468,7 @@ async function saveBudget(){
     plannedDays:v('budget-plan-days'),actualDays:v('budget-act-days'),
     serviceAmt,materialQty:v('budget-mat-qty'),materialAmt,equipment,freight,misc,total,
     owner:g('budget-owner'),updatedAt:new Date().toISOString()};
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const eid=g('budget-eid');
     if(eid){await db.collection(BUDGET_COL).doc(eid).update(d);toast('Updated âœ“','ok');}
@@ -3478,7 +3479,7 @@ async function saveBudget(){
 }
 
 async function deleteBudget(id){
-  if(!confirm('Delete this line item?'))return;showLoad('Deletingâ€¦');
+  if(!confirm('Delete this line item?'))return;showLoad('Deleting…');
   try{await db.collection(BUDGET_COL).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -3489,12 +3490,12 @@ function exportBudgetExcel(){
   const {cfg,entries,consumed,allocated,poAmount,pct}=getProjBudget(activeBudgetProject);
   const rows=[
     ['Project Budget Tracker'],
-    ['Project',activeBudgetProject,'','PO Amount','â‚¹'+fmtAmt(poAmount)],
-    ['PM',cfg.projectManager||'','','Budget Allocated','â‚¹'+fmtAmt(allocated)],
-    ['PO Date',cfg.poDate||'','','Budget Consumed','â‚¹'+fmtAmt(consumed)],
-    ['','','','Balance','â‚¹'+fmtAmt(allocated-consumed)],
+    ['Project',activeBudgetProject,'','PO Amount','₹'+fmtAmt(poAmount)],
+    ['PM',cfg.projectManager||'','','Budget Allocated','₹'+fmtAmt(allocated)],
+    ['PO Date',cfg.poDate||'','','Budget Consumed','₹'+fmtAmt(consumed)],
+    ['','','','Balance','₹'+fmtAmt(allocated-consumed)],
     [],
-    ['#','Budget Head','Description','Date','Pln Days','Act Days','Service (â‚¹)','Qty','Material (â‚¹)','Equipment (â‚¹)','Freight (â‚¹)','Misc (â‚¹)','Total (â‚¹)','Owner']
+    ['#','Budget Head','Description','Date','Pln Days','Act Days','Service (₹)','Qty','Material (₹)','Equipment (₹)','Freight (₹)','Misc (₹)','Total (₹)','Owner']
   ];
   let i=1;BUDGET_HEADS.forEach(h=>{
     const hRows=entries.filter(e=>e.budgetHead===h);
@@ -4100,7 +4101,7 @@ function amcVisitStatus(c){
   if(days<=win)return{color:'#E65100',bg:'#FFF3E0',icon:'ti-clock-exclamation',label:'Visit due in '+days+'d',days,due,state:'due'};
   return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-calendar',label:'Next visit in '+days+'d',days,due,state:'ok'};
 }
-function fmtDate(d){return d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'â€”';}
+function fmtDate(d){return d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 
 function updateAMCNavBadge(){
   const badge=el('amc-nav-badge');if(!badge)return;
@@ -4113,7 +4114,7 @@ function updateAMCNavBadge(){
 // â”€â”€ AMC DROPDOWNS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function populateAMCDropdowns(){
   const ps=el('amc-project');
-  if(ps){const cur=ps.value;const elig=projectsData.filter(p=>AMC_SCOPES.includes(p.scope));ps.innerHTML='<option value="">â€” None â€”</option>'+elig.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}${p.scope?' ('+esc(p.scope)+')':''}</option>`).join('');}
+  if(ps){const cur=ps.value;const elig=projectsData.filter(p=>AMC_SCOPES.includes(p.scope));ps.innerHTML='<option value="">— None —</option>'+elig.map(p=>`<option${p.name===cur?' selected':''}>${esc(p.name)}${p.scope?' ('+esc(p.scope)+')':''}</option>`).join('');}
   const as=el('amc-assignee');
   if(as){const cur=as.value;const names=usersData.map(u=>u.fullName).filter(Boolean);as.innerHTML='<option value="">Select engineer</option>'+names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');}
 }
@@ -4169,7 +4170,7 @@ async function saveAMC(){
   const d={contractName,client,project,frequency,assignedTo,startDate,endDate,
     contractValue:parseFloat(el('amc-value').value)||0,scope:g('amc-scope'),status:g('amc-status')||'Active',
     updatedAt:new Date().toISOString()};
-  showLoad('Savingâ€¦');
+  showLoad('Saving…');
   try{
     const eid=g('amc-eid');
     if(eid){await db.collection(AMC_COL).doc(eid).update(d);toast('Contract updated âœ“','ok');}
@@ -4179,7 +4180,7 @@ async function saveAMC(){
 }
 
 async function deleteAMC(id){
-  if(!confirm('Delete this AMC contract and its visit history?'))return;showLoad('Deletingâ€¦');
+  if(!confirm('Delete this AMC contract and its visit history?'))return;showLoad('Deleting…');
   try{await db.collection(AMC_COL).doc(id).delete();toast('Deleted âœ“','ok');}
   catch(e){toast('Failed','err');}finally{hideLoad();}
 }
@@ -4212,7 +4213,7 @@ async function saveVisit(){
   if(!canLogVisit(c)){toast('Not permitted','err');return;}
   const date=g('amc-visit-date');if(!date){toast('Select a visit date','err');return;}
   const visit={date,doneBy:g('amc-visit-by')||CU.fullName,remarks:g('amc-visit-remarks'),loggedAt:new Date().toISOString()};
-  showLoad('Recordingâ€¦');
+  showLoad('Recording…');
   try{
     const visits=(c.visits||[]).concat([visit]);
     await db.collection(AMC_COL).doc(id).update({visits,updatedAt:new Date().toISOString()});
@@ -4223,7 +4224,7 @@ async function saveVisit(){
 async function deleteVisit(id,idx){
   const c=amcData.find(x=>x.id===id);if(!c)return;
   if(!(CU.isAdmin||CU.isManager)){toast('Only a manager or admin can remove a visit','err');return;}
-  if(!confirm('Remove this visit record?'))return;showLoad('Removingâ€¦');
+  if(!confirm('Remove this visit record?'))return;showLoad('Removing…');
   try{
     const visits=(c.visits||[]).slice();visits.splice(idx,1);
     await db.collection(AMC_COL).doc(id).update({visits,updatedAt:new Date().toISOString()});
@@ -4253,14 +4254,14 @@ function renderAMC(){
     if(alerts.length){
       notify.innerHTML=`<div class="card" style="border-left:3px solid ${overN>0?'#B71C1C':'#E65100'}">
         <div class="cb" style="padding:12px 16px">
-          <div style="font-size:12px;font-weight:700;color:${overN>0?'#B71C1C':'#E65100'};margin-bottom:8px"><i class="ti ti-bell-ringing" style="font-size:14px;vertical-align:-2px"></i> ${overN>0?overN+' visit(s) overdue':''}${overN>0&&dueN>0?' Â· ':''}${dueN>0?dueN+' visit(s) due soon':''}</div>
+          <div style="font-size:12px;font-weight:700;color:${overN>0?'#B71C1C':'#E65100'};margin-bottom:8px"><i class="ti ti-bell-ringing" style="font-size:14px;vertical-align:-2px"></i> ${overN>0?overN+' visit(s) overdue':''}${overN>0&&dueN>0?' · ':''}${dueN>0?dueN+' visit(s) due soon':''}</div>
           <div style="display:flex;flex-direction:column;gap:5px">
             ${alerts.slice(0,6).map(x=>`<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;flex-wrap:wrap;cursor:pointer" onclick="amcExpandedId='${x.c.id}';renderAMC();document.getElementById('amc-card-${x.c.id}')?.scrollIntoView({behavior:'smooth',block:'center'})">
               <span class="ld-chip" style="background:${x.s.bg};color:${x.s.color}"><i class="ti ${x.s.icon}"></i>${x.s.label}</span>
               <b>${esc(x.c.contractName)}</b>
-              <span style="color:var(--t2)">${esc(x.c.client)} Â· ${esc(x.c.frequency)} Â· due ${fmtDate(x.s.due)} Â· ${esc(x.c.assignedTo)}</span>
+              <span style="color:var(--t2)">${esc(x.c.client)} · ${esc(x.c.frequency)} · due ${fmtDate(x.s.due)} · ${esc(x.c.assignedTo)}</span>
             </div>`).join('')}
-            ${alerts.length>6?`<div style="font-size:10.5px;color:var(--t2)">+ ${alerts.length-6} moreâ€¦</div>`:''}
+            ${alerts.length>6?`<div style="font-size:10.5px;color:var(--t2)">+ ${alerts.length-6} more…</div>`:''}
           </div>
         </div>
       </div>`;
@@ -4313,16 +4314,16 @@ function renderAMC(){
         return`<tr>
           <td style="font-size:10px;color:var(--t2)">${i+1}</td>
           <td style="white-space:nowrap;font-weight:500">${fmtDate(v.date)}</td>
-          <td>${esc(v.doneBy||'â€”')}</td>
-          <td style="font-size:11.5px;color:var(--t2)">${esc(v.remarks||'â€”')}</td>
+          <td>${esc(v.doneBy||'—')}</td>
+          <td style="font-size:11.5px;color:var(--t2)">${esc(v.remarks||'—')}</td>
           <td>${canEdit?`<button class="btn sm danger" onclick="event.stopPropagation();deleteVisit('${c.id}',${origIdx})"><i class="ti ti-trash"></i></button>`:''}</td>
         </tr>`;}).join(''):`<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--t2)">No visits logged yet</td></tr>`;
       detail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
           <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Contract period</div><div style="font-size:12px;font-weight:600">${fmtDate(c.startDate)} â†’ ${fmtDate(c.endDate)}</div></div>
-          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Contract value</div><div style="font-size:14px;font-weight:700;color:var(--p)">${c.contractValue?'â‚¹ '+fmtAmt(c.contractValue):'â€”'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Contract value</div><div style="font-size:14px;font-weight:700;color:var(--p)">${c.contractValue?'₹ '+fmtAmt(c.contractValue):'—'}</div></div>
           <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Last visit</div><div style="font-size:12px;font-weight:600">${lastVisit?fmtDate(lastVisit.date):'None yet'}</div></div>
-          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Next visit due</div><div style="font-size:12px;font-weight:700;color:${s.color}">${s.due?fmtDate(s.due):'â€”'}</div></div>
+          <div><div style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Next visit due</div><div style="font-size:12px;font-weight:700;color:${s.color}">${s.due?fmtDate(s.due):'—'}</div></div>
         </div>
         ${c.scope?`<div style="font-size:11.5px;color:var(--t2);margin-bottom:12px"><b style="color:var(--t1)">Scope:</b> ${esc(c.scope)}</div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
@@ -4346,7 +4347,7 @@ function renderAMC(){
               <span style="font-size:9.5px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600">${esc(c.frequency)}</span>
               ${s.state==='hold'?'<span class="badge b-cls">On Hold</span>':s.state==='expired'?'<span class="badge b-cls">Expired</span>':''}
             </div>
-            <div class="pmo-sub"><i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(c.client)} &nbsp;Â·&nbsp; <i class="ti ti-user" style="font-size:11px"></i> ${esc(c.assignedTo)}</div>
+            <div class="pmo-sub"><i class="ti ti-briefcase" style="font-size:11px"></i> ${esc(c.client)} &nbsp;·&nbsp; <i class="ti ti-user" style="font-size:11px"></i> ${esc(c.assignedTo)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
             <span class="ld-chip" style="background:${s.bg};color:${s.color}"><i class="ti ${s.icon}"></i>${s.label}</span>
@@ -4377,7 +4378,7 @@ if('serviceWorker' in navigator){
         if(!nw)return;
         nw.addEventListener('statechange',()=>{
           if(nw.state==='installed'&&navigator.serviceWorker.controller){
-            // New version ready â€” tell it to skip waiting; controllerchange will reload
+            // New version ready — tell it to skip waiting; controllerchange will reload
             nw.postMessage({type:'SKIP_WAITING'});
           }
         });
