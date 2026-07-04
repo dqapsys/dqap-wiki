@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_13_TEAM_CHAT_ANNOUNCEMENTS
-const APP_VERSION="78.13_TEAM_CHAT_ANNOUNCEMENTS";
+// DQAP_WIKI_VERSION_78_15_CALENDAR_LAYOUT_FIX
+const APP_VERSION="78.15_CALENDAR_LAYOUT_FIX";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4917,17 +4917,17 @@ async function attRenderEmpCalendar(){
     const dayType=attDayType(ds);
     const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
     
-    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd);box-sizing:border-box;overflow:hidden">`;
     dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
     
-    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;width:100%;box-sizing:border-box">`;
     if(dayType.label){
       const chipColor=dayType.type==='holiday'?'#C62828':(dayType.type==='sunday'?'#616161':'#1565C0');
-      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0">${esc(dayType.label)}</div>`;
+      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0;width:100%;box-sizing:border-box;overflow-wrap:break-word">${esc(dayType.label)}</div>`;
     }
     if(ooo){
       const color=ooo.color||attColorForUser(uid);
-      dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;word-break:break-word;line-height:1.25;flex-shrink:0;min-width:0;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
+      dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;overflow-wrap:break-word;line-height:1.25;flex-shrink:0;width:100%;box-sizing:border-box;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
       dayHtml+=`<div>${esc(ooo.type)}${ooo.remarks?': '+esc(ooo.remarks.substring(0,22))+(ooo.remarks.length>22?'...':''):''}</div>`;
       dayHtml+=`</div>`;
     }
@@ -5133,20 +5133,20 @@ async function attRenderCalendar(){
     const dayType=attDayType(ds);
     const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
     
-    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd);box-sizing:border-box;overflow:hidden">`;
     dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
     
     // OOO entries container
-    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;width:100%;box-sizing:border-box">`;
     if(dayType.label){
       const chipColor=dayType.type==='holiday'?'#C62828':(dayType.type==='sunday'?'#616161':'#1565C0');
-      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0">${esc(dayType.label)}</div>`;
+      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0;width:100%;box-sizing:border-box;overflow-wrap:break-word">${esc(dayType.label)}</div>`;
     }
     if(dayOOOs.length>0){
       dayOOOs.forEach(ooo=>{
         const color=ooo.color||attColorForUser(ooo.uid);
         // NO NAME - just type and remarks, color indicates user
-        dayHtml+=`<div title="${esc(ooo.name)} - ${esc(ooo.type)}${ooo.remarks?' - '+esc(ooo.remarks):''}" style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;word-break:break-word;line-height:1.25;flex-shrink:0;min-width:0;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
+        dayHtml+=`<div title="${esc(ooo.name)} - ${esc(ooo.type)}${ooo.remarks?' - '+esc(ooo.remarks):''}" style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;overflow-wrap:break-word;line-height:1.25;flex-shrink:0;width:100%;box-sizing:border-box;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
         dayHtml+=`<div>${esc(ooo.type)}${ooo.remarks?': '+esc(ooo.remarks.substring(0,22))+(ooo.remarks.length>22?'...':''):''}</div>`;
         dayHtml+=`</div>`;
       });
