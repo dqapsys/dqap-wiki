@@ -1,10 +1,9 @@
 // DQAP Wiki Service Worker
-// Version 78.12 - Attendance calendar OOO color-coded details fix
+// Version 78.13 - Team chat, groups, and announcements added
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.12-20260703-1';
+const CACHE_VERSION = 'dqap-wiki-v78.13-20260704-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
-
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -16,7 +15,6 @@ self.addEventListener('install', event => {
     await self.skipWaiting();
   })());
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
@@ -28,24 +26,20 @@ self.addEventListener('activate', event => {
     await self.clients.claim();
   })());
 });
-
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     event.waitUntil(self.skipWaiting());
   }
 });
-
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   // Never cache partial-content responses used for media/file downloads.
   if (request.headers.has('range')) return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   const scopePath = new URL(self.registration.scope).pathname;
   if (!url.pathname.startsWith(scopePath)) return;
-
   const isHtml = request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html');
   if (isHtml) {
     event.respondWith((async () => {
@@ -69,7 +63,6 @@ self.addEventListener('fetch', event => {
     })());
     return;
   }
-
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {
