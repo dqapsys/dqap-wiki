@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_12_ATTENDANCE_CALENDAR_COLORS
-const APP_VERSION="78.12_ATTENDANCE_CALENDAR_COLORS";
+// DQAP_WIKI_VERSION_78_13_TEAM_CHAT_ANNOUNCEMENTS
+const APP_VERSION="78.13_TEAM_CHAT_ANNOUNCEMENTS";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4267,10 +4267,11 @@ async function markThreadRead(id){
 function openChatThread(id){
   activeChatThreadId=id;
   if(chatMsgUnsub)chatMsgUnsub();
-  chatMsgUnsub=db.collection(CHAT_MSG_COL).where('threadId','==',id).orderBy('createdAt','asc').onSnapshot(sn=>{
-    chatMessagesData=sn.docs.map(d=>({id:d.id,...d.data()}));renderChat();
+  chatMsgUnsub=db.collection(CHAT_MSG_COL).where('threadId','==',id).onSnapshot(sn=>{
+    chatMessagesData=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+    renderChat();
     setTimeout(()=>{const box=el('chat-msg-box');if(box)box.scrollTop=box.scrollHeight;},30);
-  },()=>{});
+  },err=>{console.error('Chat messages listener error:',err);toast('Could not load messages: '+err.message,'err');});
   markThreadRead(id);
   renderChat();
 }
@@ -4857,5 +4858,3 @@ function attCloseOOO(){
 </script>
 </body>
 </html>
-
-
