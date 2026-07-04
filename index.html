@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_22_CHARACTER_ENCODING_FIX
-const APP_VERSION="78.22_CHARACTER_ENCODING_FIX";
+// DQAP_WIKI_VERSION_78_23_NESTED_PROJECT_SUBFOLDERS
+const APP_VERSION="78.23_NESTED_PROJECT_SUBFOLDERS";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1998,6 +1998,27 @@ function migratedChecklist(p){
   if(p.driveSubfolders)return Object.keys(p.driveSubfolders).map(label=>({key:docKey(label),label,folderId:p.driveSubfolders[label]}));
   return[];
 }
+function findChecklistItem(checklist,key){
+  for(const item of checklist){
+    if(item.key===key)return item;
+    if(item.subfolders){const sub=item.subfolders.find(s=>s.key===key);if(sub)return sub;}
+  }
+  return null;
+}
+function docRowHtml(p,item,docs,canManage,inputPrefix,indent){
+  const files=docs[item.key]||[];
+  const inputId=inputPrefix+item.key;
+  return `<div style="padding:8px 0;border-bottom:.5px solid var(--bd);margin-left:${indent}px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="font-size:12px;font-weight:600">${indent?'<i class="ti ti-corner-down-right" style="font-size:11px;color:var(--t2)"></i> ':''}${esc(item.label)}${files.length?` <span class="muted" style="font-weight:400">(${files.length})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="file" id="${inputId}" style="max-width:150px;font-size:10px">
+        <button class="btn sm pri" onclick="uploadProjectDoc('${p.id}','${esc(item.key)}','${inputId}')"><i class="ti ti-upload"></i></button>
+      </div>
+    </div>
+    ${files.length?`<div style="margin-top:4px">${files.map(f=>`<div style="font-size:11px;margin-top:2px"><a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a> <span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span></div>`).join('')}</div>`:''}
+  </div>`;
+}
 function projectDocChecklistHtml(p){
   if(!p.driveFolderId){
     return `<div class="muted" style="font-size:12px;padding:10px;background:var(--bg);border-radius:8px">No Drive folder yet for this project.${isSuperUser()||CU?.canWrite?` <button class="btn sm" onclick="retrofitProjectDriveFolders('${p.id}')"><i class="ti ti-folder-plus"></i>Create Drive Folders</button>`:''}</div>`;
@@ -2014,17 +2035,11 @@ function projectDocChecklistHtml(p){
       </div>
     </div>
     ${checklist.map((item,i)=>{
-      const files=docs[item.key]||[];
-      const inputId='pd-input-'+p.id+'-'+i;
-      return `<div style="padding:8px 0;border-bottom:.5px solid var(--bd)">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div style="font-size:12px;font-weight:600">${esc(item.label)}${files.length?` <span class="muted" style="font-weight:400">(${files.length})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="file" id="${inputId}" style="max-width:150px;font-size:10px">
-            <button class="btn sm pri" onclick="uploadProjectDoc('${p.id}','${esc(item.key)}','${inputId}')"><i class="ti ti-upload"></i></button>
-          </div>
-        </div>
-        ${files.length?`<div style="margin-top:4px">${files.map(f=>`<div style="font-size:11px;margin-top:2px"><a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a> <span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span></div>`).join('')}</div>`:''}
+      const subfolders=item.subfolders||[];
+      return `<div>
+        ${docRowHtml(p,item,docs,canManage,'pd-input-'+p.id+'-'+i+'-',0)}
+        ${subfolders.map((sub,j)=>docRowHtml(p,sub,docs,canManage,'pd-input-'+p.id+'-'+i+'-'+j+'-',22)).join('')}
+        ${canManage?`<div style="margin-left:22px;padding:4px 0 8px"><button class="btn sm" onclick="addProjectSubfolder('${p.id}','${esc(item.key)}')"><i class="ti ti-plus"></i>Add Subfolder in "${esc(item.label)}"</button></div>`:''}
       </div>`;
     }).join('')}
   </div>`;
@@ -2043,15 +2058,34 @@ async function addProjectDocFolder(projId){
     });
     if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Folder creation failed')}
     const data=await resp.json();
-    const checklist=[...existing,{key:docKey(label.trim()),label:numberedLabel,folderId:data.folderId}];
+    const checklist=[...existing,{key:docKey(label.trim()),label:numberedLabel,folderId:data.folderId,subfolders:[]}];
     await db.collection(PROJ).doc(projId).update({driveChecklist:checklist});
     toast('Category added','ok');renderPMO();
+  }catch(e){toast('Failed: '+e.message,'err');}
+}
+async function addProjectSubfolder(projId,parentKey){
+  const label=prompt('Name for the new subfolder:');
+  if(!label||!label.trim())return;
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  const checklist=migratedChecklist(p);
+  const parent=checklist.find(x=>x.key===parentKey);if(!parent)return toast('Parent category not found','err');
+  toast('Creating subfolder...','ok');
+  try{
+    const resp=await fetch(PROJECT_DOCS_API_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'createSingleFolder',parentFolderId:parent.folderId,name:label.trim()})
+    });
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Subfolder creation failed')}
+    const data=await resp.json();
+    const updated=checklist.map(x=>x.key===parentKey?{...x,subfolders:[...(x.subfolders||[]),{key:docKey(label.trim()),label:label.trim(),folderId:data.folderId}]}:x);
+    await db.collection(PROJ).doc(projId).update({driveChecklist:updated});
+    toast('Subfolder added','ok');renderPMO();
   }catch(e){toast('Failed: '+e.message,'err');}
 }
 async function renameProjectDocFolder(projId,key){
   const p=projectsData.find(x=>x.id===projId);if(!p)return;
   const checklist=migratedChecklist(p);
-  const item=checklist.find(x=>x.key===key);if(!item)return;
+  const item=findChecklistItem(checklist,key);if(!item)return;
   const newLabel=prompt('Rename this document category:',item.label);
   if(!newLabel||!newLabel.trim()||newLabel.trim()===item.label)return;
   toast('Renaming...','ok');
@@ -2061,7 +2095,11 @@ async function renameProjectDocFolder(projId,key){
       body:JSON.stringify({action:'renameFolder',folderId:item.folderId,newName:newLabel.trim()})
     });
     if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Rename failed')}
-    const updated=checklist.map(x=>x.key===key?{...x,label:newLabel.trim()}:x);
+    const updated=checklist.map(x=>{
+      if(x.key===key)return{...x,label:newLabel.trim()};
+      if(x.subfolders)return{...x,subfolders:x.subfolders.map(s=>s.key===key?{...s,label:newLabel.trim()}:s)};
+      return x;
+    });
     await db.collection(PROJ).doc(projId).update({driveChecklist:updated});
     toast('Renamed','ok');renderPMO();
   }catch(e){toast('Failed: '+e.message,'err');}
@@ -2073,7 +2111,7 @@ async function uploadProjectDoc(projId,key,inputId){
   if(file.size>MAX_PROJECT_DOC_BYTES)return toast(`File exceeds ${MAX_PROJECT_DOC_BYTES/(1024*1024)}MB limit`,'err');
   const p=projectsData.find(x=>x.id===projId);
   const checklist=p?migratedChecklist(p):[];
-  const item=checklist.find(x=>x.key===key);
+  const item=findChecklistItem(checklist,key);
   if(!p||!item)return toast('Drive folder not found for this item','err');
   toast('Uploading...','ok');
   try{
