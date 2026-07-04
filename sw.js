@@ -1,8 +1,7 @@
 // DQAP Wiki Service Worker
-// Version 78.14 - Fixed a startup crash (undefined SEG variable in dead PMO code)
-// that was silently blocking Chat badges, Leaderboard, and Holiday calendar
+// Version 78.15 - Fixed calendar chip width collapse on busy days
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.14-20260704-1';
+const CACHE_VERSION = 'dqap-wiki-v78.15-20260704-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
