@@ -1,7 +1,8 @@
 // DQAP Wiki Service Worker
-// Version 78.13 - Team chat, groups, and announcements added
+// Version 78.14 - Fixed a startup crash (undefined SEG variable in dead PMO code)
+// that was silently blocking Chat badges, Leaderboard, and Holiday calendar
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.13-20260704-1';
+const CACHE_VERSION = 'dqap-wiki-v78.14-20260704-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
