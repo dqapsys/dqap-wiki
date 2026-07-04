@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_16_CALENDAR_GRID_FIX
-const APP_VERSION="78.16_CALENDAR_GRID_FIX";
+// DQAP_WIKI_VERSION_78_17_SEED_ADMIN_RACE_FIX
+const APP_VERSION="78.17_SEED_ADMIN_RACE_FIX";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1304,7 +1304,16 @@ document.addEventListener('DOMContentLoaded',async()=>{
 });
 
 async function seedAdmin(){
-  try{const sn=await db.collection(USERS).limit(1).get();if(sn.empty)await db.collection(USERS).add({username:'admin',password:'dqap@2024',fullName:'Administrator',role:'admin',isAdmin:true,createdAt:new Date().toISOString()});}catch(e){}
+  try{
+    const ref=db.collection(USERS).doc('seed-admin');
+    const snap=await ref.get();
+    if(!snap.exists){
+      const anyUsers=await db.collection(USERS).limit(1).get();
+      if(anyUsers.empty){
+        await ref.set({username:'admin',password:'dqap@2024',fullName:'Administrator',role:'admin',isAdmin:true,createdAt:new Date().toISOString()});
+      }
+    }
+  }catch(e){}
 }
 
 // â”€â”€ AUTH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
