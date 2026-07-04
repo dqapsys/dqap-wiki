@@ -746,7 +746,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input type="file" id="holiday-csv-input" accept=".csv" style="max-width:220px">
             <button class="btn sm pri" onclick="importHolidayCsv()"><i class="ti ti-upload"></i>Import CSV</button>
-            <span class="muted" style="font-size:10.5px">Format: date,name per row e.g. 2026-08-15,Independence Day</span>
+            <span class="muted" style="font-size:10.5px">Format: date,name per row e.g. 2026-08-15,Independence Day. DD/MM/YYYY and semicolon-separated files also work.</span>
           </div>
           <div id="holiday-list-admin" style="margin-top:8px"></div>
         </div>
@@ -1877,50 +1877,6 @@ function renderPMODashboard(list){
     </div>
   </div>`;
 }
-
-  // â”€â”€ Header cells (rotated stage names + colour bar) â”€â”€
-  const headerCells=PMO_STAGES.map((s,i)=>`
-    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:0;border-left:.5px solid var(--bd);background:var(--card);vertical-align:bottom">
-      <div style="height:115px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:hidden">
-        <span style="display:block;transform:rotate(-90deg);transform-origin:center bottom;white-space:nowrap;font-size:9px;font-weight:600;color:var(--t1);letter-spacing:.2px;line-height:1.2;max-width:108px;overflow:hidden;text-overflow:ellipsis" title="${esc(s)}">
-          ${STAGE_SHORT[i]}
-        </span>
-      </div>
-      <div style="height:4px;background:${STAGE_COLORS[i]}"></div>
-    </th>`).join('');
-
-  // â”€â”€ Data rows â”€â”€
-  const rows=list.map(p=>{
-    const stages=p.stages||[];
-    const segCells=stages.map((s,i)=>{
-      const pct=s.pct||0;
-      const col=STAGE_COLORS[i]||'#999';
-      const textOnFill=pct>=55;
-      return `<td style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:4px 3px;border-left:.5px solid var(--bd)">
-        <div style="background:#ebebeb;border-radius:3px;height:22px;overflow:hidden;position:relative" title="${esc(s.stage)}: ${pct}%">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width .3s"></div>
-          ${pct>0?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:${textOnFill?'#fff':'#444'};pointer-events:none">${pct}%</span>`:''}
-        </div>
-      </td>`;
-    }).join('');
-
-    const overall=p.overall||0;
-    const pctCol=overall===100?'#1B5E20':overall>=60?'var(--p)':'#E65100';
-    const stCol={'Not Started':'#78909C','In Progress':'#0070C0','Completed':'#1B5E20','On Hold':'#F57F17','Delayed':'#B71C1C'}[p.status]||'#666';
-
-    return `<tr style="border-bottom:.5px solid var(--bd)">
-      <td style="min-width:${NAME_W}px;max-width:${NAME_W}px;padding:5px 8px 5px 12px;position:sticky;left:0;background:var(--card);z-index:2;border-right:.5px solid var(--bd);box-shadow:1px 0 4px rgba(0,0,0,.06)">
-        <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.projName)}">
-          ${p.projNum?`<span style="font-size:8.5px;font-weight:700;background:var(--pl);color:var(--p);padding:1px 5px;border-radius:7px;margin-right:4px">${esc(p.projNum)}</span>`:''}${esc(p.projName)}
-        </div>
-        <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:7px;background:${stCol}22;color:${stCol};margin-top:2px;display:inline-block">${p.status}</span>
-      </td>
-      ${segCells}
-      <td style="min-width:${TOTAL_W}px;text-align:center;font-size:12px;font-weight:800;color:${pctCol};border-left:.5px solid var(--bd);padding:0 4px">${overall}%</td>
-    </tr>`;
-  }).join('');
-
-  // â”€â”€ Legend â”€â”€
 function renderPMO(){
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
@@ -4322,6 +4278,14 @@ function dmThreadId(u1,u2){return 'dm_'+[u1,u2].sort().join('_').replace(/[^a-z0
 function chatThreadLabel(t){
   if(t.type==='broadcast')return t.name||'Company Announcements';
   if(t.type==='group')return t.name||'Group';
+  if(t.writeToUpdesh){
+    if(userKey()==='updesh'){
+      const other=(t.members||[]).find(m=>m!=='updesh');
+      const ou=usersData.find(x=>(x.username||'').toLowerCase()===other);
+      return 'Write to Updesh - '+(ou?(ou.fullName||ou.username):(other||''));
+    }
+    return 'Write to Updesh';
+  }
   const other=(t.members||[]).find(m=>m!==userKey());
   const ou=usersData.find(x=>(x.username||'').toLowerCase()===other);
   return ou?(ou.fullName||ou.username):(other||'Direct Message');
@@ -4381,7 +4345,7 @@ function chatThreadListHtml(){
   if(!chatThreadsData.length)return'<div class="empty">No conversations yet.</div>';
   return chatThreadsData.map(t=>{
     const unread=chatThreadUnread(t);
-    const icon=t.type==='broadcast'?'ti-speakerphone':(t.type==='group'?'ti-users':'ti-user');
+    const icon=t.type==='broadcast'?'ti-speakerphone':(t.writeToUpdesh?'ti-flag':(t.type==='group'?'ti-users':'ti-user'));
     return`<div class="chat-thread-item${t.id===activeChatThreadId?' active':''}" onclick="openChatThread('${t.id}')" style="padding:10px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:4px;${t.id===activeChatThreadId?'background:var(--pl)':''}">
       <i class="ti ${icon}"></i>
       <div style="flex:1;min-width:0">
@@ -4618,12 +4582,16 @@ async function submitFlagToUpdesh(){
     const ref=db.collection(CHAT_THREADS_COL).doc(threadId);
     const snap=await ref.get();
     if(!snap.exists){
-      await ref.set({type:'dm',members:[userKey(),'updesh'],name:'',createdBy:userKey(),createdAt:new Date().toISOString(),lastMessageAt:new Date().toISOString(),lastMessageText:'',lastMessageBy:''});
+      await ref.set({type:'dm',writeToUpdesh:true,members:[userKey(),'updesh'],name:'',createdBy:userKey(),createdAt:new Date().toISOString(),lastMessageAt:new Date().toISOString(),lastMessageText:'',lastMessageBy:''});
+    }else if(!snap.data().writeToUpdesh){
+      await ref.update({writeToUpdesh:true});
     }
     const flaggedText='🚩 '+text;
     await db.collection(CHAT_MSG_COL).add({threadId,text:flaggedText,senderUsername:userKey(),senderName:(CU&&(CU.fullName||CU.username))||'',createdAt:new Date().toISOString(),priority:'flag'});
     await ref.update({lastMessageAt:new Date().toISOString(),lastMessageText:flaggedText.slice(0,120),lastMessageBy:userKey()});
     toast('Sent to Updesh privately','ok');closeFlagToUpdeshModal();
+    go('chat');
+    setTimeout(()=>openChatThread(threadId),200);
   }catch(e){toast('Failed to send: '+e.message,'err');}
 }
 async function updateAttendanceNavBadge(){
@@ -4679,16 +4647,24 @@ function importHolidayCsv(){
   if(!input||!input.files||!input.files[0])return toast('Choose a CSV file first','err');
   const reader=new FileReader();
   reader.onload=async e=>{
-    const lines=String(e.target.result||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    let raw=String(e.target.result||'');
+    raw=raw.replace(/^\uFEFF/,''); // strip BOM added by "CSV UTF-8" saves in Excel
+    const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
     const rows=[];
     lines.forEach(line=>{
-      const parts=line.split(',');
+      // Some regional Excel installs save CSV with ; instead of , as the delimiter
+      const delim=line.includes(',')?',':(line.includes(';')?';':',');
+      const parts=line.split(delim).map(p=>p.trim().replace(/^"(.*)"$/,'$1').trim());
       if(parts.length<2)return;
-      const date=parts[0].trim(),name=parts.slice(1).join(',').trim();
+      let date=parts[0];
+      // Normalize DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD in case Excel reformatted the date
+      const dmy=date.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if(dmy)date=`${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+      const name=parts.slice(1).join(delim).trim().replace(/^"(.*)"$/,'$1');
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return; // skips a header row automatically
       if(name)rows.push({date,name});
     });
-    if(!rows.length)return toast('No valid rows found. Expected date,name with date as YYYY-MM-DD','err');
+    if(!rows.length)return toast('No valid rows found. Expected date,name with date as YYYY-MM-DD (DD/MM/YYYY also accepted)','err');
     try{
       const batch=db.batch();
       rows.forEach(r=>{
@@ -4879,6 +4855,7 @@ async function attRenderMonthlyReport(){
 }
 
 async function attRenderEmpCalendar(){
+ try{
   const uid=attUserKey();
   const now=new Date();
   const year=now.getFullYear();
@@ -4973,6 +4950,10 @@ async function attRenderEmpCalendar(){
   // Render to DOM
   const empCal=el('att-emp-calendar');
   if(empCal)empCal.innerHTML=calendarHtml;
+ }catch(e){
+  console.error('attRenderEmpCalendar failed:',e);
+  const empCal=el('att-emp-calendar');if(empCal)empCal.innerHTML=`<div class="empty" style="color:#c0392b">Calendar failed to load: ${esc(e.message)}. Check browser console for details.</div>`;
+ }
 }
 
 
@@ -5083,6 +5064,7 @@ async function attSaveOOO(){
 }
 
 async function attRenderCalendar(){
+ try{
   const holAdmin=el('att-holiday-admin');if(holAdmin)holAdmin.style.display=isSuperUser()?'block':'none';
   renderHolidayAdminList();
   const now=new Date();
@@ -5205,6 +5187,10 @@ async function attRenderCalendar(){
   if(legendTop)legendTop.innerHTML=legendHtml;
   const legendSide=el('att-cal-legend-copy');
   if(legendSide)legendSide.innerHTML=legendHtml;
+ }catch(e){
+  console.error('attRenderCalendar failed:',e);
+  const calMain=el('att-cal-main');if(calMain)calMain.innerHTML=`<div class="empty" style="color:#c0392b">Calendar failed to load: ${esc(e.message)}. Check browser console for details.</div>`;
+ }
 }
 
 
