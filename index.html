@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_15_CALENDAR_LAYOUT_FIX
-const APP_VERSION="78.15_CALENDAR_LAYOUT_FIX";
+// DQAP_WIKI_VERSION_78_16_CALENDAR_GRID_FIX
+const APP_VERSION="78.16_CALENDAR_GRID_FIX";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -740,16 +740,16 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           #att-cal-legend-side { display:none !important; }
         }
       </style>
-      <div id="att-cal-container">
-        <div id="att-holiday-admin" style="display:none;margin-bottom:12px;padding:12px;border-radius:10px;background:var(--bg);border:.5px solid var(--bd)">
-          <div style="font-weight:700;font-size:12.5px;margin-bottom:6px">Holiday List (admin only)</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input type="file" id="holiday-csv-input" accept=".csv" style="max-width:220px">
-            <button class="btn sm pri" onclick="importHolidayCsv()"><i class="ti ti-upload"></i>Import CSV</button>
-            <span class="muted" style="font-size:10.5px">Format: date,name per row e.g. 2026-08-15,Independence Day. DD/MM/YYYY and semicolon-separated files also work.</span>
-          </div>
-          <div id="holiday-list-admin" style="margin-top:8px"></div>
+      <div id="att-holiday-admin" style="display:none;margin-bottom:12px;padding:12px;border-radius:10px;background:var(--bg);border:.5px solid var(--bd)">
+        <div style="font-weight:700;font-size:12.5px;margin-bottom:6px">Holiday List (admin only)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="file" id="holiday-csv-input" accept=".csv" style="max-width:220px">
+          <button class="btn sm pri" onclick="importHolidayCsv()"><i class="ti ti-upload"></i>Import CSV</button>
+          <span class="muted" style="font-size:10.5px">Format: date,name per row e.g. 2026-08-15,Independence Day. DD/MM/YYYY and semicolon-separated files also work.</span>
         </div>
+        <div id="holiday-list-admin" style="margin-top:8px"></div>
+      </div>
+      <div id="att-cal-container">
         <!-- Legend on top for mobile -->
         <div id="att-cal-legend-top" style="display:none">
           <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">User Legend</div>
