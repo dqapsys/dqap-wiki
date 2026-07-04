@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_17_SEED_ADMIN_RACE_FIX
-const APP_VERSION="78.17_SEED_ADMIN_RACE_FIX";
+// DQAP_WIKI_VERSION_78_20_PROJECT_DOC_CHECKLIST_MANAGEMENT
+const APP_VERSION="78.20_PROJECT_DOC_CHECKLIST_MANAGEMENT";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -71,6 +71,11 @@ const THEMES={
 };
 const LIB_CATS=["Manuals & Datasheets","Standards & Norms","Drawings & Schematics","Vendor Documents","Internal Procedures","Safety Documents","General Reference","Other"];
 const PMO_STAGES=["PO Acceptance","Kick Off","Approvals / MFC","BOM","Procurement","Manufacturing","Dispatch","Cabling / Installation","Commissioning","System Handover","Payment"];
+const PROJECT_DOCS_API_URL='https://upload-receipt-932523956178.asia-south2.run.app';
+const PROJECT_DOC_CHECKLIST=["RFP","Offer, Queries & Costing","PO","Approvals, Queries & Response","Procurement","Inspection & Dispatch","PMO","Payments","As Built Submission","Handover"];
+const MAX_PROJECT_DOC_BYTES=15*1024*1024;
+const PROJECT_DOC_TEMPLATE_COL='dqap_project_doc_template';
+let projectDocTemplate=null,projectDocTemplateUnsub=null;
 const STAGE_COLORS=["#1565C0","#2E7D32","#F57F17","#6A1B9A","#00838F","#E64A19","#0277BD","#EF6C00","#AD1457","#1B5E20","#B71C1C"];
 const STAGE_SHORT=["PO Acceptance","Kick Off","Approvals / MFC","BOM","Procurement","Manufacturing","Dispatch","Cabling / Install.","Commissioning","System Handover","Payment"];
 // Dashboard columns are broader than some legacy projects' detailed stage lists.
@@ -397,6 +402,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki - v-</div>
   </div>
 </nav>
+<div id="project-doc-template-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:22px;width:min(480px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)">
+    <div style="font-weight:700;font-size:15px;margin-bottom:10px"><i class="ti ti-folder-cog"></i> Manage Document Checklist</div>
+    <div id="project-doc-template-body"></div>
+  </div>
+</div>
 <div id="flag-updesh-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;padding:22px;width:min(420px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.25)">
     <div style="font-weight:700;font-size:15px;margin-bottom:6px"><i class="ti ti-flag"></i> Write to Updesh</div>
@@ -635,6 +646,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="tr" id="pmo-add-btn-wrap">
       <button class="btn pri" id="pmo-dash-btn" onclick="setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
       <button class="btn" id="pmo-det-btn" onclick="setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
+      <button class="btn" id="pmo-checklist-btn" onclick="openProjectDocTemplateModal()" style="display:none"><i class="ti ti-folder-cog"></i>Manage Checklist</button>
       <button class="btn pri" onclick="go('pmo-add')"><i class="ti ti-plus"></i>New PMO project</button>
     </div>
   </div>
@@ -1359,6 +1371,7 @@ function startApp(){
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
+  if(CU.isAdmin||CU.canWrite){const cb=el('pmo-checklist-btn');if(cb)cb.style.display='flex';}
   if(CU.isAdmin||isPrivilegedEditor(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
@@ -1372,7 +1385,7 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
-  startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();startHolidaysListen();
+  startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();startHolidaysListen();startProjectDocTemplateListen();
   setTimeout(()=>{refreshBadgeMap();maybePostMonthlyLeaderboardSnapshot();},4000);
   setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
@@ -1397,6 +1410,7 @@ function startProjListen(){
     projectsData=sn.docs.map(d=>({id:d.id,...d.data()}));
     populateProjDropdown();populatePayCustomers();populateRMAProjects();populatePMOProjects();populateBudgetProjDropdown();
     if(el('v-projects').style.display!=='none')renderProjectsPage();
+    if(el('v-pmo')&&el('v-pmo').style.display!=='none')renderPMO();
   },err=>{});
 }
 function startPMOListen(){
@@ -1886,6 +1900,201 @@ function renderPMODashboard(list){
     </div>
   </div>`;
 }
+function docKey(label){return String(label||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30)+'_'+Math.random().toString(36).slice(2,7)}
+function startProjectDocTemplateListen(){
+  if(projectDocTemplateUnsub)projectDocTemplateUnsub();
+  projectDocTemplateUnsub=db.collection(PROJECT_DOC_TEMPLATE_COL).doc('current').onSnapshot(snap=>{
+    projectDocTemplate=snap.exists?(snap.data().items||null):null;
+    if(el('project-doc-template-body'))renderProjectDocTemplateAdmin();
+  },()=>{});
+}
+function effectiveDocTemplate(){
+  if(projectDocTemplate&&projectDocTemplate.length)return projectDocTemplate;
+  return PROJECT_DOC_CHECKLIST.map(label=>({key:docKey(label),label}));
+}
+async function saveProjectDocTemplate(items){
+  await db.collection(PROJECT_DOC_TEMPLATE_COL).doc('current').set({items,updatedAt:new Date().toISOString(),updatedBy:userKey()});
+}
+function openProjectDocTemplateModal(){const m=el('project-doc-template-modal');if(m)m.style.display='flex';renderProjectDocTemplateAdmin()}
+function closeProjectDocTemplateModal(){const m=el('project-doc-template-modal');if(m)m.style.display='none'}
+function renderProjectDocTemplateAdmin(){
+  const body=el('project-doc-template-body');if(!body)return;
+  const items=effectiveDocTemplate();
+  renderTemplateRowsOnly(items);
+  body.insertAdjacentHTML('afterbegin',`<div class="muted" style="font-size:11px;margin-bottom:10px">This is the default document checklist used whenever a NEW project is created. Changes here don't affect projects that already have folders - use the per-project options in PMO for those.</div>`);
+}
+function readTemplateRowsFromDom(){
+  const body=el('project-doc-template-body');
+  const stored=JSON.parse(body?.dataset.items||'[]');
+  return[...document.querySelectorAll('.tpl-row')].map(row=>{
+    const key=row.dataset.key;
+    const label=row.querySelector('.tpl-label').value.trim();
+    const existing=stored.find(x=>x.key===key);
+    return{key:existing?existing.key:key,label};
+  }).filter(x=>x.label);
+}
+function addTemplateItemRow(){
+  const rows=readTemplateRowsFromDom();
+  rows.push({key:docKey('new_item'),label:'New Category'});
+  renderTemplateRowsOnly(rows);
+}
+function removeTemplateItem(i){
+  const rows=readTemplateRowsFromDom();rows.splice(i,1);
+  renderTemplateRowsOnly(rows);
+}
+function moveTemplateItem(i,dir){
+  const rows=readTemplateRowsFromDom();const j=i+dir;if(j<0||j>=rows.length)return;
+  [rows[i],rows[j]]=[rows[j],rows[i]];
+  renderTemplateRowsOnly(rows);
+}
+function renderTemplateRowsOnly(items){
+  const body=el('project-doc-template-body');if(!body)return;
+  body.dataset.items=JSON.stringify(items);
+  body.innerHTML=`<div class="muted" style="font-size:11px;margin-bottom:10px">This is the default document checklist used whenever a NEW project is created. Changes here don't affect projects that already have folders - use the per-project options in PMO for those.</div>
+    <div id="template-items-list">${items.map((it,i)=>`
+      <div class="tpl-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-key="${esc(it.key)}">
+        <span class="muted" style="width:18px;font-size:11px">${i+1}</span>
+        <input class="tpl-label" value="${esc(it.label)}" style="flex:1">
+        <button class="btn sm" onclick="moveTemplateItem(${i},-1)" ${i===0?'disabled':''}><i class="ti ti-arrow-up"></i></button>
+        <button class="btn sm" onclick="moveTemplateItem(${i},1)" ${i===items.length-1?'disabled':''}><i class="ti ti-arrow-down"></i></button>
+        <button class="btn sm danger" onclick="removeTemplateItem(${i})"><i class="ti ti-trash"></i></button>
+      </div>`).join('')}</div>
+    <button class="btn sm" onclick="addTemplateItemRow()" style="margin-top:6px"><i class="ti ti-plus"></i>Add item</button>
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeProjectDocTemplateModal()">Cancel</button>
+      <button class="btn pri" onclick="commitProjectDocTemplate()"><i class="ti ti-device-floppy"></i>Save</button>
+    </div>`;
+}
+async function commitProjectDocTemplate(){
+  const items=readTemplateRowsFromDom();
+  if(!items.length)return toast('Add at least one checklist item','err');
+  try{await saveProjectDocTemplate(items);toast('Checklist template saved','ok');closeProjectDocTemplateModal();}catch(e){toast('Save failed: '+e.message,'err');}
+}
+
+async function createProjectDriveFolders(projId,projNumber,projName){
+  try{
+    const items=effectiveDocTemplate();
+    const resp=await fetch(PROJECT_DOCS_API_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'createProjectFolders',projectName:projName,projectNumber:projNumber,checklist:items.map(i=>i.label)})
+    });
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Folder creation failed')}
+    const data=await resp.json();
+    const driveChecklist=items.map(it=>({key:it.key,label:it.label,folderId:data.subfolders[it.label]}));
+    await db.collection(PROJ).doc(projId).update({driveFolderId:data.projectFolderId,driveFolderLink:data.projectFolderLink,driveChecklist});
+    toast('Drive folders created for '+projName,'ok');
+  }catch(e){
+    console.error('createProjectDriveFolders failed:',e);
+    toast('Drive folder creation failed for '+projName+': '+e.message+'. You can retry from the project detail view.','err');
+  }
+}
+async function retrofitProjectDriveFolders(projId){
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  toast('Creating Drive folders...','ok');
+  await createProjectDriveFolders(projId,p.number,p.name);
+  renderPMO();
+}
+function migratedChecklist(p){
+  if(p.driveChecklist)return p.driveChecklist;
+  if(p.driveSubfolders)return Object.keys(p.driveSubfolders).map(label=>({key:docKey(label),label,folderId:p.driveSubfolders[label]}));
+  return[];
+}
+function projectDocChecklistHtml(p){
+  if(!p.driveFolderId){
+    return `<div class="muted" style="font-size:12px;padding:10px;background:var(--bg);border-radius:8px">No Drive folder yet for this project.${isSuperUser()||CU?.canWrite?` <button class="btn sm" onclick="retrofitProjectDriveFolders('${p.id}')"><i class="ti ti-folder-plus"></i>Create Drive Folders</button>`:''}</div>`;
+  }
+  const checklist=migratedChecklist(p);
+  const docs=p.projectDocuments||{};
+  const canManage=isSuperUser()||CU?.canWrite;
+  return `<div style="margin-top:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:700;font-size:12.5px">Project Documents</div>
+      <div style="display:flex;gap:6px">
+        ${canManage?`<button class="btn sm" onclick="addProjectDocFolder('${p.id}')"><i class="ti ti-plus"></i>Add Category</button>`:''}
+        <a href="${esc(p.driveFolderLink||'#')}" target="_blank" rel="noopener" class="btn sm"><i class="ti ti-folder"></i>Open in Drive</a>
+      </div>
+    </div>
+    ${checklist.map((item,i)=>{
+      const files=docs[item.key]||[];
+      const inputId='pd-input-'+p.id+'-'+i;
+      return `<div style="padding:8px 0;border-bottom:.5px solid var(--bd)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-size:12px;font-weight:600">${esc(item.label)}${files.length?` <span class="muted" style="font-weight:400">(${files.length})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="file" id="${inputId}" style="max-width:150px;font-size:10px">
+            <button class="btn sm pri" onclick="uploadProjectDoc('${p.id}','${esc(item.key)}','${inputId}')"><i class="ti ti-upload"></i></button>
+          </div>
+        </div>
+        ${files.length?`<div style="margin-top:4px">${files.map(f=>`<div style="font-size:11px;margin-top:2px"><a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a> <span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span></div>`).join('')}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+async function addProjectDocFolder(projId){
+  const label=prompt('Name for the new document category:');
+  if(!label||!label.trim())return;
+  const p=projectsData.find(x=>x.id===projId);if(!p||!p.driveFolderId)return toast('Project has no Drive folder yet','err');
+  toast('Creating folder...','ok');
+  try{
+    const resp=await fetch(PROJECT_DOCS_API_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'createSingleFolder',parentFolderId:p.driveFolderId,name:label.trim()})
+    });
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Folder creation failed')}
+    const data=await resp.json();
+    const checklist=[...migratedChecklist(p),{key:docKey(label.trim()),label:label.trim(),folderId:data.folderId}];
+    await db.collection(PROJ).doc(projId).update({driveChecklist:checklist});
+    toast('Category added','ok');renderPMO();
+  }catch(e){toast('Failed: '+e.message,'err');}
+}
+async function renameProjectDocFolder(projId,key){
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  const checklist=migratedChecklist(p);
+  const item=checklist.find(x=>x.key===key);if(!item)return;
+  const newLabel=prompt('Rename this document category:',item.label);
+  if(!newLabel||!newLabel.trim()||newLabel.trim()===item.label)return;
+  toast('Renaming...','ok');
+  try{
+    const resp=await fetch(PROJECT_DOCS_API_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'renameFolder',folderId:item.folderId,newName:newLabel.trim()})
+    });
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Rename failed')}
+    const updated=checklist.map(x=>x.key===key?{...x,label:newLabel.trim()}:x);
+    await db.collection(PROJ).doc(projId).update({driveChecklist:updated});
+    toast('Renamed','ok');renderPMO();
+  }catch(e){toast('Failed: '+e.message,'err');}
+}
+async function uploadProjectDoc(projId,key,inputId){
+  const input=el(inputId);
+  if(!input||!input.files||!input.files[0])return toast('Choose a file first','err');
+  const file=input.files[0];
+  if(file.size>MAX_PROJECT_DOC_BYTES)return toast(`File exceeds ${MAX_PROJECT_DOC_BYTES/(1024*1024)}MB limit`,'err');
+  const p=projectsData.find(x=>x.id===projId);
+  const checklist=p?migratedChecklist(p):[];
+  const item=checklist.find(x=>x.key===key);
+  if(!p||!item)return toast('Drive folder not found for this item','err');
+  toast('Uploading...','ok');
+  try{
+    const fileBase64=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result.split(',')[1]);
+      reader.onerror=reject;reader.readAsDataURL(file);
+    });
+    const resp=await fetch(PROJECT_DOCS_API_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'uploadProjectDoc',fileName:file.name,mimeType:file.type||'application/octet-stream',fileBase64,targetFolderId:item.folderId,uploadedByName:(CU&&(CU.fullName||CU.username))||''})
+    });
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Upload failed')}
+    const data=await resp.json();
+    const docs={...(p.projectDocuments||{})};
+    docs[key]=[...(docs[key]||[]),{fileName:data.fileName,webViewLink:data.webViewLink,uploadedBy:userKey(),uploadedByName:(CU&&(CU.fullName||CU.username))||'',uploadedAt:new Date().toISOString(),sizeKB:Math.round((data.sizeBytes||0)/1024)}];
+    await db.collection(PROJ).doc(projId).update({projectDocuments:docs,driveChecklist:checklist});
+    toast('Uploaded '+file.name,'ok');
+    input.value='';
+    renderPMO();
+  }catch(e){toast('Upload failed: '+e.message,'err');}
+}
 function renderPMO(){
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
@@ -1989,6 +2198,7 @@ function renderPMO(){
               </div>`).join('')}
           </div>
           ${(p.stages||[]).some(s=>s.remarks)?`<div style="margin-top:10px;font-size:10.5px;color:var(--t2);line-height:1.6"><b style="color:var(--t1)">Remarks:</b> ${(p.stages||[]).filter(s=>s.remarks).map(s=>`<span style="margin-right:10px"><b>${esc(s.stage)}:</b> ${esc(s.remarks)}</span>`).join('')}</div>`:''}
+          ${(()=>{const proj=projectsData.find(x=>x.id===p.projId);return proj?projectDocChecklistHtml(proj):'';})()}
         </div>`;
       }
     }
@@ -2486,9 +2696,10 @@ async function saveNewProject(){
   showLoad('Savingâ€¦');
   try{
     const now=new Date().toISOString();
-    await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,createdAt:now});
+    const projRef=await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,createdAt:now});
     await db.collection(BUDGET_CFG_COL).add({projectName:name,poAmount:poTotal,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
     toast('Project added âœ“','ok');togNewProj();
+    createProjectDriveFolders(projRef.id,num,name); // fire-and-forget; project save already succeeded above
   }
   catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
@@ -4546,7 +4757,7 @@ async function maybePostMonthlyLeaderboardSnapshot(){
     const existing=await db.collection(LB_SNAPSHOT_COL).doc(monthKey).get();
     if(existing.exists)return;
     const fy=currentFYLabel();
-    const rows=await computeLeaderboardRows(fy);
+    const rows=(await computeLeaderboardRows(fy)).filter(r=>!['updesh','pratim'].includes((r.username||'').toLowerCase()));
     if(!rows.length)return;
     const top3=rows.slice(0,3);
     const lines=top3.map((r,i)=>`${medalFor(i)} ${r.fullName} - ${r.total.toFixed(1)} pts`).join('\n');
