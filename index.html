@@ -51,6 +51,8 @@ firebase.initializeApp({
 const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
 const CHAT_THREADS_COL="dqap_chat_threads",CHAT_MSG_COL="dqap_chat_messages";
+const ACK_LOG_COL="dqap_acknowledgements",FLAG_COL="dqap_flags_to_updesh";
+const LB_SNAPSHOT_COL="dqap_leaderboard_snapshots";
 const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
@@ -267,6 +269,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   .sv{font-size:18px}.sl{font-size:9.5px}
   .si{width:30px;height:30px}
   #v-dash .content>div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  #v-chat .content>div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  #v-pmo .content div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   .g4,.g3{grid-template-columns:1fr 1fr}
   .g2{grid-template-columns:1fr}
   .dg{grid-template-columns:1fr 1fr}
@@ -291,6 +295,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   #v-wiki .topbar .tr,#v-add .topbar .tr{flex-wrap:wrap;gap:5px}
   .stage-row{grid-template-columns:1fr 80px;grid-template-rows:auto auto}
   .stage-name{grid-column:1}.stage-pct-wrap{grid-column:2;grid-row:1}
+  #chat-msg-box{height:calc(100vh - 400px)!important}
+  .chat-thread-item{font-size:12px}
+  #flag-updesh-modal>div,#ack-log-modal>div{width:94vw!important;padding:16px!important}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
 @media(max-width:420px){.g4,.g3{grid-template-columns:1fr}.sc{padding:8px 10px}.sv{font-size:16px}}
 </style>
@@ -352,6 +360,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div class="sb-nav">
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="go('chat')"             id="ni-chat"><i class="ti ti-message-circle"></i>Chat<span id="chat-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy"></i>Leaderboard</div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
@@ -373,7 +382,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="sb-foot">
     <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connecting...</span></div>
-    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span></div>
+    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span><span id="sb-badges"></span></div>
     <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase">Colour theme</div>
     <div class="tdots">
       <div class="tdot active" onclick="setTheme('blue')"   title="Ocean Blue"  style="background:#0070C0" data-t="blue"></div>
@@ -382,10 +391,32 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="tdot"        onclick="setTheme('slate')"  title="Slate"       style="background:#475569" data-t="slate"></div>
       <div class="tdot"        onclick="setTheme('ember')"  title="Ember"       style="background:#DC2626" data-t="ember"></div>
     </div>
+    <button class="btn sm" onclick="openFlagToUpdeshModal()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:8px"><i class="ti ti-flag"></i>Write to Updesh</button>
+    <button class="btn sm" id="ack-log-btn" onclick="openAckLogModal()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:6px;display:none"><i class="ti ti-clipboard-check"></i>Acknowledgement Log</button>
     <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px"><i class="ti ti-logout"></i>Sign out</button>
     <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki - v-</div>
   </div>
 </nav>
+<div id="flag-updesh-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:22px;width:min(420px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.25)">
+    <div style="font-weight:700;font-size:15px;margin-bottom:6px"><i class="ti ti-flag"></i> Write to Updesh</div>
+    <div class="muted" style="font-size:12px;margin-bottom:12px">This goes only to Updesh - use it to flag a discrepancy, concern, or anything you'd rather not raise in a group chat.</div>
+    <textarea id="flag-updesh-text" rows="5" style="width:100%;resize:vertical" placeholder="Describe the issue..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button class="btn" onclick="closeFlagToUpdeshModal()">Cancel</button>
+      <button class="btn pri" onclick="submitFlagToUpdesh()"><i class="ti ti-send"></i>Send</button>
+    </div>
+  </div>
+</div>
+<div id="ack-log-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:22px;width:min(640px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:700;font-size:15px"><i class="ti ti-clipboard-check"></i> Acknowledgement Log</div>
+      <button class="btn sm" onclick="closeAckLogModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="ack-log-body">Loading...</div>
+  </div>
+</div>
 
 <main class="main">
 
@@ -485,6 +516,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <!-- â•â• DEBT MANAGEMENT â•â• -->
 <!-- â•â• DEBT MANAGEMENT (IFRAME - EXTERNAL APP) â•â• -->
+<div id="v-leaderboard" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-trophy" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Performance Leaderboard</div><div class="pg-s">Top 3 at financial year-end qualify for incentives</div></div>
+  </div>
+  <div class="content" id="leaderboard-root"></div>
+</div>
 <div id="v-chat" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-message-circle" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Chat</div><div class="pg-s">Company announcements, groups and direct messages</div></div>
@@ -1311,7 +1348,7 @@ function startApp(){
   const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki - v'+APP_VERSION;
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
-  if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
+  if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';const ackBtn=el('ack-log-btn');if(ackBtn)ackBtn.style.display='flex';}
   if(CU.isAdmin||isPrivilegedEditor(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
@@ -1326,6 +1363,7 @@ function startApp(){
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
   startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();
+  setTimeout(()=>{refreshBadgeMap();maybePostMonthlyLeaderboardSnapshot();},4000);
   setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
 }
@@ -2920,6 +2958,7 @@ function go(n){
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='attendance'){attRender();}
   if(n==='chat'){renderChat();}
+  if(n==='leaderboard'){renderLeaderboard();}
   if(n==='debt'){loadDebtFrame();}
   if(n==='payments'){
     const pu=el('pay-unauth');
@@ -2964,6 +3003,11 @@ function toast(m,type=''){const t=document.createElement('div');t.className='toa
 function el(id){return document.getElementById(id);}
 function g(id){return(el(id)?.value||'').trim();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function logAcknowledgement(module,entityId,entityLabel,action){
+  try{
+    await db.collection(ACK_LOG_COL).add({module,entityId:String(entityId||''),entityLabel:entityLabel||'',action,actorUsername:userKey(),actorName:(CU&&(CU.fullName||CU.username))||'',timestamp:new Date().toISOString()});
+  }catch(e){console.error('Acknowledgement log failed:',e);}
+}
 function fmtAmt(n){if(!n)return'0';if(n>=10000000)return(n/10000000).toFixed(2)+' Cr';if(n>=100000)return(n/100000).toFixed(2)+' L';return n.toLocaleString('en-IN');}
 
 function bcat(v){if(!v)return'';const m={'Hardware / Electrical':'hw','Networking / Communication':'net','Commissioning':'com','SCADA / HMI':'hmi','PAS':'pro','Cabling':'cab','Programming':'pro','Troubleshooting':'tro','Other':'oth'};return`<span class="badge b-${m[v]||'oth'}">${v.split(' / ')[0]}</span>`;}
@@ -3463,7 +3507,7 @@ async function reviewWikiDeadlineRequest(id,decision){
 async function completeWikiMandatoryTask(id){await updateTaskStatus(id,'Completed');modalHideWikiTask();}
 function modalHideWikiTask(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';}
 function openAttendanceDuringTaskBlock(){modalHideWikiTask();go('attendance');}
-function ackWikiTaskNotifications(){markTasksSeen();el('wiki-task-notify-modal').style.display='none';}
+function ackWikiTaskNotifications(){markTasksSeen();logAcknowledgement('tasks','notification','Task notifications','notification_acknowledged');el('wiki-task-notify-modal').style.display='none';}
 function openNotifiedTasks(){ackWikiTaskNotifications();go('tasks');}
 function updateTaskNavBadge(){
   const badge=el('task-nav-badge');if(!badge||!CU)return;
@@ -3647,6 +3691,8 @@ async function updateTaskStatus(id,status){
         deadline:nextDl||existing.deadline,
         updatedAt:now,
         lastCompletedAt:now,
+        lastCompletedBy:CU.username,
+        lastCompletedByName:CU.fullName,
         timesCompleted:(existing.timesCompleted||0)+1,
         assigneeActionRequiredAt:now,
         assigneeActionResolvedAt:null,
@@ -3654,13 +3700,15 @@ async function updateTaskStatus(id,status){
         completions:[...(existing.completions||[]),completion].slice(-24)
       };
       await db.collection(TASK_COL).doc(id).update(d);
+      await logAcknowledgement('tasks',id,existing.title||existing.name||'','completed_occurrence');
       const niceNext=nextDl?new Date(nextDl).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'-';
       toast('Recurring task done - next due '+niceNext,'ok');
       sendTaskNotification(existing.frequency.toLowerCase()+' occurrence completed - next due '+niceNext,{...existing,...d});
     }else{
       const d={status,updatedAt:now};
-      if(status==='Completed'){d.completedAt=now;d.assigneeActionResolvedAt=now;}
+      if(status==='Completed'){d.completedAt=now;d.completedBy=CU.username;d.completedByName=CU.fullName;d.assigneeActionResolvedAt=now;}
       await db.collection(TASK_COL).doc(id).update(d);
+      if(status==='Completed')await logAcknowledgement('tasks',id,existing.title||existing.name||'','completed');
       toast('Status updated','ok');
       sendTaskNotification('status changed to '+status,{...existing,...d});
     }
@@ -4326,7 +4374,7 @@ function chatMessagePaneHtml(){
   return`<div style="display:flex;flex-direction:column;height:calc(100vh - 230px)">
     <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd);margin-bottom:8px">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
     <div id="chat-msg-box" style="flex:1;overflow-y:auto;padding:4px">
-      ${chatMessagesData.length?chatMessagesData.map(m=>`<div style="margin-bottom:10px"><div style="font-size:11px" class="muted"><b>${esc(m.senderName||m.senderUsername)}</b> · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</div><div style="font-size:13px;margin-top:2px;white-space:pre-wrap">${esc(m.text)}</div></div>`).join(''):'<div class="empty">No messages yet.</div>'}
+      ${chatMessagesData.length?chatMessagesData.map(m=>`<div style="margin-bottom:10px"><div style="font-size:11px" class="muted"><b>${esc(m.senderName||m.senderUsername)}</b>${badgeHtmlFor(m.senderUsername)} · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</div><div style="font-size:13px;margin-top:2px;white-space:pre-wrap">${esc(m.text)}</div></div>`).join(''):'<div class="empty">No messages yet.</div>'}
     </div>
     ${canPost?`<div style="display:flex;gap:8px;margin-top:8px"><input id="chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri" onclick="sendChatMessage()"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin-top:8px">Only admins/managers can post announcements here.</div>`}
   </div>`;
@@ -4357,6 +4405,198 @@ function renderChat(){
   </div>`;
 }
 function toggleNewGroupForm(){const f=el('new-group-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
+
+// ── PERFORMANCE LEADERBOARD ──────────────────────────
+// Weights reflect stated business priority order (highest first):
+// Sales > Payment Collection > Account Management > Task Management > Attendance > Finance/Accounting.
+// Sales, Payment Collection and Account Management are currently 0 for everyone -
+// they need the CRM and Debt Management app files (separate codebases) to know the
+// correct field names for salesperson/collector attribution before they can be scored.
+const LEADERBOARD_WEIGHTS={sales:30,paymentCollection:25,accountManagement:20,taskManagement:15,attendance:10,financeAccounting:5};
+let leaderboardFY='';
+function fyLabelOf(dateStr){const d=new Date(dateStr);if(isNaN(d))return null;const m=d.getMonth(),y=d.getFullYear(),sy=m>=3?y:y-1;return`FY${String(sy).slice(2)}-${String(sy+1).slice(2)}`}
+function currentFYLabel(){return fyLabelOf(new Date().toISOString())}
+function fyBounds(label){const m=(label||'').match(/FY(\d{2})-(\d{2})/);if(!m)return null;const y1=2000+Number(m[1]);return{start:`${y1}-04-01`,end:`${y1+1}-03-31`}}
+function availableLeaderboardFYs(){
+  const set=new Set([currentFYLabel()]);
+  taskData.forEach(t=>{if(t.completedAt){const l=fyLabelOf(t.completedAt);if(l)set.add(l);}});
+  return[...set].sort().reverse();
+}
+async function loadLeaderboardAttendance(bounds){
+  try{
+    const sn=await db.collection(ATTENDANCE_COL).where('date','>=',bounds.start).where('date','<=',bounds.end).get();
+    return sn.docs.map(d=>d.data());
+  }catch(e){console.error('Leaderboard attendance load failed:',e);return[];}
+}
+async function loadLeaderboardPayms(){
+  try{
+    const sn=await db.collection(PAYMS_REQ_COL).where('status','==','PAID').get();
+    return sn.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){console.error('Leaderboard PayMS load failed:',e);return[];}
+}
+function taskScoreFor(fullName,bounds){
+  const mine=taskData.filter(t=>t.assignedTo===fullName&&t.status==='Completed'&&t.completedAt&&t.completedAt>=bounds.start&&t.completedAt<=bounds.end+'T23:59:59');
+  if(!mine.length)return{rate:0,points:0,count:0};
+  const onTime=mine.filter(t=>!t.deadline||t.completedAt<=t.deadline).length;
+  const rate=onTime/mine.length;
+  return{rate,points:rate*LEADERBOARD_WEIGHTS.taskManagement,count:mine.length};
+}
+function attendanceScoreFor(username,attRows){
+  const mine=attRows.filter(a=>(a.username||'').toLowerCase()===username);
+  if(!mine.length)return{rate:0,points:0,count:0};
+  const credit=mine.reduce((s,a)=>s+(a.status==='present'?(a.isLate?0.5:1):0),0);
+  const rate=credit/mine.length;
+  return{rate,points:rate*LEADERBOARD_WEIGHTS.attendance,count:mine.length};
+}
+function financeScoreFor(username,paidRequests){
+  const mine=paidRequests.filter(r=>r.payment&&r.payment.recordedBy===username);
+  if(!mine.length)return{rate:0,points:0,count:0};
+  return{rate:1,points:LEADERBOARD_WEIGHTS.financeAccounting*Math.min(1,mine.length/10),count:mine.length};
+}
+async function loadLeaderboardDeals(bounds){
+  try{
+    const sn=await db.collection('dqap_crm_deals').where('stage','==','Billed').get();
+    return sn.docs.map(d=>d.data()).filter(x=>x.billingDate&&x.billingDate>=bounds.start&&x.billingDate<=bounds.end);
+  }catch(e){console.error('Leaderboard deals load failed:',e);return[];}
+}
+async function loadLeaderboardActivities(bounds){
+  try{
+    const sn=await db.collection('dqap_crm_activities').where('activityDate','>=',bounds.start).where('activityDate','<=',bounds.end+'T23:59:59').get();
+    return sn.docs.map(d=>d.data());
+  }catch(e){console.error('Leaderboard activities load failed:',e);return[];}
+}
+async function loadLeaderboardCollections(bounds){
+  try{
+    const sn=await db.collection('dqap_debt_collections').where('collectionDate','>=',bounds.start).where('collectionDate','<=',bounds.end).get();
+    return sn.docs.map(d=>d.data());
+  }catch(e){console.error('Leaderboard collections load failed:',e);return[];}
+}
+async function computeLeaderboardRows(fy){
+  const bounds=fyBounds(fy);if(!bounds)return[];
+  const [attRows,paidRequests,deals,activities,collections]=await Promise.all([
+    loadLeaderboardAttendance(bounds),loadLeaderboardPayms(),loadLeaderboardDeals(bounds),loadLeaderboardActivities(bounds),loadLeaderboardCollections(bounds)
+  ]);
+  // Raw values first, so sales/account-mgmt/collection can be scored relative to the
+  // best performer this FY (there's no natural 0-1 "rate" for rupee amounts/counts the
+  // way there is for on-time-rate or attendance-rate).
+  const raw=usersData.map(u=>{
+    const username=(u.username||'').toLowerCase();
+    const salesGP=deals.filter(d=>(d.username||'').toLowerCase()===username).reduce((s,d)=>s+Number(d.grossMarginAmount||d.value||0),0);
+    const actCount=activities.filter(a=>(a.username||'').toLowerCase()===username).length;
+    const collAmt=collections.filter(c=>(c.recordedBy||'').toLowerCase()===username).reduce((s,c)=>s+Number(c.amount||0),0);
+    return{username,fullName:u.fullName||u.username,salesGP,actCount,collAmt};
+  });
+  const maxSales=Math.max(1,...raw.map(r=>r.salesGP));
+  const maxAct=Math.max(1,...raw.map(r=>r.actCount));
+  const maxColl=Math.max(1,...raw.map(r=>r.collAmt));
+  return raw.map(r=>{
+    const task=taskScoreFor(r.fullName,bounds);
+    const att=attendanceScoreFor(r.username,attRows);
+    const fin=financeScoreFor(r.username,paidRequests);
+    const sales={amount:r.salesGP,points:r.salesGP?LEADERBOARD_WEIGHTS.sales*(r.salesGP/maxSales):0};
+    const acctMgmt={count:r.actCount,points:r.actCount?LEADERBOARD_WEIGHTS.accountManagement*(r.actCount/maxAct):0};
+    const collection={amount:r.collAmt,points:r.collAmt?LEADERBOARD_WEIGHTS.paymentCollection*(r.collAmt/maxColl):0};
+    const total=task.points+att.points+fin.points+sales.points+acctMgmt.points+collection.points;
+    return{username:r.username,fullName:r.fullName,task,att,fin,sales,acctMgmt,collection,total};
+  }).filter(r=>r.task.count>0||r.att.count>0||r.fin.count>0||r.sales.amount>0||r.acctMgmt.count>0||r.collection.amount>0).sort((a,b)=>b.total-a.total);
+}
+function medalFor(rank){return rank===0?'🥇':rank===1?'🥈':rank===2?'🥉':''}
+// ── MONTHLY SNAPSHOT + BADGES ──────────────────────────
+// This only fires when an admin happens to load Wiki after month-turnover -
+// there's no server-side cron here, so it's a best-effort "first admin login
+// of the month posts it" pattern, not a guaranteed midnight-exact trigger.
+let currentBadgeMap={};
+const BADGE_DEFS=[
+  {key:'sales',emoji:'💰',label:'Sales Leader'},
+  {key:'collection',emoji:'📞',label:'Collection Leader'},
+  {key:'acctMgmt',emoji:'🤝',label:'Account Mgmt Leader'},
+  {key:'task',emoji:'✅',label:'Task Champion'},
+  {key:'att',emoji:'🕐',label:'Attendance Star'},
+  {key:'fin',emoji:'💵',label:'Finance Star'}
+];
+function pushBadge(username,badge){if(!username)return;if(!currentBadgeMap[username])currentBadgeMap[username]=[];currentBadgeMap[username].push(badge);}
+function badgesFor(username){return currentBadgeMap[(username||'').toLowerCase()]||[]}
+function badgeHtmlFor(username){const b=badgesFor(username);return b.length?b.map(x=>`<span title="${esc(x)}" style="font-size:12px;margin-left:3px">${x.split(' ')[0]}</span>`).join(''):''}
+async function refreshBadgeMap(){
+  try{
+    const fy=currentFYLabel();
+    const rows=await computeLeaderboardRows(fy);
+    const map={};
+    function push(u,b){if(!u)return;if(!map[u])map[u]=[];map[u].push(b);}
+    if(rows[0])push(rows[0].username,'🏆 Top Performer');
+    BADGE_DEFS.forEach(cb=>{
+      const sorted=[...rows].sort((a,b)=>b[cb.key].points-a[cb.key].points);
+      if(sorted[0]&&sorted[0][cb.key].points>0)push(sorted[0].username,cb.emoji+' '+cb.label);
+    });
+    currentBadgeMap=map;
+    const sbBadges=el('sb-badges');if(sbBadges&&CU)sbBadges.innerHTML=badgeHtmlFor(CU.username);
+    if(isChatViewOpen())renderChat();
+  }catch(e){console.error('Badge refresh failed:',e);}
+}
+async function maybePostMonthlyLeaderboardSnapshot(){
+  if(!isSuperUser())return;
+  try{
+    const now=new Date();
+    const monthKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const existing=await db.collection(LB_SNAPSHOT_COL).doc(monthKey).get();
+    if(existing.exists)return;
+    const fy=currentFYLabel();
+    const rows=await computeLeaderboardRows(fy);
+    if(!rows.length)return;
+    const top3=rows.slice(0,3);
+    const lines=top3.map((r,i)=>`${medalFor(i)} ${r.fullName} - ${r.total.toFixed(1)} pts`).join('\n');
+    const text=`📊 Monthly Performance Snapshot (${monthKey})\nFinancial Year: ${fy}\n\nTop performers so far this FY:\n${lines}\n\nCategories: Sales, Payment Collection, Account Management, Task Management, Attendance, Finance/Accounting.`;
+    const bsnap=await db.collection(CHAT_THREADS_COL).where('type','==','broadcast').limit(1).get();
+    if(bsnap.empty)return;
+    const threadId=bsnap.docs[0].id;
+    await db.collection(CHAT_MSG_COL).add({threadId,text,senderUsername:'system',senderName:'Performance Bot',createdAt:new Date().toISOString()});
+    await db.collection(CHAT_THREADS_COL).doc(threadId).update({lastMessageAt:new Date().toISOString(),lastMessageText:text.slice(0,120),lastMessageBy:'system'});
+    await db.collection(LB_SNAPSHOT_COL).doc(monthKey).set({postedAt:new Date().toISOString(),postedBy:userKey(),fy,top3:top3.map(r=>({fullName:r.fullName,total:r.total}))});
+  }catch(e){console.error('Monthly snapshot post failed:',e);}
+}
+async function renderLeaderboard(){
+  const root=el('leaderboard-root');if(!root)return;
+  if(!leaderboardFY)leaderboardFY=currentFYLabel();
+  const fys=availableLeaderboardFYs();
+  root.innerHTML=`<div class="card"><div class="card-header">Filter</div>
+    <div class="form-row"><div class="form-group"><label>Financial Year</label><select id="lb-fy" onchange="leaderboardFY=g('lb-fy');renderLeaderboard()">${fys.map(f=>`<option value="${f}" ${leaderboardFY===f?'selected':''}>${f}</option>`).join('')}</select></div></div>
+  </div><div class="card"><div class="card-header">Loading scores...</div></div>`;
+  const rows=await computeLeaderboardRows(leaderboardFY);
+  const podium=rows.slice(0,3);
+  root.innerHTML=`<div class="card"><div class="card-header">Filter</div>
+    <div class="form-row"><div class="form-group"><label>Financial Year</label><select id="lb-fy" onchange="leaderboardFY=g('lb-fy');renderLeaderboard()">${fys.map(f=>`<option value="${f}" ${leaderboardFY===f?'selected':''}>${f}</option>`).join('')}</select></div></div>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">Sales and Account Management scores use CRM deal/activity data; Payment Collection uses Debt Management collection records. Sales and Payment Collection are scored relative to this FY's top performer in each category.</div>
+  </div>
+  ${podium.length?`<div class="card"><div class="card-header">Top 3 - ${esc(leaderboardFY)}</div>
+    <div style="display:grid;grid-template-columns:repeat(${podium.length},1fr);gap:12px">
+      ${podium.map((r,i)=>`<div class="card" style="margin:0;text-align:center;padding:16px"><div style="font-size:28px">${medalFor(i)}</div><div style="font-weight:700;margin-top:4px">${esc(r.fullName)}</div><div class="muted" style="font-size:11px">Score: ${r.total.toFixed(1)}</div></div>`).join('')}
+    </div></div>`:''}
+  <div class="card"><div class="card-header">Full Ranking</div>
+    ${rows.length?`<div class="table-wrap"><table><thead><tr><th>Rank</th><th>User</th><th class="right">Sales</th><th class="right">Payment Coln.</th><th class="right">Acct. Mgmt</th><th class="right">Task Mgmt</th><th class="right">Attendance</th><th class="right">Finance/Accts</th><th class="right">Total</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="strong">${i+1} ${medalFor(i)}</td><td>${esc(r.fullName)}${badgeHtmlFor(r.username)}</td><td class="right" title="Gross margin billed: Rs ${fmtAmt2(r.sales.amount)}">${r.sales.points.toFixed(1)}</td><td class="right" title="Collected: Rs ${fmtAmt2(r.collection.amount)}">${r.collection.points.toFixed(1)}</td><td class="right" title="${r.acctMgmt.count} activities logged">${r.acctMgmt.points.toFixed(1)}</td><td class="right">${r.task.points.toFixed(1)}</td><td class="right">${r.att.points.toFixed(1)}</td><td class="right">${r.fin.points.toFixed(1)}</td><td class="right strong">${r.total.toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No scoreable activity found for this financial year yet.</div>'}
+  </div>`;
+}
+function fmtAmt2(n){return Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0})}
+function openFlagToUpdeshModal(){const m=el('flag-updesh-modal');if(m)m.style.display='flex';const t=el('flag-updesh-text');if(t)t.value='';}
+function closeFlagToUpdeshModal(){const m=el('flag-updesh-modal');if(m)m.style.display='none';}
+async function submitFlagToUpdesh(){
+  const text=(el('flag-updesh-text')?.value||'').trim();
+  if(!text)return toast('Enter a message first','err');
+  try{
+    await db.collection(FLAG_COL).add({text,fromUsername:userKey(),fromName:(CU&&(CU.fullName||CU.username))||'',createdAt:new Date().toISOString(),read:false});
+    toast('Sent to Updesh privately','ok');closeFlagToUpdeshModal();
+  }catch(e){toast('Failed to send: '+e.message,'err');}
+}
+function openAckLogModal(){
+  const m=el('ack-log-modal');if(m)m.style.display='flex';
+  const body=el('ack-log-body');if(body)body.innerHTML='Loading...';
+  db.collection(ACK_LOG_COL).orderBy('timestamp','desc').limit(100).get().then(sn=>{
+    const rows=sn.docs.map(d=>d.data());
+    if(!body)return;
+    if(!rows.length){body.innerHTML='<div class="empty">No acknowledgements recorded yet.</div>';return;}
+    body.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Module</th><th>Item</th><th>Action</th><th>By</th><th>When</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.module)}</td><td>${esc(r.entityLabel||r.entityId||'')}</td><td>${esc(r.action)}</td><td>${esc(r.actorName)}</td><td>${esc(new Date(r.timestamp).toLocaleString('en-IN'))}</td></tr>`).join('')}</tbody></table></div>`;
+  }).catch(e=>{if(body)body.innerHTML='<div class="empty">Could not load log: '+esc(e.message)+'</div>';});
+}
+function closeAckLogModal(){const m=el('ack-log-modal');if(m)m.style.display='none';}
 async function updateAttendanceNavBadge(){
   if(!CU||!db){setNavBadge('attendance-nav-badge',0);return;}
   const rec=await attGet(attUserKey(),attDateKey());
