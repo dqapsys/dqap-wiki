@@ -53,6 +53,7 @@ const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",
 const CHAT_THREADS_COL="dqap_chat_threads",CHAT_MSG_COL="dqap_chat_messages";
 const ACK_LOG_COL="dqap_acknowledgements",FLAG_COL="dqap_flags_to_updesh";
 const LB_SNAPSHOT_COL="dqap_leaderboard_snapshots";
+const HOLIDAYS_COL="dqap_holidays";
 const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
@@ -295,9 +296,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   #v-wiki .topbar .tr,#v-add .topbar .tr{flex-wrap:wrap;gap:5px}
   .stage-row{grid-template-columns:1fr 80px;grid-template-rows:auto auto}
   .stage-name{grid-column:1}.stage-pct-wrap{grid-column:2;grid-row:1}
-  #chat-msg-box{height:calc(100vh - 400px)!important}
+  .chat-pane{height:calc(100vh - 320px)!important}
   .chat-thread-item{font-size:12px}
-  #flag-updesh-modal>div,#ack-log-modal>div{width:94vw!important;padding:16px!important}
+  #flag-updesh-modal>div{width:94vw!important;padding:16px!important}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
 @media(max-width:420px){.g4,.g3{grid-template-columns:1fr}.sc{padding:8px 10px}.sv{font-size:16px}}
@@ -392,7 +393,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="tdot"        onclick="setTheme('ember')"  title="Ember"       style="background:#DC2626" data-t="ember"></div>
     </div>
     <button class="btn sm" onclick="openFlagToUpdeshModal()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:8px"><i class="ti ti-flag"></i>Write to Updesh</button>
-    <button class="btn sm" id="ack-log-btn" onclick="openAckLogModal()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:6px;display:none"><i class="ti ti-clipboard-check"></i>Acknowledgement Log</button>
     <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px"><i class="ti ti-logout"></i>Sign out</button>
     <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki - v-</div>
   </div>
@@ -408,15 +408,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
   </div>
 </div>
-<div id="ack-log-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:22px;width:min(640px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-weight:700;font-size:15px"><i class="ti ti-clipboard-check"></i> Acknowledgement Log</div>
-      <button class="btn sm" onclick="closeAckLogModal()"><i class="ti ti-x"></i></button>
-    </div>
-    <div id="ack-log-body">Loading...</div>
-  </div>
-</div>
+
 
 <main class="main">
 
@@ -749,6 +741,15 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
         }
       </style>
       <div id="att-cal-container">
+        <div id="att-holiday-admin" style="display:none;margin-bottom:12px;padding:12px;border-radius:10px;background:var(--bg);border:.5px solid var(--bd)">
+          <div style="font-weight:700;font-size:12.5px;margin-bottom:6px">Holiday List (admin only)</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input type="file" id="holiday-csv-input" accept=".csv" style="max-width:220px">
+            <button class="btn sm pri" onclick="importHolidayCsv()"><i class="ti ti-upload"></i>Import CSV</button>
+            <span class="muted" style="font-size:10.5px">Format: date,name per row e.g. 2026-08-15,Independence Day</span>
+          </div>
+          <div id="holiday-list-admin" style="margin-top:8px"></div>
+        </div>
         <!-- Legend on top for mobile -->
         <div id="att-cal-legend-top" style="display:none">
           <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">User Legend</div>
@@ -1348,7 +1349,7 @@ function startApp(){
   const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki - v'+APP_VERSION;
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
-  if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';const ackBtn=el('ack-log-btn');if(ackBtn)ackBtn.style.display='flex';}
+  if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
   if(CU.isAdmin||isPrivilegedEditor(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
@@ -1362,7 +1363,7 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
-  startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();
+  startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();startHolidaysListen();
   setTimeout(()=>{refreshBadgeMap();maybePostMonthlyLeaderboardSnapshot();},4000);
   setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
@@ -3723,6 +3724,25 @@ async function deleteTask(id){
 
 // â”€â”€ TASK RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function closeTaskDetails(){const m=el('wiki-task-detail-modal');if(m)m.style.display='none';}
+async function loadTaskAckInfo(taskId){
+  const box=el('task-ack-info');if(!box)return;
+  const t=taskData.find(x=>x.id===taskId)||{};
+  let html='';
+  if(t.completedBy||t.completedByName){
+    html+=`<div style="margin-bottom:4px"><i class="ti ti-check" style="color:var(--success)"></i> Marked Completed by <b>${esc(t.completedByName||t.completedBy)}</b> on ${esc(t.completedAt?new Date(t.completedAt).toLocaleString('en-IN'):'-')}</div>`;
+  }
+  if(t.lastCompletedByName){
+    html+=`<div style="margin-bottom:4px"><i class="ti ti-repeat" style="color:var(--success)"></i> Last recurring completion by <b>${esc(t.lastCompletedByName)}</b> on ${esc(t.lastCompletedAt?new Date(t.lastCompletedAt).toLocaleString('en-IN'):'-')}</div>`;
+  }
+  try{
+    const sn=await db.collection(ACK_LOG_COL).where('entityId','==',String(taskId)).get();
+    const rows=sn.docs.map(d=>d.data()).sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')));
+    if(rows.length){
+      html+=rows.map(r=>`<div style="margin-bottom:4px;padding-top:4px;border-top:.5px solid var(--bd)"><i class="ti ti-clipboard-check"></i> ${esc(r.action.replace(/_/g,' '))} by <b>${esc(r.actorName)}</b> on ${esc(new Date(r.timestamp).toLocaleString('en-IN'))}</div>`).join('');
+    }
+  }catch(e){console.error('Task ack info load failed:',e);}
+  box.innerHTML=html||'<div class="muted">No acknowledgement recorded yet for this task.</div>';
+}
 function openTaskDetails(id){
   const t=taskData.find(x=>x.id===id);if(!t)return;
   const modal=el('wiki-task-detail-modal'),title=el('wiki-task-detail-title'),body=el('wiki-task-detail-body'),actions=el('wiki-task-detail-actions');
@@ -3749,7 +3769,12 @@ function openTaskDetails(id){
     <div style="font-size:13px;line-height:1.6;margin-top:5px">${esc(t.description||'No additional details.')}</div>
   </div>
   ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
-  ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}`;
+  ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
+  <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
+    <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
+    <div id="task-ack-info" style="font-size:12.5px;margin-top:6px">Loading...</div>
+  </div>`;
+  loadTaskAckInfo(t.id);
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
     ${canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
     ${canEditTask?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
@@ -4318,7 +4343,7 @@ function openChatThread(id){
   chatMsgUnsub=db.collection(CHAT_MSG_COL).where('threadId','==',id).onSnapshot(sn=>{
     chatMessagesData=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
     renderChat();
-    setTimeout(()=>{const box=el('chat-msg-box');if(box)box.scrollTop=box.scrollHeight;},30);
+    setTimeout(()=>{const box=el('chat-msg-box');if(box)box.scrollTop=0;},30);
   },err=>{console.error('Chat messages listener error:',err);toast('Could not load messages: '+err.message,'err');});
   markThreadRead(id);
   renderChat();
@@ -4371,12 +4396,19 @@ function chatMessagePaneHtml(){
   const thread=chatThreadsData.find(t=>t.id===activeChatThreadId);
   if(!thread)return'<div class="empty" style="padding:30px">Select a conversation on the left, or start a new one.</div>';
   const canPost=thread.type!=='broadcast'||canPostBroadcast();
-  return`<div style="display:flex;flex-direction:column;height:calc(100vh - 230px)">
-    <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd);margin-bottom:8px">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
-    <div id="chat-msg-box" style="flex:1;overflow-y:auto;padding:4px">
-      ${chatMessagesData.length?chatMessagesData.map(m=>`<div style="margin-bottom:10px"><div style="font-size:11px" class="muted"><b>${esc(m.senderName||m.senderUsername)}</b>${badgeHtmlFor(m.senderUsername)} · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</div><div style="font-size:13px;margin-top:2px;white-space:pre-wrap">${esc(m.text)}</div></div>`).join(''):'<div class="empty">No messages yet.</div>'}
+  const msgHtml=chatMessagesData.length?chatMessagesData.map(m=>{
+    const flagged=m.priority==='flag';
+    return`<div style="margin-bottom:10px${flagged?';background:#fff3f2;border-left:3px solid #c0392b;padding:6px 8px;border-radius:4px':''}">
+      <div style="font-size:11px" class="muted"><b>${esc(m.senderName||m.senderUsername)}</b>${badgeHtmlFor(m.senderUsername)}${flagged?' <span style="color:#c0392b;font-weight:700">· PRIORITY</span>':''} · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</div>
+      <div style="font-size:13px;margin-top:2px;white-space:pre-wrap">${esc(m.text)}</div>
+    </div>`;
+  }).join(''):'<div class="empty">No messages yet.</div>';
+  return`<div class="chat-pane" style="display:flex;flex-direction:column;height:calc(100vh - 230px);max-height:100%">
+    <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd)">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
+    ${canPost?`<div style="display:flex;gap:8px;margin:8px 0;flex-shrink:0"><input id="chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri" onclick="sendChatMessage()"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
+    <div id="chat-msg-box" style="flex:1;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column-reverse">
+      ${msgHtml}
     </div>
-    ${canPost?`<div style="display:flex;gap:8px;margin-top:8px"><input id="chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri" onclick="sendChatMessage()"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin-top:8px">Only admins/managers can post announcements here.</div>`}
   </div>`;
 }
 function chatNewDmOptionsHtml(){
@@ -4582,24 +4614,24 @@ async function submitFlagToUpdesh(){
   const text=(el('flag-updesh-text')?.value||'').trim();
   if(!text)return toast('Enter a message first','err');
   try{
-    await db.collection(FLAG_COL).add({text,fromUsername:userKey(),fromName:(CU&&(CU.fullName||CU.username))||'',createdAt:new Date().toISOString(),read:false});
+    const threadId=dmThreadId(userKey(),'updesh');
+    const ref=db.collection(CHAT_THREADS_COL).doc(threadId);
+    const snap=await ref.get();
+    if(!snap.exists){
+      await ref.set({type:'dm',members:[userKey(),'updesh'],name:'',createdBy:userKey(),createdAt:new Date().toISOString(),lastMessageAt:new Date().toISOString(),lastMessageText:'',lastMessageBy:''});
+    }
+    const flaggedText='🚩 '+text;
+    await db.collection(CHAT_MSG_COL).add({threadId,text:flaggedText,senderUsername:userKey(),senderName:(CU&&(CU.fullName||CU.username))||'',createdAt:new Date().toISOString(),priority:'flag'});
+    await ref.update({lastMessageAt:new Date().toISOString(),lastMessageText:flaggedText.slice(0,120),lastMessageBy:userKey()});
     toast('Sent to Updesh privately','ok');closeFlagToUpdeshModal();
   }catch(e){toast('Failed to send: '+e.message,'err');}
 }
-function openAckLogModal(){
-  const m=el('ack-log-modal');if(m)m.style.display='flex';
-  const body=el('ack-log-body');if(body)body.innerHTML='Loading...';
-  db.collection(ACK_LOG_COL).orderBy('timestamp','desc').limit(100).get().then(sn=>{
-    const rows=sn.docs.map(d=>d.data());
-    if(!body)return;
-    if(!rows.length){body.innerHTML='<div class="empty">No acknowledgements recorded yet.</div>';return;}
-    body.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Module</th><th>Item</th><th>Action</th><th>By</th><th>When</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.module)}</td><td>${esc(r.entityLabel||r.entityId||'')}</td><td>${esc(r.action)}</td><td>${esc(r.actorName)}</td><td>${esc(new Date(r.timestamp).toLocaleString('en-IN'))}</td></tr>`).join('')}</tbody></table></div>`;
-  }).catch(e=>{if(body)body.innerHTML='<div class="empty">Could not load log: '+esc(e.message)+'</div>';});
-}
-function closeAckLogModal(){const m=el('ack-log-modal');if(m)m.style.display='none';}
 async function updateAttendanceNavBadge(){
   if(!CU||!db){setNavBadge('attendance-nav-badge',0);return;}
-  const rec=await attGet(attUserKey(),attDateKey());
+  const today=attDateKey();
+  const dayType=attDayType(today);
+  if(!dayType.requiresEntry){setNavBadge('attendance-nav-badge',0);return;}
+  const rec=await attGet(attUserKey(),today);
   setNavBadge('attendance-nav-badge',rec?0:1);
 }
 // ATTENDANCE MODULE FUNCTIONS (variables declared at top, safe to use here)
@@ -4613,6 +4645,63 @@ function attColorForUser(uid){
   return attTeamUsers().find(u=>u.key===key)?.color||'#1565C0';
 }
 function attDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+// ── HOLIDAYS ──────────────────────────
+let holidaysData=[],holidaysUnsub=null;
+function startHolidaysListen(){
+  if(holidaysUnsub)holidaysUnsub();
+  holidaysUnsub=db.collection(HOLIDAYS_COL).onSnapshot(sn=>{
+    holidaysData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    if(el('att-cal-main'))attRenderCalendar();
+    if(el('att-emp-calendar'))attRenderEmpCalendar();
+    if(el('holiday-list-admin'))renderHolidayAdminList();
+  },()=>{});
+}
+function isHoliday(dateStr){const h=holidaysData.find(x=>x.date===dateStr);return h?h.name:null}
+function attDayType(dateStr){
+  const holiday=isHoliday(dateStr);
+  if(holiday)return{type:'holiday',label:holiday,requiresEntry:false};
+  const dow=new Date(dateStr+'T00:00:00').getDay();
+  if(dow===0)return{type:'sunday',label:'Sunday',requiresEntry:false};
+  if(dow===6)return{type:'saturday',label:'Saturday - WFH (default)',requiresEntry:false,defaultWFH:true};
+  return{type:'workday',label:'',requiresEntry:true};
+}
+function renderHolidayAdminList(){
+  const box=el('holiday-list-admin');if(!box)return;
+  const sorted=[...holidaysData].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  box.innerHTML=sorted.length?`<div style="max-height:160px;overflow-y:auto">${sorted.map(h=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:.5px solid var(--bd);font-size:11.5px"><span>${esc(h.date)} - ${esc(h.name)}</span><button class="btn sm" onclick="deleteHoliday('${h.id}')"><i class="ti ti-trash"></i></button></div>`).join('')}</div>`:'<div class="muted" style="font-size:11px">No holidays added yet.</div>';
+}
+async function deleteHoliday(id){
+  if(!confirm('Remove this holiday?'))return;
+  try{await db.collection(HOLIDAYS_COL).doc(id).delete();toast('Holiday removed','ok');}catch(e){toast('Failed: '+e.message,'err');}
+}
+function importHolidayCsv(){
+  const input=el('holiday-csv-input');
+  if(!input||!input.files||!input.files[0])return toast('Choose a CSV file first','err');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const lines=String(e.target.result||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const rows=[];
+    lines.forEach(line=>{
+      const parts=line.split(',');
+      if(parts.length<2)return;
+      const date=parts[0].trim(),name=parts.slice(1).join(',').trim();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return; // skips a header row automatically
+      if(name)rows.push({date,name});
+    });
+    if(!rows.length)return toast('No valid rows found. Expected date,name with date as YYYY-MM-DD','err');
+    try{
+      const batch=db.batch();
+      rows.forEach(r=>{
+        const id=r.date;
+        batch.set(db.collection(HOLIDAYS_COL).doc(id),{date:r.date,name:r.name,addedBy:userKey(),addedAt:new Date().toISOString()});
+      });
+      await batch.commit();
+      toast(rows.length+' holiday(s) imported','ok');
+      input.value='';
+    }catch(err){toast('Import failed: '+err.message,'err');}
+  };
+  reader.readAsText(input.files[0]);
+}
 function attDocId(user,date){return `${String(user||'').toLowerCase()}_${date}`;}
 function attMonthKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 function attCheckinCutoffMinutes(){return ATT_CHECKIN_HOUR*60+ATT_CHECKIN_MINUTE+ATT_LATE_GRACE_MINUTES;}
@@ -4669,7 +4758,8 @@ async function attRenderEmp(){
   attCurrentUser=attUserKey();
   const today=attDateKey();
   const rec=await attGet(attCurrentUser,today);
-  setNavBadge('attendance-nav-badge',rec?0:1);
+  const dayType=attDayType(today);
+  setNavBadge('attendance-nav-badge',(rec||!dayType.requiresEntry)?0:1);
   const label=el('att-user-label'); if(label)label.textContent=`${attUserName()} (@${attCurrentUser})`;
   const ns=attTrustStatus();
   const trust=el('att-trust-status');
@@ -4679,6 +4769,18 @@ async function attRenderEmp(){
     el('att-today').textContent=rec.status==='present'?`Checked in ${rec.checkin_time}${rec.isLate?' - Late':''}${rec.halfDayPenalty?' - Half-day penalty':''}`:`OOO - ${rec.oof_reason}`;
     if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='.5';checkInBtn.title='Attendance already recorded today';}
     if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='.5';oooBtn.title='Attendance already recorded today';}
+  }else if(dayType.type==='holiday'){
+    el('att-today').textContent=`Holiday - ${dayType.label} (no entry required)`;
+    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title="Optional - click if you worked today despite the holiday";}
+    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.title='Mark working outside office';}
+  }else if(dayType.type==='sunday'){
+    el('att-today').textContent='Sunday - no entry required';
+    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title='Optional - click if you worked today';}
+    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.title='Mark working outside office';}
+  }else if(dayType.type==='saturday'){
+    el('att-today').textContent='Working From Home (default for Saturday) - click "I am in office" if you came in';
+    if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title='Click if you actually came into office today';}
+    if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.title='Mark a different OOO type for today';}
   }else{
     el('att-today').textContent='Pending';
     if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title='Trust-based office self check-in';}
@@ -4701,7 +4803,12 @@ async function attRenderEmp(){
       const bg=r.status==='present'?(r.isLate?'#FFF3E0':'#E8F5E9'):'#E3F2FD';
       const tx=r.status==='present'?`${r.checkin_time}${r.isLate?' - Late':''}${r.halfDayPenalty?' - Half-day penalty':''}`:`${r.oof_reason}${r.remarks?' - '+esc(r.remarks):''}`;
       h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;font-weight:600">${r.status==='present'?'In office':'OOO'} - ${tx}</div></div>`;
-    }else h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;color:var(--t2)">-</div></div>`;
+    }else{
+      const dayType=attDayType(ds);
+      const bg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':''));
+      const tx=dayType.label||'-';
+      h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px${bg?';background:'+bg:''}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;color:var(--t2)">${esc(tx)}</div></div>`;
+    }
   }
   const tl=el('att-timeline'); if(tl)tl.innerHTML=h;
 }
@@ -4710,17 +4817,19 @@ async function attRenderAdm(){
   if(controls)controls.style.display=attCanViewReports()?'block':'none';
   const monthInput=el('att-report-month'); if(monthInput&&!monthInput.value)monthInput.value=attMonthKey();
   const today=attDateKey();
+  const dayType=attDayType(today);
   const team=attTeamUsers();
   const rows=await Promise.all(team.map(async u=>({u,rec:await attGet(u.key,today)})));
   rows.sort((a,b)=>(a.rec?.status||'z').localeCompare(b.rec?.status||'z')||a.u.name.localeCompare(b.u.name));
   const h=rows.map(({u,rec})=>{
     const present=rec?.status==='present',ooo=rec?.status==='ooo';
-    const bg=present?(rec.isLate?'#FFF3E0':'#E8F5E9'):(ooo?'#E3F2FD':'#F5F5F5');
-    const badge=present?(rec.isLate?'Late':'Present'):(ooo?rec.oof_reason:'Pending');
-    const status=present?`Present - ${rec.checkin_time}${rec.halfDayPenalty?' - Half-day penalty':''}`:(ooo?`OOO - ${rec.oof_reason}`:'Pending');
+    const noEntryDay=!rec&&!dayType.requiresEntry;
+    const bg=present?(rec.isLate?'#FFF3E0':'#E8F5E9'):(ooo?'#E3F2FD':(noEntryDay?(dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':'#E3F2FD')):'#F5F5F5'));
+    const badge=present?(rec.isLate?'Late':'Present'):(ooo?rec.oof_reason:(noEntryDay?(dayType.type==='saturday'?'WFH':dayType.label):'Pending'));
+    const status=present?`Present - ${rec.checkin_time}${rec.halfDayPenalty?' - Half-day penalty':''}`:(ooo?`OOO - ${rec.oof_reason}`:(noEntryDay?dayType.label:'Pending'));
     return `<div class="card" style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
       <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${status}</div></div>
-      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${present?'#4CAF50':ooo?'#2196F3':'#757575'};color:#fff">${esc(badge)}</span></div>
+      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${present?'#4CAF50':ooo?'#2196F3':(noEntryDay?'#1565C0':'#757575')};color:#fff">${esc(badge)}</span></div>
     </div>`;
   }).join('');
   const adm=el('att-admin'); if(adm)adm.innerHTML=h||'<div class="empty">No users found.</div>';
@@ -4828,11 +4937,17 @@ async function attRenderEmpCalendar(){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const ooo=oooData[ds];
     const isToday=d===now.getDate();
+    const dayType=attDayType(ds);
+    const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
     
-    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
     dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
     
     dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    if(dayType.label){
+      const chipColor=dayType.type==='holiday'?'#C62828':(dayType.type==='sunday'?'#616161':'#1565C0');
+      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0">${esc(dayType.label)}</div>`;
+    }
     if(ooo){
       const color=ooo.color||attColorForUser(uid);
       dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;word-break:break-word;line-height:1.25;flex-shrink:0;min-width:0;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
@@ -4968,6 +5083,8 @@ async function attSaveOOO(){
 }
 
 async function attRenderCalendar(){
+  const holAdmin=el('att-holiday-admin');if(holAdmin)holAdmin.style.display=isSuperUser()?'block':'none';
+  renderHolidayAdminList();
   const now=new Date();
   const year=now.getFullYear();
   const month=now.getMonth();
@@ -5031,12 +5148,18 @@ async function attRenderCalendar(){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dayOOOs=oooData[ds]||[];
     const isToday=d===now.getDate();
+    const dayType=attDayType(ds);
+    const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
     
-    let dayHtml=`<div style="background:${isToday?'var(--pl)':'var(--card)'};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
+    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd)">`;
     dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
     
     // OOO entries container
     dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-width:0">`;
+    if(dayType.label){
+      const chipColor=dayType.type==='holiday'?'#C62828':(dayType.type==='sunday'?'#616161':'#1565C0');
+      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0">${esc(dayType.label)}</div>`;
+    }
     if(dayOOOs.length>0){
       dayOOOs.forEach(ooo=>{
         const color=ooo.color||attColorForUser(ooo.uid);
