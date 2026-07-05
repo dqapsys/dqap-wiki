@@ -1,4 +1,5 @@
 // DQAP Wiki Service Worker
+// Version 78.28 - PMO details table, chat bubbles, badge alignment, PWA assets.
 // Version 78.27 - Restored the "Leaderboard" sidebar link/page (kept, per
 // request, only the old individual scoring was meant to be removed). Now
 // shows a department-based team scorecard: Sales/Tech/PMO/F&A scored on
@@ -6,9 +7,9 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.27-20260705-1';
+const CACHE_VERSION = 'dqap-wiki-v78.28-20260705-2';
 const CACHE_NAME = CACHE_VERSION;
-const APP_SHELL = ['./', './index.html'];
+const APP_SHELL = ['./', './index.html', './manifest.json'];
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
