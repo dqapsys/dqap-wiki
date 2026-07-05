@@ -24,7 +24,7 @@
 const APP_VERSION="78.26";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260705-1";
+const APP_BUILD="20260705-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -639,8 +639,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-chart-gantt" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>PMO Dashboard</div><div class="pg-s">Project Management — live status of all active projects</div></div>
     <div class="tr" id="pmo-add-btn-wrap">
-      <button class="btn pri" id="pmo-dash-btn" onclick="setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
-      <button class="btn" id="pmo-det-btn" onclick="setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
+      <button class="btn pri" id="pmo-dash-btn" onclick="pmoReturnToChart=false;setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
+      <button class="btn" id="pmo-det-btn" onclick="pmoReturnToChart=false;setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
       <button class="btn pri" onclick="go('pmo-add')"><i class="ti ti-plus"></i>New PMO project</button>
     </div>
   </div>
@@ -1306,7 +1306,7 @@ let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
 let amcExpandedId=null,amcVisitForId=null;
-let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
+let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart',pmoReturnToChart=false;
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
 
@@ -1891,6 +1891,7 @@ function renderPMODashboard(list){
 }
 function switchToPMODetails(id){
   pmoExpandedId=id;
+  pmoReturnToChart=true; // came from a Dashboard row click - collapsing this card should go back there, not strand the user in Details
   setPMOView('cards');
   setTimeout(()=>{const c=el('pmc-'+id);if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);
 }
@@ -2275,8 +2276,10 @@ function renderPMO(){
 }
 
 function togglePMOCard(id){
-  if(pmoExpandedId===id){pmoExpandedId=null;pmoEditId=null;}
-  else{pmoExpandedId=id;pmoEditId=null;}
+  const wasOpen=(pmoExpandedId===id);
+  if(wasOpen){pmoExpandedId=null;pmoEditId=null;}
+  else{pmoExpandedId=id;pmoEditId=null;pmoReturnToChart=false;} // manually opening a (different) card cancels any pending "return to Dashboard"
+  if(wasOpen&&pmoReturnToChart){pmoReturnToChart=false;setPMOView('chart');return;}
   renderPMO();
 }
 function enterPMOEdit(id){pmoExpandedId=id;pmoEditId=id;renderPMO();}
