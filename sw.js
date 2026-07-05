@@ -1,7 +1,9 @@
 // DQAP Wiki Service Worker
-// Version 78.24 - Fixed deadline-review acknowledgment logging; disabled auto-announcements
+// Version 78.26 build 2 - Fixed: clicking a Dashboard row now returns you to
+// the Dashboard table when you collapse that project's card, instead of
+// stranding you in the PMO Details card view.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.26-20260705-1';
+const CACHE_VERSION = 'dqap-wiki-v78.26-20260705-2';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
