@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_24_ACK_TRAIL_FIX_AND_MANUAL_ANNOUNCEMENTS
-const APP_VERSION="78.24_ACK_TRAIL_FIX_AND_MANUAL_ANNOUNCEMENTS";
+// DQAP_WIKI_VERSION_78_25_DEPT_FIELD_PROJECT_EXTENSIONS_LEADERBOARD_REMOVED
+const APP_VERSION="78.25_DEPT_FIELD_PROJECT_EXTENSIONS_LEADERBOARD_REMOVED";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -52,7 +52,6 @@ const db=firebase.firestore(),storage=firebase.storage();
 const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",PROJ="dqap_projects",TASK_COL="dqap_tasks",AMC_COL="dqap_amc";
 const CHAT_THREADS_COL="dqap_chat_threads",CHAT_MSG_COL="dqap_chat_messages";
 const ACK_LOG_COL="dqap_acknowledgements",FLAG_COL="dqap_flags_to_updesh";
-const LB_SNAPSHOT_COL="dqap_leaderboard_snapshots";
 const HOLIDAYS_COL="dqap_holidays";
 const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
@@ -366,7 +365,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div class="sb-nav">
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="go('chat')"             id="ni-chat"><i class="ti ti-message-circle"></i>Chat<span id="chat-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy"></i>Leaderboard</div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
@@ -388,7 +386,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="sb-foot">
     <div class="sync"><div class="sdot" id="sdot"></div><span id="stxt">Connecting...</span></div>
-    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span><span id="sb-badges"></span></div>
+    <div style="font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px;margin:5px 0 8px"><i class="ti ti-user-circle" style="font-size:12px"></i><span id="sb-user"></span><span id="sb-role" style="font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;opacity:.9"></span></div>
     <div style="font-size:9.5px;color:rgba(255,255,255,.4);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase">Colour theme</div>
     <div class="tdots">
       <div class="tdot active" onclick="setTheme('blue')"   title="Ocean Blue"  style="background:#0070C0" data-t="blue"></div>
@@ -519,12 +517,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <!-- â•â• DEBT MANAGEMENT â•â• -->
 <!-- â•â• DEBT MANAGEMENT (IFRAME - EXTERNAL APP) â•â• -->
-<div id="v-leaderboard" class="view" style="display:none">
-  <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-trophy" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Performance Leaderboard</div><div class="pg-s">Top 3 at financial year-end qualify for incentives</div></div>
-  </div>
-  <div class="content" id="leaderboard-root"></div>
-</div>
 <div id="v-chat" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-message-circle" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Chat</div><div class="pg-s">Company announcements, groups and direct messages</div></div>
@@ -1166,7 +1158,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
           <div id="np-po-list" style="margin:6px 0"></div>
           <button type="button" class="btn sm pri" onclick="addPORow('np-po-list')" style="margin-bottom:14px"><i class="ti ti-plus"></i>Add PO</button>
           <div class="g3" style="margin-bottom:14px">
-            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — Liquidated Damages)</span></label><input type="date" class="fi" id="np-ld-date"></div>
+            <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional — Liquidated Damages, contractual)</span></label><input type="date" class="fi" id="np-ld-date"></div>
+            <div class="fg"><label class="fl r">Target Completion Date <span style="font-size:9px;color:var(--t2);font-weight:400">(PMO's internal estimate — separate from LD Date, used for schedule scoring)</span></label><input type="date" class="fi" id="np-target-date"></div>
           </div>
 
           <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
@@ -1226,13 +1219,18 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
               <option value="manager">Manager — can add &amp; edit</option>
               <option value="admin">Admin — full access</option>
             </select></div>
+          <div class="fg" style="min-width:180px"><label class="fl">Department <span style="font-size:9px;color:var(--t2);font-weight:400">(for team scorecards — independent of any sales target)</span></label>
+            <select class="fs" id="u-dept">
+              <option value="">— Not set —</option>
+              <option>Sales</option><option>Tech</option><option>PMO</option><option>F&amp;A</option>
+            </select></div>
           <button class="btn pri" onclick="addUser()" style="align-self:flex-end;margin-bottom:1px"><i class="ti ti-user-plus"></i>Add user</button>
         </div>
       </div>
     </div>
     <div class="card">
       <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
-      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Department</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -1270,6 +1268,29 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div style="padding:16px 18px">
       <div id="wiki-task-detail-body"></div>
       <div id="wiki-task-detail-actions" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Extension Request modal (PMO Details -> Extension Request) -->
+<div id="ext-req-modal" style="display:none;position:fixed;inset:0;z-index:5002;background:rgba(8,20,40,.64);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:18px">
+  <div style="width:min(560px,96vw);background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45)">
+    <div style="padding:15px 18px;background:linear-gradient(135deg,#006994,#263F65);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:1px">EXTENSION REQUEST</div>
+        <div id="ext-req-title" style="font-size:16px;font-weight:700;margin-top:3px">Request revised completion date</div>
+      </div>
+      <button class="btn sm" onclick="closeExtensionRequestModal()" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:16px 18px">
+      <div id="ext-req-current" style="font-size:11.5px;color:var(--t2);margin-bottom:12px"></div>
+      <div class="fg" style="margin-bottom:12px"><label class="fl r">Proposed revised completion date</label><input type="date" class="fi" id="ext-req-date"></div>
+      <div class="fg" style="margin-bottom:4px"><label class="fl r">Reason for delay</label><textarea class="fi" id="ext-req-reason" placeholder="Reason is mandatory - this is what Pratim/Updesh will review"></textarea></div>
+      <div style="font-size:10.5px;color:var(--t2);margin-top:8px">Sent to Pratim as a Task for Approve / Reject / Refer to Updesh. If approved, this becomes the new scored target date; the original date stays visible for audit.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="btn" onclick="closeExtensionRequestModal()">Cancel</button>
+        <button class="btn pri" onclick="submitExtensionRequest()"><i class="ti ti-send"></i>Send Request</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1385,7 +1406,6 @@ function startApp(){
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
   startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();startHolidaysListen();startProjectDocTemplateListen();
-  setTimeout(()=>{refreshBadgeMap();/* maybePostMonthlyLeaderboardSnapshot() disabled - manual announcements only for now, pending a more comprehensive leaderboard/incentive design */},4000);
   setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
 }
@@ -2168,6 +2188,9 @@ function renderPMO(){
     // LD chip
     const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
     const ldChipHtml=projRef.ldDate?`<div style="display:flex;align-items:center;gap:6px;padding:4px 16px 6px;flex-wrap:wrap"><span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-gavel" style="font-size:11px"></i> LD</span>${renderLdChip(projRef.ldDate)}</div>`:'';
+    const targetChipInner=renderTargetDateChip(projRef);
+    const targetChipHtml=targetChipInner?`<div style="display:flex;align-items:center;gap:6px;padding:4px 16px 6px;flex-wrap:wrap"><span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-target-arrow" style="font-size:11px"></i> Target</span>${targetChipInner}</div>`:'';
+    const pendingExt=projRef.pendingExtension&&projRef.pendingExtension.status==='pending'?projRef.pendingExtension:null;
     // Budget mini
     const {allocated,consumed,pct:bgPct,status:bgStatus,gmValue,gmPct}=getProjBudget(p.projName);
     const bgCol=bgPct>100?'#B71C1C':bgPct>=80?'#E65100':'#1B5E20';
@@ -2223,8 +2246,9 @@ function renderPMO(){
         stageDetail=`<div style="border-top:.5px solid var(--bd);padding:12px 16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
             <span style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete</span>
-            <div style="display:flex;gap:6px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
               ${canEdit?`<button class="btn sm pri" onclick="event.stopPropagation();enterPMOEdit('${id}')"><i class="ti ti-edit"></i>Edit stages</button>`:''}
+              ${canEdit&&projRef.id?(pendingExt?`<span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:700">Extension pending review</span>`:`<button class="btn sm" onclick="event.stopPropagation();openExtensionRequestModal('${projRef.id}')"><i class="ti ti-calendar-plus"></i>Extension Request</button>`):''}
               ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deletePMO('${id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
             </div>
           </div>
@@ -2265,6 +2289,7 @@ function renderPMO(){
           <div class="pmo-bar-wrap"><div class="pmo-bar-fill" style="width:${overall}%;background:${barColor}"></div></div>
         </div>
         ${ldChipHtml}
+        ${targetChipHtml}
       </div>
       ${stageDetail}
       ${budgetMini}
@@ -2295,6 +2320,80 @@ async function savePMOInline(id){
     await db.collection(PMO_COL).doc(id).update({stages,overall,status,updatedAt:new Date().toISOString()});
     toast('Saved \u2713','ok');
     pmoEditId=null;
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+// â”€â”€ PROJECT EXTENSION REQUEST (target completion date revision) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PMO requests a revised completion date -> routed to Pratim as a Task ->
+// Approve (moves targetCompletionDate + logs to extensionHistory) / Reject
+// (logs to extensionHistory, no date change) / Refer to Updesh (reassigns the
+// same task once). originalTargetCompletionDate never changes through this flow.
+let extReqProjId=null;
+function openExtensionRequestModal(projId){
+  const proj=projectsData.find(x=>x.id===projId);if(!proj)return;
+  extReqProjId=projId;
+  const cur=proj.targetCompletionDate||proj.originalTargetCompletionDate;
+  el('ext-req-title').textContent='Request revised date - '+proj.name;
+  el('ext-req-current').innerHTML=`Current target: <b>${cur?esc(new Date(cur).toLocaleDateString('en-IN')):'not set'}</b>`;
+  el('ext-req-date').value='';el('ext-req-reason').value='';
+  el('ext-req-modal').style.display='flex';
+}
+function closeExtensionRequestModal(){el('ext-req-modal').style.display='none';extReqProjId=null;}
+async function submitExtensionRequest(){
+  const proj=projectsData.find(x=>x.id===extReqProjId);if(!proj)return;
+  const proposedDate=(el('ext-req-date')?.value||'').trim();
+  const reason=(el('ext-req-reason')?.value||'').trim();
+  if(!proposedDate){toast('Proposed date is mandatory','err');return;}
+  if(!reason){toast('Reason is mandatory','err');return;}
+  const pratimUser=usersData.find(u=>(u.username||'').toLowerCase()==='pratim');
+  const pratimName=pratimUser?pratimUser.fullName:'Pratim';
+  showLoad('Sending request…');
+  try{
+    const now=new Date().toISOString();
+    const pendingExtension={proposedDate,reason,requestedBy:CU.fullName,requestedByUsername:CU.username,requestedAt:now,status:'pending'};
+    await db.collection(PROJ).doc(extReqProjId).update({pendingExtension,updatedAt:now});
+    const ref=db.collection(TASK_COL).doc();
+    await ref.set({
+      title:'Project Extension Request - '+proj.name,
+      description:`Current target: ${proj.targetCompletionDate||proj.originalTargetCompletionDate||'not set'}\nProposed target: ${proposedDate}\nReason: ${reason}`,
+      taskCode:genTaskCode(ref.id),
+      assignedBy:CU.fullName,assignedByRole:CU.role,
+      assignedTo:pratimName,assignedToRole:'admin',
+      supervisor:'',priority:'High',project:proj.name,frequency:'One Time',
+      status:'Open',createdAt:now,updatedAt:now,
+      taskType:'project_extension',linkedProjectId:extReqProjId,
+      extensionStatus:'pending',
+      assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null
+    });
+    toast('Extension request sent to '+pratimName,'ok');
+    closeExtensionRequestModal();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function decideProjectExtension(taskId,decision){
+  const t=taskData.find(x=>x.id===taskId);if(!t||t.taskType!=='project_extension')return;
+  if(t.assignedTo!==CU.fullName){toast('Only the current assignee can act on this request','err');return;}
+  const proj=projectsData.find(x=>x.id===t.linkedProjectId);
+  const now=new Date().toISOString();
+  showLoad('Saving decision…');
+  try{
+    if(decision==='refer'){
+      if(t.referredBy){toast('Already referred once','err');return;}
+      await db.collection(TASK_COL).doc(taskId).update({assignedTo:'Updesh',assignedToRole:'admin',referredBy:CU.fullName,referredAt:now,description:t.description+`\n\nReferred to Updesh by ${CU.fullName}.`,updatedAt:now});
+      toast('Referred to Updesh','ok');
+    }else{
+      const remarks=prompt(decision==='approve'?'Approval remarks (optional):':'Rejection remarks (mandatory):','')||'';
+      if(decision==='reject'&&!remarks.trim()){toast('Rejection remarks are mandatory','err');return;}
+      if(proj){
+        const pe=proj.pendingExtension||{};
+        const histEntry={proposedDate:pe.proposedDate,reason:pe.reason,requestedBy:pe.requestedBy,requestedAt:pe.requestedAt,decision:decision==='approve'?'approved':'rejected',decidedBy:CU.fullName,decidedAt:now,remarks};
+        const upd={extensionHistory:[...(proj.extensionHistory||[]),histEntry],pendingExtension:null,updatedAt:now};
+        if(decision==='approve')upd.targetCompletionDate=pe.proposedDate;
+        await db.collection(PROJ).doc(proj.id).update(upd);
+      }
+      await db.collection(TASK_COL).doc(taskId).update({status:'Completed',extensionStatus:decision==='approve'?'approved':'rejected',completedAt:now,completedByName:CU.fullName,updatedAt:now,description:t.description+`\n\n${decision==='approve'?'Approved':'Rejected'} by ${CU.fullName}${remarks?': '+remarks:''}.`});
+      toast('Extension '+(decision==='approve'?'approved':'rejected'),'ok');
+    }
+    closeTaskDetails();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
@@ -2709,7 +2808,7 @@ function sendTaskNotification(action,t){
 // â”€â”€ PROJECTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-ld-date').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';const pl=el('np-po-list');if(pl){pl.innerHTML='';addPORow('np-po-list');}renderNpItems();}
+  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-ld-date').value='';el('np-target-date').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';const pl=el('np-po-list');if(pl){pl.innerHTML='';addPORow('np-po-list');}renderNpItems();}
 }
 function addNpItem(type){const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();if(!val)return;if(type==='cli'){if(!npClients.includes(val))npClients.push(val);}else{if(!npSites.includes(val))npSites.push(val);}inp.value='';renderNpItems();inp.focus();}
 function removeNpItem(type,val){if(type==='cli')npClients=npClients.filter(v=>v!==val);else npSites=npSites.filter(v=>v!==val);renderNpItems();}
@@ -2724,6 +2823,7 @@ async function saveNewProject(){
   const scope=(el('np-scope').value||'').trim();
   if(!scope){toast('Select a Project Scope','err');return;}
   const ldDate=(el('np-ld-date').value||'').trim();
+  const targetDate=(el('np-target-date').value||'').trim();
   const pos=readPORows('np-po-list');
   const poTotal=pos.reduce((s,po)=>s+(Number(po.value)||0),0);
   const budgetAllocated=parseFloat(el('np-budget-alloc').value)||0;
@@ -2735,7 +2835,10 @@ async function saveNewProject(){
   showLoad('Saving…');
   try{
     const now=new Date().toISOString();
-    const projRef=await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,createdAt:now});
+    // originalTargetCompletionDate never changes after this - it's the audit baseline.
+    // targetCompletionDate is the working/scored baseline and moves only when an
+    // Extension Request is approved (see requestProjectExtension/decideProjectExtension).
+    const projRef=await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,originalTargetCompletionDate:targetDate,targetCompletionDate:targetDate,extensionHistory:[],pendingExtension:null,createdAt:now});
     await db.collection(BUDGET_CFG_COL).add({projectName:name,poAmount:poTotal,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
     toast('Project added âœ“','ok');togNewProj();
     createProjectDriveFolders(projRef.id,num,name); // fire-and-forget; project save already succeeded above
@@ -2799,6 +2902,8 @@ async function saveProjectInline(projId){
   const number=gv('pe-num-'+projId);
   const scope=gv('pe-scope-'+projId);
   const ldDate=gv('pe-lddate-'+projId);
+  const originalTargetCompletionDate=gv('pe-origtarget-'+projId);
+  const targetCompletionDate=gv('pe-target-'+projId);
   const pos=readPORows('pe-po-list-'+projId);
   const poTotal=pos.reduce((s,po)=>s+(Number(po.value)||0),0);
   const budgetAllocated=parseFloat(el('pe-alloc-'+projId)?.value)||0;
@@ -2810,7 +2915,7 @@ async function saveProjectInline(projId){
   showLoad('Saving…');
   try{
     const now=new Date().toISOString();
-    await db.collection(PROJ).doc(projId).update({number,scope,ldDate,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',updatedAt:now});
+    await db.collection(PROJ).doc(projId).update({number,scope,ldDate,originalTargetCompletionDate,targetCompletionDate,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',updatedAt:now});
     // Budget config (keyed by project name): PO Amount = total of all POs.
     const cfg=budgetCfgData.find(c=>c.projectName===p.name);
     if(cfg&&cfg.id){
@@ -2860,9 +2965,12 @@ function renderProjectsPage(){
         <label class="fl">Purchase Orders <span style="font-size:9px;color:var(--t2);font-weight:400">(PO No · Date · Value ₹)</span></label>
         <div id="pe-po-list-${p.id}" style="margin:6px 0"></div>
         ${canEdit?`<button type="button" class="btn sm pri" onclick="addPORow('pe-po-list-${p.id}')" style="margin-bottom:14px"><i class="ti ti-plus"></i>Add PO</button>`:''}
-        <div class="g3" style="margin-bottom:14px">
+        <div class="g3" style="margin-bottom:6px">
           <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional)</span></label><input type="date" class="fi" id="pe-lddate-${p.id}" value="${p.ldDate||''}" ${dis}></div>
+          <div class="fg"><label class="fl">Original Target Date <span style="font-size:9px;color:var(--t2);font-weight:400">(audit baseline — set once)</span></label><input type="date" class="fi" id="pe-origtarget-${p.id}" value="${p.originalTargetCompletionDate||''}" ${dis}></div>
+          <div class="fg"><label class="fl">Current Target Date <span style="font-size:9px;color:var(--t2);font-weight:400">(scored baseline)</span></label><input type="date" class="fi" id="pe-target-${p.id}" value="${p.targetCompletionDate||p.originalTargetCompletionDate||''}" ${dis}></div>
         </div>
+        <div style="font-size:10px;color:var(--t2);margin-bottom:14px">Normal course: Current Target Date only moves via an approved Extension Request in PMO Details. Editing it directly here bypasses that approval trail — use only to fix a data-entry mistake.</div>
 
         <div class="fsec-t"><i class="ti ti-report-money"></i>Budget configuration</div>
         <div class="g3" style="margin-bottom:6px">
@@ -2932,16 +3040,18 @@ async function loadUsers(){
       <td style="font-weight:500">${esc(u.fullName)}</td>
       <td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td>
       <td style="font-size:12px;color:var(--t2)">${u.email ? esc(u.email) : '<span style="color:#aaa">— not set —</span>'}</td>
+      <td>${u.department?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:600">${esc(u.department)}</span>`:'<span style="color:#aaa;font-size:11px">— not set —</span>'}</td>
       <td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td>
       <td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn sm" onclick="editUser('${u.id}', '${esc(u.fullName)}', '${esc(u.username)}', '${u.email||''}', '${u.role||(u.isAdmin?'admin':'user')}')"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn sm" onclick="changeDept('${u.id}','${u.department||''}','${esc(u.fullName)}')"><i class="ti ti-building"></i>Dept</button>
         <button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button>
         <button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button>
         <button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
+    :'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function changeRole(id,currentRole,name){
@@ -2956,6 +3066,24 @@ async function changeRole(id,currentRole,name){
   try{
     await db.collection(USERS).doc(id).update({role:newRole,isAdmin:newRole==='admin',updatedAt:new Date().toISOString()});
     toast('Role updated âœ“','ok');await loadUsers();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+// Department is the canonical source of truth for team-based scoring/rewards -
+// it is deliberately independent of any individual sales/collection target a
+// person may carry (e.g. a PMO or Tech user chasing a relationship-sourced deal
+// still belongs to their own department, not to Sales).
+const DEPARTMENTS=['Sales','Tech','PMO','F&A'];
+async function changeDept(id,currentDept,name){
+  const opts=DEPARTMENTS.map(d=>`${d===currentDept?'* ':''}${d}`).join('\n');
+  const choice=prompt(`Set department for ${name}\n\nCurrent: ${currentDept||'(not set)'}\n\nType one of:\n  Sales\n  Tech\n  PMO\n  F&A`,currentDept||'');
+  if(choice===null)return;
+  const trimmed=choice.trim();
+  const match=DEPARTMENTS.find(d=>d.toLowerCase()===trimmed.toLowerCase());
+  if(trimmed&&!match){toast('Department must be one of: Sales, Tech, PMO, F&A','err');return;}
+  showLoad('Updating department…');
+  try{
+    await db.collection(USERS).doc(id).update({department:match||'',updatedAt:new Date().toISOString()});
+    toast('Department updated âœ“','ok');await loadUsers();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
@@ -2996,6 +3124,7 @@ function editUser(id, fullName, username, currentEmail, currentRole){
 async function addUser(){
   const fn=g('u-fn'),un=(g('u-un')||'').toLowerCase().replace(/\s+/g,''),pw=g('u-pw'),role=(el('u-role')?.value||'user');
   const email = (el('u-email')?.value || '').trim();
+  const department = (el('u-dept')?.value || '').trim();
 
   if(!fn||!un||!pw){toast('All fields required','err');return;}if(un.length<3){toast('Username min 3 chars','err');return;}
   showLoad('Adding…');
@@ -3008,10 +3137,12 @@ async function addUser(){
       role,
       isAdmin:role==='admin',
       email: email || null,
+      department: department || '',
       createdAt:new Date().toISOString()
     });
     ['u-fn','u-un','u-pw','u-email'].forEach(id=>{const e=el(id);if(e)e.value='';});
     el('u-role').value='user';
+    el('u-dept').value='';
     toast('User added âœ“','ok');
     await loadUsers();
   }catch(e){toast('Failed','err');}finally{hideLoad();}
@@ -3174,7 +3305,6 @@ function go(n){
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='attendance'){attRender();}
   if(n==='chat'){renderChat();}
-  if(n==='leaderboard'){renderLeaderboard();}
   if(n==='debt'){loadDebtFrame();}
   if(n==='payments'){
     const pu=el('pay-unauth');
@@ -3252,6 +3382,22 @@ function renderLdChip(ldDate){
   const d=ldDate?new Date(ldDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
   return`<span class="ld-chip" style="background:${s.bg};color:${s.color}"><i class="ti ${s.icon}"></i>${s.label}</span>`
     +`<span style="font-size:10.5px;color:var(--t2);margin-left:4px">${d}</span>`;
+}
+// Target Completion Date is the PMO-owned working baseline used for schedule
+// scoring (see Extension Request flow) - kept visually distinct from LD Date,
+// which is the contractual/legal deadline and is never touched by that flow.
+function renderTargetDateChip(projRef){
+  if(!projRef)return'';
+  const target=projRef.targetCompletionDate||projRef.originalTargetCompletionDate;
+  if(!target)return'';
+  const s=ldStatus(target);
+  const d=new Date(target).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  const revised=projRef.originalTargetCompletionDate&&projRef.targetCompletionDate&&projRef.originalTargetCompletionDate!==projRef.targetCompletionDate;
+  const histCount=(projRef.extensionHistory||[]).filter(h=>h.decision==='approved').length;
+  return`<span class="ld-chip" style="background:${s.bg};color:${s.color}"><i class="ti ti-calendar-event"></i>Target ${s.label}</span>`
+    +`<span style="font-size:10.5px;color:var(--t2);margin-left:4px">${d}</span>`
+    +(revised?`<span title="Original target: ${esc(new Date(projRef.originalTargetCompletionDate).toLocaleDateString('en-IN'))}" style="font-size:9.5px;color:#E65100;margin-left:5px;font-weight:600"><i class="ti ti-history"></i> revised</span>`:'')
+    +(histCount>=2?`<span title="${histCount} approved extensions on this project" style="font-size:9.5px;color:#B71C1C;margin-left:5px;font-weight:700">⚠ ${histCount} extensions</span>`:'');
 }
 
 // â”€â”€ BUDGET LISTENERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -3985,15 +4131,20 @@ function openTaskDetails(id){
   </div>
   ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
   ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
+  ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
   <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
     <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
     <div id="task-ack-info" style="font-size:12.5px;margin-top:6px">Loading...</div>
   </div>`;
   loadTaskAckInfo(t.id);
+  const isExtensionAction=t.taskType==='project_extension'&&t.extensionStatus==='pending'&&t.assignedTo===CU.fullName;
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
-    ${canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+    ${isExtensionAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectExtension('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
+    ${isExtensionAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="decideProjectExtension('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
+    ${isExtensionAction?`<button class="btn pri" onclick="decideProjectExtension('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
+    ${!isExtensionAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
   modal.style.display='flex';
 }
 
@@ -4622,7 +4773,7 @@ function chatMessagePaneHtml(){
   const msgHtml=chatMessagesData.length?chatMessagesData.map(m=>{
     const flagged=m.priority==='flag';
     return`<div style="margin-bottom:10px${flagged?';background:#fff3f2;border-left:3px solid #c0392b;padding:6px 8px;border-radius:4px':''}">
-      <div style="font-size:11px" class="muted"><b>${esc(m.senderName||m.senderUsername)}</b>${badgeHtmlFor(m.senderUsername)}${flagged?' <span style="color:#c0392b;font-weight:700">· PRIORITY</span>':''} · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</div>
+      <div style="font-size:11px" class="muted"><b>${esc(m.senderName||m.senderUsername)}</b>${flagged?' <span style="color:#c0392b;font-weight:700">· PRIORITY</span>':''} · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</div>
       <div style="font-size:13px;margin-top:2px;white-space:pre-wrap">${esc(m.text)}</div>
     </div>`;
   }).join(''):'<div class="empty">No messages yet.</div>';
@@ -4661,176 +4812,6 @@ function renderChat(){
 }
 function toggleNewGroupForm(){const f=el('new-group-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
 
-// ── PERFORMANCE LEADERBOARD ──────────────────────────
-// Weights reflect stated business priority order (highest first):
-// Sales > Payment Collection > Account Management > Task Management > Attendance > Finance/Accounting.
-// Sales, Payment Collection and Account Management are currently 0 for everyone -
-// they need the CRM and Debt Management app files (separate codebases) to know the
-// correct field names for salesperson/collector attribution before they can be scored.
-const LEADERBOARD_WEIGHTS={sales:30,paymentCollection:25,accountManagement:20,taskManagement:15,attendance:10,financeAccounting:5};
-let leaderboardFY='';
-function fyLabelOf(dateStr){const d=new Date(dateStr);if(isNaN(d))return null;const m=d.getMonth(),y=d.getFullYear(),sy=m>=3?y:y-1;return`FY${String(sy).slice(2)}-${String(sy+1).slice(2)}`}
-function currentFYLabel(){return fyLabelOf(new Date().toISOString())}
-function fyBounds(label){const m=(label||'').match(/FY(\d{2})-(\d{2})/);if(!m)return null;const y1=2000+Number(m[1]);return{start:`${y1}-04-01`,end:`${y1+1}-03-31`}}
-function availableLeaderboardFYs(){
-  const set=new Set([currentFYLabel()]);
-  taskData.forEach(t=>{if(t.completedAt){const l=fyLabelOf(t.completedAt);if(l)set.add(l);}});
-  return[...set].sort().reverse();
-}
-async function loadLeaderboardAttendance(bounds){
-  try{
-    const sn=await db.collection(ATTENDANCE_COL).where('date','>=',bounds.start).where('date','<=',bounds.end).get();
-    return sn.docs.map(d=>d.data());
-  }catch(e){console.error('Leaderboard attendance load failed:',e);return[];}
-}
-async function loadLeaderboardPayms(){
-  try{
-    const sn=await db.collection(PAYMS_REQ_COL).where('status','==','PAID').get();
-    return sn.docs.map(d=>({id:d.id,...d.data()}));
-  }catch(e){console.error('Leaderboard PayMS load failed:',e);return[];}
-}
-function taskScoreFor(fullName,bounds){
-  const mine=taskData.filter(t=>t.assignedTo===fullName&&t.status==='Completed'&&t.completedAt&&t.completedAt>=bounds.start&&t.completedAt<=bounds.end+'T23:59:59');
-  if(!mine.length)return{rate:0,points:0,count:0};
-  const onTime=mine.filter(t=>!t.deadline||t.completedAt<=t.deadline).length;
-  const rate=onTime/mine.length;
-  return{rate,points:rate*LEADERBOARD_WEIGHTS.taskManagement,count:mine.length};
-}
-function attendanceScoreFor(username,attRows){
-  const mine=attRows.filter(a=>(a.username||'').toLowerCase()===username);
-  if(!mine.length)return{rate:0,points:0,count:0};
-  const credit=mine.reduce((s,a)=>s+(a.status==='present'?(a.isLate?0.5:1):0),0);
-  const rate=credit/mine.length;
-  return{rate,points:rate*LEADERBOARD_WEIGHTS.attendance,count:mine.length};
-}
-function financeScoreFor(username,paidRequests){
-  const mine=paidRequests.filter(r=>r.payment&&r.payment.recordedBy===username);
-  if(!mine.length)return{rate:0,points:0,count:0};
-  return{rate:1,points:LEADERBOARD_WEIGHTS.financeAccounting*Math.min(1,mine.length/10),count:mine.length};
-}
-async function loadLeaderboardDeals(bounds){
-  try{
-    const sn=await db.collection('dqap_crm_deals').where('stage','==','Billed').get();
-    return sn.docs.map(d=>d.data()).filter(x=>x.billingDate&&x.billingDate>=bounds.start&&x.billingDate<=bounds.end);
-  }catch(e){console.error('Leaderboard deals load failed:',e);return[];}
-}
-async function loadLeaderboardActivities(bounds){
-  try{
-    const sn=await db.collection('dqap_crm_activities').where('activityDate','>=',bounds.start).where('activityDate','<=',bounds.end+'T23:59:59').get();
-    return sn.docs.map(d=>d.data());
-  }catch(e){console.error('Leaderboard activities load failed:',e);return[];}
-}
-async function loadLeaderboardCollections(bounds){
-  try{
-    const sn=await db.collection('dqap_debt_collections').where('collectionDate','>=',bounds.start).where('collectionDate','<=',bounds.end).get();
-    return sn.docs.map(d=>d.data());
-  }catch(e){console.error('Leaderboard collections load failed:',e);return[];}
-}
-async function computeLeaderboardRows(fy){
-  const bounds=fyBounds(fy);if(!bounds)return[];
-  const [attRows,paidRequests,deals,activities,collections]=await Promise.all([
-    loadLeaderboardAttendance(bounds),loadLeaderboardPayms(),loadLeaderboardDeals(bounds),loadLeaderboardActivities(bounds),loadLeaderboardCollections(bounds)
-  ]);
-  // Raw values first, so sales/account-mgmt/collection can be scored relative to the
-  // best performer this FY (there's no natural 0-1 "rate" for rupee amounts/counts the
-  // way there is for on-time-rate or attendance-rate).
-  const raw=usersData.map(u=>{
-    const username=(u.username||'').toLowerCase();
-    const salesGP=deals.filter(d=>(d.username||'').toLowerCase()===username).reduce((s,d)=>s+Number(d.grossMarginAmount||d.value||0),0);
-    const actCount=activities.filter(a=>(a.username||'').toLowerCase()===username).length;
-    const collAmt=collections.filter(c=>(c.recordedBy||'').toLowerCase()===username).reduce((s,c)=>s+Number(c.amount||0),0);
-    return{username,fullName:u.fullName||u.username,salesGP,actCount,collAmt};
-  });
-  const maxSales=Math.max(1,...raw.map(r=>r.salesGP));
-  const maxAct=Math.max(1,...raw.map(r=>r.actCount));
-  const maxColl=Math.max(1,...raw.map(r=>r.collAmt));
-  return raw.map(r=>{
-    const task=taskScoreFor(r.fullName,bounds);
-    const att=attendanceScoreFor(r.username,attRows);
-    const fin=financeScoreFor(r.username,paidRequests);
-    const sales={amount:r.salesGP,points:r.salesGP?LEADERBOARD_WEIGHTS.sales*(r.salesGP/maxSales):0};
-    const acctMgmt={count:r.actCount,points:r.actCount?LEADERBOARD_WEIGHTS.accountManagement*(r.actCount/maxAct):0};
-    const collection={amount:r.collAmt,points:r.collAmt?LEADERBOARD_WEIGHTS.paymentCollection*(r.collAmt/maxColl):0};
-    const total=task.points+att.points+fin.points+sales.points+acctMgmt.points+collection.points;
-    return{username:r.username,fullName:r.fullName,task,att,fin,sales,acctMgmt,collection,total};
-  }).filter(r=>r.task.count>0||r.att.count>0||r.fin.count>0||r.sales.amount>0||r.acctMgmt.count>0||r.collection.amount>0).sort((a,b)=>b.total-a.total);
-}
-function medalFor(rank){return rank===0?'🥇':rank===1?'🥈':rank===2?'🥉':''}
-// ── MONTHLY SNAPSHOT + BADGES ──────────────────────────
-// This only fires when an admin happens to load Wiki after month-turnover -
-// there's no server-side cron here, so it's a best-effort "first admin login
-// of the month posts it" pattern, not a guaranteed midnight-exact trigger.
-let currentBadgeMap={};
-const BADGE_DEFS=[
-  {key:'sales',emoji:'💰',label:'Sales Leader'},
-  {key:'collection',emoji:'📞',label:'Collection Leader'},
-  {key:'acctMgmt',emoji:'🤝',label:'Account Mgmt Leader'},
-  {key:'task',emoji:'✅',label:'Task Champion'},
-  {key:'att',emoji:'🕐',label:'Attendance Star'},
-  {key:'fin',emoji:'💵',label:'Finance Star'}
-];
-function pushBadge(username,badge){if(!username)return;if(!currentBadgeMap[username])currentBadgeMap[username]=[];currentBadgeMap[username].push(badge);}
-function badgesFor(username){return currentBadgeMap[(username||'').toLowerCase()]||[]}
-function badgeHtmlFor(username){const b=badgesFor(username);return b.length?b.map(x=>`<span title="${esc(x)}" style="font-size:12px;margin-left:3px">${x.split(' ')[0]}</span>`).join(''):''}
-async function refreshBadgeMap(){
-  try{
-    const fy=currentFYLabel();
-    const rows=await computeLeaderboardRows(fy);
-    const map={};
-    function push(u,b){if(!u)return;if(!map[u])map[u]=[];map[u].push(b);}
-    if(rows[0])push(rows[0].username,'🏆 Top Performer');
-    BADGE_DEFS.forEach(cb=>{
-      const sorted=[...rows].sort((a,b)=>b[cb.key].points-a[cb.key].points);
-      if(sorted[0]&&sorted[0][cb.key].points>0)push(sorted[0].username,cb.emoji+' '+cb.label);
-    });
-    currentBadgeMap=map;
-    const sbBadges=el('sb-badges');if(sbBadges&&CU)sbBadges.innerHTML=badgeHtmlFor(CU.username);
-    if(isChatViewOpen())renderChat();
-  }catch(e){console.error('Badge refresh failed:',e);}
-}
-async function maybePostMonthlyLeaderboardSnapshot(){
-  if(!isSuperUser())return;
-  try{
-    const now=new Date();
-    const monthKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    const existing=await db.collection(LB_SNAPSHOT_COL).doc(monthKey).get();
-    if(existing.exists)return;
-    const fy=currentFYLabel();
-    const rows=(await computeLeaderboardRows(fy)).filter(r=>!['updesh','pratim'].includes((r.username||'').toLowerCase()));
-    if(!rows.length)return;
-    const top3=rows.slice(0,3);
-    const lines=top3.map((r,i)=>`${medalFor(i)} ${r.fullName} - ${r.total.toFixed(1)} pts`).join('\n');
-    const text=`📊 Monthly Performance Snapshot (${monthKey})\nFinancial Year: ${fy}\n\nTop performers so far this FY:\n${lines}\n\nCategories: Sales, Payment Collection, Account Management, Task Management, Attendance, Finance/Accounting.`;
-    const bsnap=await db.collection(CHAT_THREADS_COL).where('type','==','broadcast').limit(1).get();
-    if(bsnap.empty)return;
-    const threadId=bsnap.docs[0].id;
-    await db.collection(CHAT_MSG_COL).add({threadId,text,senderUsername:'system',senderName:'Performance Bot',createdAt:new Date().toISOString()});
-    await db.collection(CHAT_THREADS_COL).doc(threadId).update({lastMessageAt:new Date().toISOString(),lastMessageText:text.slice(0,120),lastMessageBy:'system'});
-    await db.collection(LB_SNAPSHOT_COL).doc(monthKey).set({postedAt:new Date().toISOString(),postedBy:userKey(),fy,top3:top3.map(r=>({fullName:r.fullName,total:r.total}))});
-  }catch(e){console.error('Monthly snapshot post failed:',e);}
-}
-async function renderLeaderboard(){
-  const root=el('leaderboard-root');if(!root)return;
-  if(!leaderboardFY)leaderboardFY=currentFYLabel();
-  const fys=availableLeaderboardFYs();
-  root.innerHTML=`<div class="card"><div class="card-header">Filter</div>
-    <div class="form-row"><div class="form-group"><label>Financial Year</label><select id="lb-fy" onchange="leaderboardFY=g('lb-fy');renderLeaderboard()">${fys.map(f=>`<option value="${f}" ${leaderboardFY===f?'selected':''}>${f}</option>`).join('')}</select></div></div>
-  </div><div class="card"><div class="card-header">Loading scores...</div></div>`;
-  const rows=await computeLeaderboardRows(leaderboardFY);
-  const podium=rows.slice(0,3);
-  root.innerHTML=`<div class="card"><div class="card-header">Filter</div>
-    <div class="form-row"><div class="form-group"><label>Financial Year</label><select id="lb-fy" onchange="leaderboardFY=g('lb-fy');renderLeaderboard()">${fys.map(f=>`<option value="${f}" ${leaderboardFY===f?'selected':''}>${f}</option>`).join('')}</select></div></div>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">Sales and Account Management scores use CRM deal/activity data; Payment Collection uses Debt Management collection records. Sales and Payment Collection are scored relative to this FY's top performer in each category.</div>
-  </div>
-  ${podium.length?`<div class="card"><div class="card-header">Top 3 - ${esc(leaderboardFY)}</div>
-    <div style="display:grid;grid-template-columns:repeat(${podium.length},1fr);gap:12px">
-      ${podium.map((r,i)=>`<div class="card" style="margin:0;text-align:center;padding:16px"><div style="font-size:28px">${medalFor(i)}</div><div style="font-weight:700;margin-top:4px">${esc(r.fullName)}</div><div class="muted" style="font-size:11px">Score: ${r.total.toFixed(1)}</div></div>`).join('')}
-    </div></div>`:''}
-  <div class="card"><div class="card-header">Full Ranking</div>
-    ${rows.length?`<div class="table-wrap"><table><thead><tr><th>Rank</th><th>User</th><th class="right">Sales</th><th class="right">Payment Coln.</th><th class="right">Acct. Mgmt</th><th class="right">Task Mgmt</th><th class="right">Attendance</th><th class="right">Finance/Accts</th><th class="right">Total</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="strong">${i+1} ${medalFor(i)}</td><td>${esc(r.fullName)}${badgeHtmlFor(r.username)}</td><td class="right" title="Gross margin billed: Rs ${fmtAmt2(r.sales.amount)}">${r.sales.points.toFixed(1)}</td><td class="right" title="Collected: Rs ${fmtAmt2(r.collection.amount)}">${r.collection.points.toFixed(1)}</td><td class="right" title="${r.acctMgmt.count} activities logged">${r.acctMgmt.points.toFixed(1)}</td><td class="right">${r.task.points.toFixed(1)}</td><td class="right">${r.att.points.toFixed(1)}</td><td class="right">${r.fin.points.toFixed(1)}</td><td class="right strong">${r.total.toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No scoreable activity found for this financial year yet.</div>'}
-  </div>`;
-}
-function fmtAmt2(n){return Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0})}
 function openFlagToUpdeshModal(){const m=el('flag-updesh-modal');if(m)m.style.display='flex';const t=el('flag-updesh-text');if(t)t.value='';}
 function closeFlagToUpdeshModal(){const m=el('flag-updesh-modal');if(m)m.style.display='none';}
 async function submitFlagToUpdesh(){
