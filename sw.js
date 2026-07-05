@@ -1,9 +1,12 @@
 // DQAP Wiki Service Worker
-// Version 78.26 build 2 - Fixed: clicking a Dashboard row now returns you to
-// the Dashboard table when you collapse that project's card, instead of
-// stranding you in the PMO Details card view.
+// Version 78.27 - Restored the "Leaderboard" sidebar link/page (kept, per
+// request, only the old individual scoring was meant to be removed). Now
+// shows a department-based team scorecard: Sales/Tech/PMO/F&A scored on
+// Sales-New, Billing & Collection, Attendance, Project Completion, HSM.
+// Attendance is computed live from Wiki data by department; the other four
+// are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.26-20260705-2';
+const CACHE_VERSION = 'dqap-wiki-v78.27-20260705-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
