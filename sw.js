@@ -1,7 +1,7 @@
 // DQAP Wiki Service Worker
 // Version 78.24 - Fixed deadline-review acknowledgment logging; disabled auto-announcements
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.26-20260705-2';
+const CACHE_VERSION = 'dqap-wiki-v78.26-20260705-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
