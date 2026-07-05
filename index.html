@@ -20,8 +20,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_25_DEPT_FIELD_PROJECT_EXTENSIONS_LEADERBOARD_REMOVED
-const APP_VERSION="78.25_DEPT_FIELD_PROJECT_EXTENSIONS_LEADERBOARD_REMOVED";
+// DQAP_WIKI_VERSION_78_26_PMO_DASHBOARD_ROW_LAYOUT_TARGET_DATE
+const APP_VERSION="78.26";
+// Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
+// the two are trivially cross-checkable when diagnosing a stale-cache report.
+const APP_BUILD="20260705-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1387,7 +1390,7 @@ function logout(){
 
 function startApp(){
   el('sb-user').textContent=CU.fullName;
-  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki - v'+APP_VERSION;
+  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki v'+APP_VERSION+'-'+APP_BUILD;
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
@@ -1852,72 +1855,44 @@ function renderPMODashboard(list){
     c.innerHTML=`<div class="card"><div class="cb" style="text-align:center;padding:32px;color:var(--t2)"><i class="ti ti-chart-gantt" style="font-size:36px;display:block;margin-bottom:10px"></i>No projects match the current filter</div></div>`;
     return;
   }
-  const SEG=70,NAME_W=215,TOTAL_W=50;
-  const minW=NAME_W+PMO_STAGES.length*SEG+TOTAL_W;
-  // Both tables share the same fixed layout — column widths MUST match.
-  const tbl=`border-collapse:collapse;table-layout:fixed;width:${minW}px`;
-
-  // â”€â”€ Fixed header cells: horizontal text, word-wrapped, colour stripe bottom â”€â”€
-  const thCols=PMO_STAGES.map((s,i)=>`
-    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:6px 3px;border-left:.5px solid var(--bd);border-bottom:3px solid ${STAGE_COLORS[i]};background:var(--pl);vertical-align:middle;text-align:center">
-      <div style="font-size:8.5px;font-weight:700;color:var(--t1);line-height:1.35;word-break:break-word;overflow-wrap:anywhere">${STAGE_SHORT[i]}</div>
-    </th>`).join('');
-
-  // â”€â”€ Data rows â”€â”€
+  const th=(label,align)=>`<th style="padding:11px 14px;text-align:${align||'left'};font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;background:var(--pl);border-bottom:.5px solid var(--bd);white-space:nowrap">${label}</th>`;
   const rows=list.map(p=>{
-    const stages=p.stages||[];
-    const tds=PMO_STAGES.map((stageName,i)=>{
-      const summary=getPMODashboardStage(stages,stageName);
-      const pct=summary.pct,col=STAGE_COLORS[i]||'#999';
-      return `<td style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:4px 3px;border-left:.5px solid var(--bd)">
-        <div style="background:#e8e8e8;border-radius:3px;height:22px;overflow:hidden;position:relative" title="${esc(summary.title)}">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px"></div>
-          ${pct>0?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:${pct>=55?'#fff':'#444'};pointer-events:none">${pct}%</span>`:''}
-        </div>
-      </td>`;
-    }).join('');
+    const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
+    const cfg=budgetCfgData.find(cf=>cf.projectName===p.projName)||{};
     const ov=p.overall||0;
     const pctCol=ov===100?'#1B5E20':ov>=60?'var(--p)':'#E65100';
-    const stCol={'Not Started':'#78909C','In Progress':'#0070C0','Completed':'#1B5E20','On Hold':'#F57F17','Delayed':'#B71C1C'}[p.status]||'#666';
-    return `<tr style="border-bottom:.5px solid var(--bd)">
-      <td style="width:${NAME_W}px;min-width:${NAME_W}px;max-width:${NAME_W}px;padding:5px 8px 5px 12px;position:sticky;left:0;background:var(--card);z-index:2;border-right:.5px solid var(--bd);box-shadow:2px 0 4px rgba(0,0,0,.07)">
-        <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.projName)}">
-          ${p.projNum?`<span style="font-size:8.5px;font-weight:700;background:var(--pl);color:var(--p);padding:1px 5px;border-radius:7px;margin-right:4px">${esc(p.projNum)}</span>`:''}${esc(p.projName)}
-        </div>
-        <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:7px;background:${stCol}22;color:${stCol};margin-top:2px;display:inline-block">${p.status}</span>
+    const {allocated,pct:bgPct,status:bgStatus}=getProjBudget(p.projName);
+    const target=projRef.targetCompletionDate||projRef.originalTargetCompletionDate;
+    const tStatus=target?ldStatus(target):null;
+    const targetCell=target
+      ?`<div style="font-size:12px;font-weight:600;color:${tStatus.color}">${new Date(target).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div><div style="font-size:9.5px;color:var(--t2)">${tStatus.label}</div>`
+      :`<span style="color:#aaa;font-size:11.5px">Not set</span>`;
+    return`<tr style="cursor:pointer" onclick="switchToPMODetails('${p.id}')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${p.projNum?`<span style="font-size:9px;font-weight:700;background:var(--pl);color:var(--p);padding:1px 6px;border-radius:8px;margin-right:6px;vertical-align:1px">${esc(p.projNum)}</span>`:''}${esc(p.projName)}</div>
       </td>
-      ${tds}
-      <td style="width:${TOTAL_W}px;min-width:${TOTAL_W}px;text-align:center;font-size:12px;font-weight:800;color:${pctCol};border-left:.5px solid var(--bd)">${ov}%</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t1)">${esc(p.client||'-')}</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t1)">${esc(cfg.projectManager||'-')}</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">${bpmoStatus(p.status)}</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);text-align:right;font-size:13px;font-weight:800;color:${pctCol}">${ov}%</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">${targetCell}</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">${allocated?bbudgetStatus(bgStatus):'<span style="color:#aaa;font-size:11.5px">-</span>'}</td>
+      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:11.5px;color:var(--t2);white-space:nowrap">${(p.updatedAt||'').split('T')[0]||'-'}</td>
     </tr>`;
   }).join('');
-
-  // â”€â”€ Legend â”€â”€
-  const legend=PMO_STAGES.map((s,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--t1);white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${STAGE_COLORS[i]};flex-shrink:0"></span>${STAGE_SHORT[i]}</span>`).join('');
-
-  c.innerHTML=`<div class="card" style="overflow:hidden">
-
-    <!-- Fixed header: overflow:hidden + no scrollbar; synced by body onscroll -->
-    <div id="pmo-hw" style="overflow:hidden;border-bottom:.5px solid var(--bd)">
-      <table style="${tbl}">
-        <thead><tr>
-          <th style="width:${NAME_W}px;min-width:${NAME_W}px;max-width:${NAME_W}px;background:var(--pl);padding:8px 8px 10px 12px;text-align:left;font-size:9.5px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.5px;border-right:.5px solid var(--bd);vertical-align:bottom">Project</th>
-          ${thCols}
-          <th style="width:${TOTAL_W}px;min-width:${TOTAL_W}px;background:var(--pl);padding:8px 4px;text-align:center;font-size:9.5px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.5px;border-left:.5px solid var(--bd);vertical-align:bottom">Done</th>
-        </tr></thead>
+  c.innerHTML=`<div class="card" style="overflow:hidden;padding:0">
+    <div style="overflow-x:auto">
+      <table style="border-collapse:collapse;width:100%;min-width:920px">
+        <thead><tr>${th('Project')}${th('Client')}${th('PM')}${th('Status')}${th('Overall','right')}${th('Target Completion')}${th('Budget')}${th('Updated')}</tr></thead>
+        <tbody>${rows}</tbody>
       </table>
     </div>
-
-    <!-- Scrollable body: syncs horizontal scroll back to header -->
-    <div id="pmo-bw" style="overflow-x:auto;overflow-y:auto;max-height:62vh"
-         onscroll="var h=el('pmo-hw');if(h)h.scrollLeft=this.scrollLeft">
-      <table style="${tbl}"><tbody>${rows}</tbody></table>
-    </div>
-
-    <div style="border-top:.5px solid var(--bd);padding:10px 14px">
-      <div style="font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Legend — hover any cell for detail</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${legend}</div>
-    </div>
   </div>`;
+}
+function switchToPMODetails(id){
+  pmoExpandedId=id;
+  setPMOView('cards');
+  setTimeout(()=>{const c=el('pmc-'+id);if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);
 }
 function docKey(label){return String(label||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30)+'_'+Math.random().toString(36).slice(2,7)}
 function startProjectDocTemplateListen(){
@@ -2243,9 +2218,11 @@ function renderPMO(){
       } else {
         // â”€â”€ View mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const done=(p.stages||[]).filter(s=>s.pct===100).length;
+        const targetVal=projRef.targetCompletionDate||projRef.originalTargetCompletionDate;
+        const targetLine=targetVal?`<div style="font-size:10.5px;color:var(--t2);margin-top:2px"><i class="ti ti-target-arrow" style="font-size:12px;vertical-align:-1px"></i> Target completion: <b style="color:var(--t1)">${new Date(targetVal).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</b>${projRef.originalTargetCompletionDate&&projRef.targetCompletionDate&&projRef.originalTargetCompletionDate!==projRef.targetCompletionDate?` <span style="color:#E65100">(originally ${new Date(projRef.originalTargetCompletionDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})})</span>`:''}</div>`:`<div style="font-size:10.5px;color:#aaa;margin-top:2px">Target completion date not set — add it from Manage Projects</div>`;
         stageDetail=`<div style="border-top:.5px solid var(--bd);padding:12px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
-            <span style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete</span>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+            <div><span style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete</span>${targetLine}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               ${canEdit?`<button class="btn sm pri" onclick="event.stopPropagation();enterPMOEdit('${id}')"><i class="ti ti-edit"></i>Edit stages</button>`:''}
               ${canEdit&&projRef.id?(pendingExt?`<span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:700">Extension pending review</span>`:`<button class="btn sm" onclick="event.stopPropagation();openExtensionRequestModal('${projRef.id}')"><i class="ti ti-calendar-plus"></i>Extension Request</button>`):''}
