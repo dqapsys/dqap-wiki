@@ -20,11 +20,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_26_PMO_DASHBOARD_ROW_LAYOUT_TARGET_DATE
-const APP_VERSION="78.26";
+// DQAP_WIKI_VERSION_78_27_TEAM_LEADERBOARD_RESTORED
+const APP_VERSION="78.27";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260705-2";
+const APP_BUILD="20260705-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -377,6 +377,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy"></i>Leaderboard</div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
@@ -520,6 +521,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <!-- â•â• DEBT MANAGEMENT â•â• -->
 <!-- â•â• DEBT MANAGEMENT (IFRAME - EXTERNAL APP) â•â• -->
+<div id="v-leaderboard" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-trophy" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Leaderboard</div><div class="pg-s">Team performance by department — Sales, Tech, PMO, F&amp;A</div></div>
+  </div>
+  <div class="content" id="team-perf-root"></div>
+</div>
 <div id="v-chat" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-message-circle" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Chat</div><div class="pg-s">Company announcements, groups and direct messages</div></div>
@@ -3067,6 +3074,188 @@ async function changeDept(id,currentDept,name){
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
+// â”€â”€ TEAM PERFORMANCE / LEADERBOARD (department-based) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Replaces the old individual leaderboard. Departments (Sales/Tech/PMO/F&A)
+// are scored on 5 company-priority parameters, weighted per policy:
+//   Sales-New 30, Billing & Collection 25, Attendance 8,
+//   Project Completion time/GM/budget 25, HSM Score 12
+// A department's "share" of a parameter = its actual contribution Ã· everyone's
+// actual contribution (never an average of individual %-attainment - see the
+// design discussion this is built from).
+//
+// STATUS (deliberately, for now): only Attendance is computed live from real
+// Wiki data, because it's the only parameter whose source data already lives
+// in this app. The other four are entered manually per period below and
+// persisted to Firestore, until CRM/Debt Management integration, the PMO
+// target-date rollup, and the HSM module are ready to feed this directly.
+// This is the "framework and format first" phase we agreed on.
+const DEPT_PARAM_WEIGHTS={sales:30,collection:25,attendance:8,project:25,hsm:12};
+const DEPT_SCORECARD_COL='dqap_dept_scorecard_inputs';
+const TP_MANUAL_PARAMS=[
+  {key:'sales',label:'Sales-New',hint:'% of target achievement, split equally across sales / billing / GM (per-department contribution share)'},
+  {key:'collection',label:'Billing & Collection',hint:'% of collections against commitments (per-department contribution share)'},
+  {key:'project',label:'Project Completion time / GM / budget',hint:'Equal split of schedule vs. approved baseline, budget adherence, GM adherence'},
+  {key:'hsm',label:'HSM Score',hint:'Pending - HSM module not built yet. Leave at policy default (100% F&A) until it exists.'}
+];
+let tpPeriodIdx=0,tpPeriods=[],tpInputsCache=null;
+
+function tpBuildPeriods(){
+  const now=new Date();
+  const fyStart = now.getMonth()>=3 ? now.getFullYear() : now.getFullYear()-1; // FY = Apr..Mar
+  const qDefs=[[3,0],[6,3],[9,6],[0,9]]; // [startMonthOffsetFromJan, unused] - computed directly below instead
+  const mk=(y,m,d)=>attDateKey(new Date(y,m,d));
+  const quarters=[
+    {key:`Q1_FY${fyStart}`,label:`Q1 FY${String(fyStart).slice(-2)}-${String(fyStart+1).slice(-2)} (Apr-Jun)`,start:mk(fyStart,3,1),end:mk(fyStart,5,30)},
+    {key:`Q2_FY${fyStart}`,label:`Q2 FY${String(fyStart).slice(-2)}-${String(fyStart+1).slice(-2)} (Jul-Sep)`,start:mk(fyStart,6,1),end:mk(fyStart,8,30)},
+    {key:`Q3_FY${fyStart}`,label:`Q3 FY${String(fyStart).slice(-2)}-${String(fyStart+1).slice(-2)} (Oct-Dec)`,start:mk(fyStart,9,1),end:mk(fyStart,11,31)},
+    {key:`Q4_FY${fyStart}`,label:`Q4 FY${String(fyStart).slice(-2)}-${String(fyStart+1).slice(-2)} (Jan-Mar)`,start:mk(fyStart+1,0,1),end:mk(fyStart+1,2,31)},
+    {key:`FY${fyStart}_ANNUAL`,label:`FY${String(fyStart).slice(-2)}-${String(fyStart+1).slice(-2)} (Full Year)`,start:mk(fyStart,3,1),end:mk(fyStart+1,2,31)}
+  ];
+  tpPeriods=quarters;
+  // default to whichever quarter contains today
+  const todayKey=attDateKey(now);
+  const idx=quarters.findIndex(q=>q.key.startsWith('Q')&&todayKey>=q.start&&todayKey<=q.end);
+  tpPeriodIdx=idx>=0?idx:0;
+}
+
+function tpUserDept(username){
+  const u=(usersData||[]).find(x=>String(x.username||'').toLowerCase()===String(username||'').toLowerCase());
+  return u?u.department:'';
+}
+
+async function tpComputeAttendanceShares(start,end){
+  const deptTotals={};DEPARTMENTS.forEach(d=>deptTotals[d]=0);
+  try{
+    const rows=await attFetchRange(start,end);
+    const byUser={};
+    rows.forEach(r=>{
+      const uname=String(r.username||r.userId||'').toLowerCase();if(!uname)return;
+      byUser[uname]=byUser[uname]||{credit:0,total:0};
+      byUser[uname].total+=1;
+      if(r.status==='present')byUser[uname].credit+=(r.isLate?0.5:1);
+    });
+    Object.entries(byUser).forEach(([uname,v])=>{
+      const dept=tpUserDept(uname);if(!dept||!deptTotals.hasOwnProperty(dept))return;
+      deptTotals[dept]+=v.credit; // contribution-share by attendance-credit earned, not by rate average
+    });
+  }catch(e){/* attendance not readable - leave at 0, shares() below guards the zero-sum case */}
+  return tpSharesFromTotals(deptTotals);
+}
+function tpSharesFromTotals(totals){
+  const sum=Object.values(totals).reduce((a,b)=>a+b,0);
+  const shares={};DEPARTMENTS.forEach(d=>shares[d]=sum>0?(totals[d]/sum*100):0);
+  return shares;
+}
+function tpDefaultManualShares(){
+  // Falls back to the originally-assumed policy split from the Weightage Matrix
+  // discussion, only used the first time a period has no saved input yet.
+  return {
+    sales:{Sales:70,Tech:30,PMO:0,'F&A':0},
+    collection:{Sales:22,Tech:15,PMO:58,'F&A':5},
+    project:{Sales:0,Tech:40,PMO:60,'F&A':0},
+    hsm:{Sales:0,Tech:0,PMO:0,'F&A':100}
+  };
+}
+async function tpLoadInputs(periodKey){
+  try{
+    const doc=await db.collection(DEPT_SCORECARD_COL).doc(periodKey).get();
+    if(doc.exists)return {...tpDefaultManualShares(),...doc.data().manual};
+  }catch(e){}
+  return tpDefaultManualShares();
+}
+async function tpSaveInputs(periodKey,manual){
+  await db.collection(DEPT_SCORECARD_COL).doc(periodKey).set({manual,updatedAt:new Date().toISOString(),updatedBy:CU.fullName});
+}
+
+async function renderTeamPerformance(){
+  const root=el('team-perf-root');if(!root)return;
+  if(!tpPeriods.length)tpBuildPeriods();
+  const period=tpPeriods[tpPeriodIdx];
+  root.innerHTML=`<div class="card"><div class="cb" style="text-align:center;padding:30px;color:var(--t2)">Loading team performance…</div></div>`;
+
+  const [attShares,manual]=await Promise.all([
+    tpComputeAttendanceShares(period.start,period.end),
+    tpInputsCache&&tpInputsCache._key===period.key?Promise.resolve(tpInputsCache):tpLoadInputs(period.key)
+  ]);
+  manual._key=period.key;tpInputsCache=manual;
+
+  const shares={attendance:attShares,sales:manual.sales,collection:manual.collection,project:manual.project,hsm:manual.hsm};
+  const rows=DEPARTMENTS.map(d=>{
+    const absMarks=DEPT_PARAM_WEIGHTS.sales*(shares.sales[d]||0)
+      +DEPT_PARAM_WEIGHTS.collection*(shares.collection[d]||0)
+      +DEPT_PARAM_WEIGHTS.attendance*(shares.attendance[d]||0)
+      +DEPT_PARAM_WEIGHTS.project*(shares.project[d]||0)
+      +DEPT_PARAM_WEIGHTS.hsm*(shares.hsm[d]||0);
+    return {dept:d,absMarks,sales:shares.sales[d]||0,collection:shares.collection[d]||0,attendance:shares.attendance[d]||0,project:shares.project[d]||0,hsm:shares.hsm[d]||0};
+  });
+  const totalMarks=rows.reduce((s,r)=>s+r.absMarks,0)||1;
+  rows.forEach(r=>r.pctDist=r.absMarks/totalMarks*100);
+  rows.sort((a,b)=>b.absMarks-a.absMarks);
+  const winner=rows[0];
+  const canEditInputs=CU?.isAdmin||(CU?.username||'').toLowerCase()==='pratim';
+
+  const periodOptions=tpPeriods.map((p,i)=>`<option value="${i}" ${i===tpPeriodIdx?'selected':''}>${esc(p.label)}</option>`).join('');
+  const th=(label)=>`<th style="padding:9px 10px;text-align:center;font-size:9.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;background:var(--pl);border-bottom:.5px solid var(--bd)">${label}</th>`;
+  const manualCell=(paramKey,dept,val)=>canEditInputs
+    ?`<input type="number" min="0" max="100" step="0.1" value="${val}" onchange="tpUpdateManual('${paramKey}','${dept}',this.value)" style="width:56px;padding:3px 4px;text-align:center;border:.5px solid var(--bd);border-radius:5px;font-size:12px">`
+    :`<span style="font-size:12.5px">${val.toFixed ? val.toFixed(1):val}</span>`;
+
+  root.innerHTML=`
+    <div class="card" style="margin-bottom:14px">
+      <div class="cb" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-weight:700;font-size:14px">Department scorecard</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px">Rewards go to the whole winning department, split by salary ratio — separate from any individual sales incentive.</div>
+        </div>
+        <select id="tp-period-sel" class="fs" style="width:auto" onchange="tpPeriodIdx=parseInt(this.value);renderTeamPerformance()">${periodOptions}</select>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#B8860B,#8B6914);border:none;color:#fff">
+      <div class="cb" style="display:flex;align-items:center;gap:12px">
+        <i class="ti ti-trophy" style="font-size:30px"></i>
+        <div><div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Leading department this period</div>
+        <div style="font-size:20px;font-weight:800">${esc(winner.dept)} <span style="font-size:13px;font-weight:600;opacity:.9">(${winner.pctDist.toFixed(1)}%)</span></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="overflow:hidden;padding:0;margin-bottom:14px">
+      <div style="overflow-x:auto">
+        <table style="border-collapse:collapse;width:100%;min-width:700px">
+          <thead><tr>${th('Department')}${th('Sales-New (30)')}${th('Billing &amp; Collection (25)')}${th('Attendance (8) - live')}${th('Project Completion (25)')}${th('HSM (12) - pending')}${th('Score')}${th('Rank')}</tr></thead>
+          <tbody>${rows.map((r,i)=>`<tr style="${i===0?'background:#FFF8E1':''}">
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);font-weight:700">${esc(r.dept)}</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('sales',r.dept,r.sales)}</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('collection',r.dept,r.collection)}</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;color:var(--t2);font-size:12.5px">${r.attendance.toFixed(1)}</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('project',r.dept,r.project)}</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('hsm',r.dept,r.hsm)}</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:800;color:${i===0?'#B8860B':'var(--t1)'}">${r.pctDist.toFixed(1)}%</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:700">#${i+1}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+      ${canEditInputs?`<div style="padding:10px 14px;border-top:.5px solid var(--bd);font-size:10.5px;color:var(--t2)">Editable cells save automatically per period. Each column should sum to 100 across the four departments.</div>`:''}
+    </div>
+
+    <div class="card">
+      <div class="cb">
+        <div style="font-weight:700;font-size:13px;margin-bottom:8px">Where each number comes from</div>
+        ${TP_MANUAL_PARAMS.map(p=>`<div style="font-size:11.5px;color:var(--t2);margin-bottom:6px"><b style="color:var(--t1)">${esc(p.label)}:</b> ${esc(p.hint)} — currently entered manually${p.key==='hsm'?' (module not built yet)':', pending module integration'}.</div>`).join('')}
+        <div style="font-size:11.5px;color:var(--t2)"><b style="color:var(--t1)">Attendance:</b> computed live from this Wiki's own Attendance records for the selected period, rolled up by each user's Department field in Manage Users.</div>
+      </div>
+    </div>
+  `;
+}
+async function tpUpdateManual(paramKey,dept,val){
+  const period=tpPeriods[tpPeriodIdx];
+  tpInputsCache[paramKey][dept]=parseFloat(val)||0;
+  try{await tpSaveInputs(period.key,{sales:tpInputsCache.sales,collection:tpInputsCache.collection,project:tpInputsCache.project,hsm:tpInputsCache.hsm});toast('Saved âœ“','ok');}
+  catch(e){toast('Failed to save: '+e.message,'err');}
+  renderTeamPerformance();
+}
+
+
 function editUser(id, fullName, username, currentEmail, currentRole){
   const newEmail = prompt(`Edit Email for ${fullName} (${username})\n\nCurrent: ${currentEmail || '(not set)'}`, currentEmail || '');
   if(newEmail === null) return;
@@ -3282,6 +3471,7 @@ function go(n){
   if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
+  if(n==='leaderboard')renderTeamPerformance();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
   if(n==='attendance'){attRender();}
   if(n==='chat'){renderChat();}
