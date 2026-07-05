@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_23_NESTED_PROJECT_SUBFOLDERS
-const APP_VERSION="78.23_NESTED_PROJECT_SUBFOLDERS";
+// DQAP_WIKI_VERSION_78_24_ACK_TRAIL_FIX_AND_MANUAL_ANNOUNCEMENTS
+const APP_VERSION="78.24_ACK_TRAIL_FIX_AND_MANUAL_ANNOUNCEMENTS";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1385,7 +1385,7 @@ function startApp(){
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
   startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();startHolidaysListen();startProjectDocTemplateListen();
-  setTimeout(()=>{refreshBadgeMap();maybePostMonthlyLeaderboardSnapshot();},4000);
+  setTimeout(()=>{refreshBadgeMap();/* maybePostMonthlyLeaderboardSnapshot() disabled - manual announcements only for now, pending a more comprehensive leaderboard/incentive design */},4000);
   setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
 }
@@ -3718,7 +3718,7 @@ async function reviewWikiDeadlineRequest(id,decision){
   if(!t||t.assignedBy!==CU.fullName||t.deadlineChangeStatus!=='pending'||!remarks){toast('Decision remarks are mandatory','err');return;}
   const now=new Date().toISOString(),d={deadlineChangeStatus:decision,deadlineChangeReviewedBy:CU.fullName,deadlineChangeReviewedAt:now,deadlineChangeReviewRemarks:remarks,updatedAt:now};
   if(decision==='approved')d.deadline=t.proposedDeadline;
-  showLoad('Saving decision...');try{await db.collection(TASK_COL).doc(id).update(d);toast('Deadline request '+decision,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+  showLoad('Saving decision...');try{await db.collection(TASK_COL).doc(id).update(d);await logAcknowledgement('tasks',id,t.title||t.name||'','deadline_'+decision);toast('Deadline request '+decision,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function completeWikiMandatoryTask(id){await updateTaskStatus(id,'Completed');modalHideWikiTask();}
 function modalHideWikiTask(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';}
