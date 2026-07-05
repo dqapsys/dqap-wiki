@@ -1,15 +1,13 @@
 // DQAP Wiki Service Worker
-// Version 78.28 - PMO details table, chat bubbles, badge alignment, PWA assets.
-// Version 78.27 - Restored the "Leaderboard" sidebar link/page (kept, per
-// request, only the old individual scoring was meant to be removed). Now
-// shows a department-based team scorecard: Sales/Tech/PMO/F&A scored on
-// Sales-New, Billing & Collection, Attendance, Project Completion, HSM.
-// Attendance is computed live from Wiki data by department; the other four
-// are manual per-period inputs (admin/Pratim) pending module integration.
+// Version 78.28 - Leaderboard now has its own gold module theme (nav icon,
+// header, table, buttons); Chat messages use per-sender font colors instead
+// of colored boxes and are more compact; Keshav can now create projects in
+// Manage Projects, with any edit to an existing project routed to Pratim for
+// approval (reject/refer-to-Updesh), same pattern as Extension Requests.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.28-20260705-2';
+const CACHE_VERSION = 'dqap-wiki-v78.28-20260705-1';
 const CACHE_NAME = CACHE_VERSION;
-const APP_SHELL = ['./', './index.html', './manifest.json'];
+const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
