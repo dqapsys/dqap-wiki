@@ -20,8 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_28_LB_THEME_CHAT_COMPACT_KESHAV_PROJECT_ACCESS
-const APP_VERSION="78.28";
+// DQAP_WIKI_VERSION_78_29_MOBILE_OVERFLOW_FIX
+const APP_VERSION="78.29";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
 const APP_BUILD="20260705-1";
@@ -233,7 +233,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .proj-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .sub-list{display:flex;flex-direction:column;gap:4px;margin-top:7px;max-height:160px;overflow-y:auto}
 .sub-item{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px}
-.sub-add{display:flex;gap:5px;margin-top:8px}
+.sub-add{display:flex;gap:5px;margin-top:8px;min-width:0}.sub-add>.fi{min-width:0}
 .chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#fafafa;border:.5px solid var(--bd);border-radius:12px;font-size:11px;color:var(--t2)}
 /* PMO */
 .pmo-card{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);margin-bottom:12px;overflow:hidden;transition:box-shadow .15s}
@@ -274,25 +274,32 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .mob-overlay.open{display:block}
 .sidebar.mob-open{transform:translateX(0)!important}
 @media(max-width:768px){
+  html,body{overflow-x:hidden;max-width:100vw}
   .compact-card-grid{grid-template-columns:1fr}
-  #app{display:flex!important;flex-direction:column;min-height:100vh}
+  #app{display:flex!important;flex-direction:column;min-height:100vh;overflow-x:hidden;max-width:100vw}
   .mob-bar{display:flex}
   .sidebar{transform:translateX(-100%);transition:transform .25s ease;position:fixed;top:0;left:0;z-index:400;height:100vh;width:var(--sw)}
-  .main{margin-left:0!important;flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
+  .main{margin-left:0!important;flex:1;display:flex;flex-direction:column;min-height:0;width:100%;overflow-x:hidden;max-width:100vw}
   .topbar{display:none}
-  .stats{grid-template-columns:1fr 1fr;gap:8px}
+  /* !important is required below: many stat/grid rows carry a redundant inline
+     style (e.g. style="grid-template-columns:repeat(4,1fr)") that otherwise
+     silently wins over a plain class rule inside a media query, even though
+     the class rule is what's meant to apply on mobile - it defeated every one
+     of these overrides until !important was added. */
+  .stats{grid-template-columns:1fr 1fr!important;gap:8px}
   .sc{padding:10px 11px;gap:8px}
   .sv{font-size:18px}.sl{font-size:9.5px}
   .si{width:30px;height:30px}
   #v-dash .content>div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   #v-chat .content>div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   #v-pmo .content div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
-  .g4,.g3{grid-template-columns:1fr 1fr}
-  .g2{grid-template-columns:1fr}
-  .dg{grid-template-columns:1fr 1fr}
-  .proj-body{grid-template-columns:1fr}
-  .lib-grid{grid-template-columns:1fr}
-  .content{padding:12px 14px}
+  .chat-grid{grid-template-columns:1fr!important}
+  .g4,.g3{grid-template-columns:1fr 1fr!important}
+  .g2{grid-template-columns:1fr!important}
+  .dg{grid-template-columns:1fr 1fr!important}
+  .proj-body{grid-template-columns:1fr!important}
+  .lib-grid{grid-template-columns:1fr!important}
+  .content{padding:12px 14px;max-width:100vw;overflow-x:hidden}
   #lib-storage-bar{display:block!important;width:100%}
   .wtable{min-width:580px}
   .wtable th,.wtable td{padding:7px 8px;font-size:11px}
@@ -315,8 +322,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   .chat-thread-item{font-size:12px}
   #flag-updesh-modal>div{width:94vw!important;padding:16px!important}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Any row that pairs a flexible input with a button (chat compose, quick-add
+     rows, etc.) needs its flex children allowed to shrink below their default
+     intrinsic width, or the row - and the page along with it - overflows. */
+  #chat-input,.flex-row-safe>input,.flex-row-safe>select{min-width:0}
 }
-@media(max-width:420px){.g4,.g3{grid-template-columns:1fr}.sc{padding:8px 10px}.sv{font-size:16px}}
+@media(max-width:420px){.g4,.g3{grid-template-columns:1fr!important}.sc{padding:8px 10px}.sv{font-size:16px}}
 </style>
 </head>
 <body>
@@ -5062,7 +5073,7 @@ function chatMessagePaneHtml(){
   }).join(''):'<div class="empty">No messages yet.</div>';
   return`<div class="chat-pane" style="display:flex;flex-direction:column;height:calc(100vh - 230px);max-height:100%">
     <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd)">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
-    ${canPost?`<div style="display:flex;gap:8px;margin:8px 0;flex-shrink:0"><input id="chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri" onclick="sendChatMessage()"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
+    ${canPost?`<div class="flex-row-safe" style="display:flex;gap:8px;margin:8px 0;flex-shrink:0;min-width:0"><input id="chat-input" placeholder="Type a message..." style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri" onclick="sendChatMessage()" style="flex-shrink:0"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
     <div id="chat-msg-box" style="flex:1;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column-reverse">
       ${msgHtml}
     </div>
@@ -5076,11 +5087,11 @@ function chatGroupMemberCheckboxesHtml(){
 }
 function renderChat(){
   const root=el('chat-root');if(!root)return;
-  root.innerHTML=`<div style="display:grid;grid-template-columns:280px 1fr;gap:16px">
+  root.innerHTML=`<div class="chat-grid" style="display:grid;grid-template-columns:280px 1fr;gap:16px">
     <div>
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <select id="chat-new-dm-user" style="flex:1"><option value="">Start a new chat...</option>${chatNewDmOptionsHtml()}</select>
-        <button class="btn sm" onclick="const u=g('chat-new-dm-user');if(u)openDM(u)"><i class="ti ti-plus"></i></button>
+      <div class="flex-row-safe" style="display:flex;gap:6px;margin-bottom:10px;min-width:0">
+        <select id="chat-new-dm-user" style="flex:1;min-width:0"><option value="">Start a new chat...</option>${chatNewDmOptionsHtml()}</select>
+        <button class="btn sm" onclick="const u=g('chat-new-dm-user');if(u)openDM(u)" style="flex-shrink:0"><i class="ti ti-plus"></i></button>
       </div>
       ${canCreateChatGroup()?`<button class="btn sm" style="width:100%;margin-bottom:10px" onclick="toggleNewGroupForm()"><i class="ti ti-users"></i>New Group</button>
       <div id="new-group-form" style="display:none;border:.5px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:10px">
