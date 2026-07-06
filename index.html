@@ -21,11 +21,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_30_LEADERBOARD_PROJECT_APPROVAL_CHAT_COMPACT
-const APP_VERSION="78.30";
+// DQAP_WIKI_VERSION_78_31_PAYMS_EXPENSE_LINK_SWITCHES
+const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-2";
+const APP_BUILD="20260706-3";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -3668,7 +3668,7 @@ function openPayMS(){
   }
   try {
     try{localStorage.setItem('dqap_payms_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
-    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260703.1' : 'https://dqapsys.github.io/PayMS/?v=20260703.1';
+    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260706.3' : 'https://dqapsys.github.io/PayMS/?v=20260706.3';
     const url = `${base}#sess=${encodeURIComponent(sess)}`;
     const paymsWindow = window.open(url, '_blank');
     if(paymsWindow) paymsWindow.opener=null;
