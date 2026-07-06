@@ -21,11 +21,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_29_MOBILE_CHAT_ATTENDANCE_OOO_SCORE
-const APP_VERSION="78.29";
+// DQAP_WIKI_VERSION_78_30_LEADERBOARD_PROJECT_APPROVAL_CHAT_COMPACT
+const APP_VERSION="78.30";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-1";
+const APP_BUILD="20260706-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -44,6 +44,10 @@ function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase(
 // Named users granted edit rights across all modules regardless of their role.
 const EDIT_USERS=["updesh","pratim"];
 function isPrivilegedEditor(u){return EDIT_USERS.includes(String(u||"").toLowerCase());}
+const PROJECT_ACCESS_USERS=["updesh","pratim","keshav"];
+const PROJECT_APPROVER_USERS=["pratim","keshav"];
+function canManageProjectsUser(u){return PROJECT_ACCESS_USERS.includes(String(u||"").toLowerCase());}
+function canApproveProjectChangesUser(u){return PROJECT_APPROVER_USERS.includes(String(u||"").toLowerCase())||String(u||"").toLowerCase()==="updesh";}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
   authDomain:"dqap-wiki.firebaseapp.com",
@@ -267,20 +271,36 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .pmo-detail-progress .bar{height:7px;background:#ECEFF1;border-radius:99px;overflow:hidden;flex:1}
 .pmo-detail-progress .fill{height:100%;border-radius:99px}
 .pmo-detail-expanded td{background:#fff!important;padding:0;border-bottom:.5px solid var(--bd)}
-.chat-msg-row{display:flex;margin:8px 0}
+.chat-msg-row{display:flex;margin:4px 0}
 .chat-msg-row.mine{justify-content:flex-end}
 .chat-msg-row.theirs{justify-content:flex-start}
-.chat-bubble{max-width:min(72%,680px);padding:8px 10px;border-radius:12px;font-size:13px;line-height:1.45;box-shadow:0 1px 2px rgba(0,0,0,.05);white-space:pre-wrap}
-.chat-msg-row.mine .chat-bubble{background:#DFF3FF;color:#073B55;border-bottom-right-radius:4px}
-.chat-msg-row.theirs .chat-bubble{background:#F1F5F9;color:#111827;border-bottom-left-radius:4px}
-.chat-msg-row.flagged .chat-bubble{border-left:3px solid #c0392b;background:#FFF3F2}
-.chat-meta{font-size:10px;margin-bottom:3px;opacity:.74;display:flex;gap:5px;align-items:center;justify-content:space-between}
+.chat-bubble{max-width:min(68%,620px);padding:5px 8px;border-radius:8px;font-size:12px;line-height:1.32;white-space:pre-wrap;border:.5px solid var(--bd);background:#fff}
+.chat-msg-row.mine .chat-bubble{color:#006994}
+.chat-msg-row.theirs .chat-bubble{color:#2E7D32}
+.chat-msg-row.flagged .chat-bubble{border-left:3px solid #c0392b;color:#B71C1C}
+.chat-meta{font-size:9px;margin-bottom:2px;opacity:.68;display:flex;gap:5px;align-items:center;justify-content:space-between;color:var(--t2)}
 .chat-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;width:100%;max-width:100%;overflow:hidden}
 .chat-sidebar,.chat-panel{min-width:0}
 .chat-card{margin:0;min-width:0;overflow:hidden}
 .chat-compose{display:flex;gap:8px;margin:8px 0;flex-shrink:0}
 .chat-compose input{min-width:0;flex:1;width:100%;padding:7px 10px;border:.5px solid var(--bds);border-radius:7px;font:inherit;font-size:12px;background:#fafafa;color:var(--t1)}
 .chat-send-btn{flex:0 0 auto;width:38px;justify-content:center;padding-left:0;padding-right:0}
+.leaderboard-shell{max-width:1480px;margin:0 auto}
+.leaderboard-hero{background:linear-gradient(135deg,#005C83,#008DB8);color:#fff;border-radius:8px;padding:22px 24px;margin-bottom:16px;display:flex;justify-content:space-between;gap:18px;align-items:center;box-shadow:0 10px 24px rgba(0,105,148,.16)}
+.leaderboard-hero h2{margin:0;font-size:24px;line-height:1.1;letter-spacing:0}
+.leaderboard-hero p{margin:6px 0 0;font-size:12.5px;opacity:.88;max-width:720px}
+.leaderboard-kpis{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.leaderboard-kpi{background:var(--card);border:.5px solid var(--bd);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.leaderboard-kpi i{font-size:19px;color:var(--p)}
+.leaderboard-kpi b{font-size:18px;color:var(--t1)}
+.leaderboard-kpi span{display:block;font-size:10px;color:var(--t2);margin-top:1px}
+.leaderboard-panel{background:var(--card);border:.5px solid var(--bd);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.leaderboard-panel-head{padding:12px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.leaderboard-table{width:100%;border-collapse:collapse;min-width:760px}
+.leaderboard-table th{padding:9px 10px;text-align:center;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:var(--t2);background:#F7FAFC;border-bottom:.5px solid var(--bd)}
+.leaderboard-table td{padding:9px 10px;border-bottom:.5px solid var(--bd);font-size:12px;text-align:center}
+.leaderboard-table td:first-child,.leaderboard-table th:first-child{text-align:left}
+.leaderboard-winner{background:#EAF7FB}
 /* MOBILE */
 .mob-bar{display:none;background:linear-gradient(90deg,var(--sb1),var(--sb2));padding:0 14px;height:52px;flex-direction:row;align-items:center;justify-content:space-between;position:sticky;top:0;left:0;right:0;z-index:200;width:100%;flex-shrink:0}
 .mob-left{display:flex;align-items:center;gap:10px;height:100%}
@@ -333,13 +353,16 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   #v-wiki .topbar .tr,#v-add .topbar .tr{flex-wrap:wrap;gap:5px}
   .stage-row{grid-template-columns:1fr 80px;grid-template-rows:auto auto}
   .stage-name{grid-column:1}.stage-pct-wrap{grid-column:2;grid-row:1}
-  .chat-bubble{max-width:88%;font-size:11.5px;padding:7px 9px}
-  .chat-meta{font-size:8.8px;gap:4px;flex-wrap:wrap}
+  .chat-bubble{max-width:88%;font-size:11px;padding:5px 7px}
+  .chat-meta{font-size:8px;gap:4px;flex-wrap:wrap}
   .chat-pane{height:calc(100vh - 210px)!important;min-height:360px;overflow:hidden}
   .chat-thread-item{font-size:11px;padding:8px!important}
   .chat-compose{position:sticky;top:0;z-index:2;background:var(--card);padding:6px 0;margin:0 0 6px}
   .chat-compose input{font-size:11.5px;padding:7px 9px}
   .chat-send-btn{width:36px;min-width:36px}
+  .leaderboard-hero{padding:16px;align-items:flex-start;flex-direction:column}
+  .leaderboard-hero h2{font-size:20px}
+  .leaderboard-kpis{grid-template-columns:1fr 1fr}
   #flag-updesh-modal>div{width:94vw!important;padding:16px!important}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
@@ -1437,7 +1460,7 @@ function startApp(){
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
   if(CU.isAdmin||CU.canWrite){const cb=el('pmo-checklist-btn');if(cb)cb.style.display='flex';}
-  if(CU.isAdmin||isPrivilegedEditor(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
+  if(CU.isAdmin||canManageProjectsUser(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
   }
@@ -2927,6 +2950,7 @@ function renderNpItems(){
   ['cli','site'].forEach(type=>{const arr=type==='cli'?npClients:npSites;el(`np-${type}-list`).innerHTML=arr.map(v=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px"><span>${esc(v)}</span><button class="btn sm danger" onclick="removeNpItem('${type}','${v.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i></button></div>`).join('');});
 }
 async function saveNewProject(){
+  if(!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Unauthorized access','err');return;}
   const num=(el('np-num').value||'').trim(),name=(el('np-name').value||'').trim();
   if(!num){toast('Project number is required','err');return;}if(!name){toast('Project name is required','err');return;}
   if(!npClients.length){toast('Add at least one client','err');return;}if(!npSites.length){toast('Add at least one site','err');return;}
@@ -2957,19 +2981,21 @@ async function saveNewProject(){
   catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function addSubItem(projId,type,inputId){
-  if(!isPrivilegedEditor(CU?.username)){toast('Only Updesh and Pratim can edit projects','err');return;}
+  if(!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Only authorized project users can edit projects','err');return;}
   const val=(el(inputId)?.value||'').trim();if(!val)return;
   const proj=projectsData.find(p=>p.id===projId);if(!proj)return;
   const arr=type==='clients'?(proj.clients||[]):(proj.sites||[]);
   if(arr.includes(val)){toast('"'+val+'" already exists','err');return;}
+  if(!isSuperUser()){await requestProjectChangeApproval(projId,{[type]:[...arr,val]},null,`Add ${type==='clients'?'client':'site'} "${val}"`);if(el(inputId))el(inputId).value='';return;}
   try{await db.collection(PROJ).doc(projId).update({[type]:[...arr,val]});if(el(inputId))el(inputId).value='';toast('Added âœ“','ok');}
   catch(e){toast('Failed','err');}
 }
 async function removeSubItem(projId,type,val){
-  if(!isPrivilegedEditor(CU?.username)){toast('Only Updesh and Pratim can edit projects','err');return;}
+  if(!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Only authorized project users can edit projects','err');return;}
   if(!confirm('Remove "'+val+'"?'))return;
   const proj=projectsData.find(p=>p.id===projId);if(!proj)return;
   const arr=((type==='clients'?proj.clients:proj.sites)||[]).filter(v=>v!==val);
+  if(!isSuperUser()){await requestProjectChangeApproval(projId,{[type]:arr},null,`Remove ${type==='clients'?'client':'site'} "${val}"`);return;}
   try{await db.collection(PROJ).doc(projId).update({[type]:arr});toast('Removed âœ“','ok');}catch(e){toast('Failed','err');}
 }
 async function deleteProject(projId,name){
@@ -3006,8 +3032,86 @@ function readPORows(containerId){
     value:parseFloat(r.querySelector('.po-f-val')?.value)||0
   })).filter(po=>po.number||po.value||po.date);
 }
+function pickProjectChangeApprover(){
+  const requester=userKey();
+  const preferred=requester==='pratim'?'keshav':'pratim';
+  const u=(usersData||[]).find(x=>String(x.username||'').toLowerCase()===preferred);
+  return {username:preferred,name:u?(u.fullName||preferred):(preferred==='keshav'?'Keshav':'Pratim')};
+}
+function projectChangeSummary(projectChanges,budgetChanges,reason){
+  const parts=[reason||'Project change request'];
+  if(projectChanges){
+    ['number','scope','ldDate','originalTargetCompletionDate','targetCompletionDate','clients','sites','pos'].forEach(k=>{
+      if(Object.prototype.hasOwnProperty.call(projectChanges,k))parts.push(k+': '+JSON.stringify(projectChanges[k]));
+    });
+  }
+  if(budgetChanges){
+    ['poAmount','budgetAllocated','projectManager'].forEach(k=>{
+      if(Object.prototype.hasOwnProperty.call(budgetChanges,k))parts.push(k+': '+JSON.stringify(budgetChanges[k]));
+    });
+  }
+  return parts.join('\n');
+}
+async function requestProjectChangeApproval(projId,projectChanges,budgetChanges,reason){
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  if(p.pendingProjectChange&&p.pendingProjectChange.status==='pending'){toast('A project change approval is already pending','err');return;}
+  const approver=pickProjectChangeApprover();
+  const now=new Date().toISOString();
+  const pendingProjectChange={projectChanges:projectChanges||{},budgetChanges:budgetChanges||null,reason:reason||'',requestedBy:CU.fullName,requestedByUsername:CU.username,requestedAt:now,status:'pending',approverUsername:approver.username,approverName:approver.name};
+  showLoad('Sending approval request…');
+  try{
+    await db.collection(PROJ).doc(projId).update({pendingProjectChange,updatedAt:now});
+    const ref=db.collection(TASK_COL).doc();
+    await ref.set({
+      title:'Project Change Approval - '+p.name,
+      description:projectChangeSummary(projectChanges,budgetChanges,reason),
+      taskCode:genTaskCode(ref.id),
+      assignedBy:CU.fullName,assignedByRole:CU.role,
+      assignedTo:approver.name,assignedToUsername:approver.username,assignedToRole:'admin',
+      supervisor:'',priority:'High',project:p.name,frequency:'One Time',
+      status:'Open',createdAt:now,updatedAt:now,
+      taskType:'project_change',linkedProjectId:projId,
+      projectChangeStatus:'pending',
+      proposedProjectChange:pendingProjectChange,
+      assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null
+    });
+    toast('Project change sent to '+approver.name+' for approval','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function applyProjectChange(projId,projectChanges,budgetChanges){
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  const now=new Date().toISOString();
+  await db.collection(PROJ).doc(projId).update({...projectChanges,pendingProjectChange:null,updatedAt:now});
+  if(budgetChanges){
+    const cfg=budgetCfgData.find(c=>c.projectName===p.name);
+    if(cfg&&cfg.id)await db.collection(BUDGET_CFG_COL).doc(cfg.id).update({...budgetChanges,updatedAt:now});
+    else await db.collection(BUDGET_CFG_COL).add({projectName:p.name,...budgetChanges,createdAt:now,updatedAt:now});
+  }
+}
+async function decideProjectChange(taskId,decision){
+  const t=taskData.find(x=>x.id===taskId);if(!t||t.taskType!=='project_change')return;
+  const assignedUser=String(t.assignedToUsername||'').toLowerCase();
+  if(assignedUser&&assignedUser!==userKey()&&!isSuperUser()){toast('Only the assigned approver can act on this request','err');return;}
+  if(!assignedUser&&t.assignedTo!==CU.fullName&&!isSuperUser()){toast('Only the assigned approver can act on this request','err');return;}
+  const proj=projectsData.find(x=>x.id===t.linkedProjectId);
+  const now=new Date().toISOString();
+  const remarks=prompt(decision==='approve'?'Approval remarks (optional):':'Rejection remarks (mandatory):','')||'';
+  if(decision==='reject'&&!remarks.trim()){toast('Rejection remarks are mandatory','err');return;}
+  showLoad('Saving decision…');
+  try{
+    const change=t.proposedProjectChange||proj?.pendingProjectChange||{};
+    if(decision==='approve'){
+      await applyProjectChange(t.linkedProjectId,change.projectChanges||{},change.budgetChanges||null);
+    }else if(proj){
+      await db.collection(PROJ).doc(proj.id).update({pendingProjectChange:null,updatedAt:now});
+    }
+    await db.collection(TASK_COL).doc(taskId).update({status:'Completed',projectChangeStatus:decision==='approve'?'approved':'rejected',completedAt:now,completedByName:CU.fullName,updatedAt:now,description:(t.description||'')+`\n\n${decision==='approve'?'Approved':'Rejected'} by ${CU.fullName}${remarks?': '+remarks:''}.`});
+    toast('Project change '+(decision==='approve'?'approved':'rejected'),'ok');
+    closeTaskDetails();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
 async function saveProjectInline(projId){
-  if(!isPrivilegedEditor(CU?.username)){toast('Only Updesh and Pratim can edit projects','err');return;}
+  if(!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Only authorized project users can edit projects','err');return;}
   const p=projectsData.find(x=>x.id===projId);if(!p)return;
   const gv=id=>(el(id)?.value||'').trim();
   const number=gv('pe-num-'+projId);
@@ -3023,10 +3127,13 @@ async function saveProjectInline(projId){
   if(!scope){toast('Select a Project Scope','err');return;}
   if(!pos.some(po=>po.number)){toast('Add at least one PO (number)','err');return;}
   if(!poTotal){toast('Enter PO value(s)','err');return;}
+  const projectChanges={number,scope,ldDate,originalTargetCompletionDate,targetCompletionDate,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||''};
+  const budgetChanges={poAmount:poTotal,budgetAllocated,projectManager};
+  if(!isSuperUser()){await requestProjectChangeApproval(projId,projectChanges,budgetChanges,'Project master data update');return;}
   showLoad('Saving…');
   try{
     const now=new Date().toISOString();
-    await db.collection(PROJ).doc(projId).update({number,scope,ldDate,originalTargetCompletionDate,targetCompletionDate,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',updatedAt:now});
+    await db.collection(PROJ).doc(projId).update({...projectChanges,updatedAt:now});
     // Budget config (keyed by project name): PO Amount = total of all POs.
     const cfg=budgetCfgData.find(c=>c.projectName===p.name);
     if(cfg&&cfg.id){
@@ -3040,7 +3147,7 @@ async function saveProjectInline(projId){
 function renderProjectsPage(){
   const list=el('proj-list');
   if(!projectsData.length){list.innerHTML=`<div class="empty"><i class="ti ti-building eico"></i><div class="etit">No projects yet</div></div>`;return;}
-  const canEdit=isPrivilegedEditor(CU?.username);
+  const canEdit=CU?.isAdmin||canManageProjectsUser(CU?.username);
   list.innerHTML=projectsData.map(p=>{
     const isExp=(projExpandedId===p.id);
     const ldChip=p.ldDate?`<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">${renderLdChip(p.ldDate)}</span>`:'';
@@ -3049,6 +3156,7 @@ function renderProjectsPage(){
       p.scope?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:600"><i class="ti ti-category" style="font-size:11px"></i>${esc(p.scope)}</span>`:'',
       `<span class="chip"><i class="ti ti-file-invoice" style="font-size:11px"></i>${nPO} PO${nPO!==1?'s':''}</span>`,
       `<span class="chip" style="background:#E8F5E9;color:#1B5E20;font-weight:600"><i class="ti ti-currency-rupee" style="font-size:11px"></i>${fmtAmt(totPO)}</span>`,
+      p.pendingProjectChange&&p.pendingProjectChange.status==='pending'?`<span class="chip" style="background:#FFF3E0;color:#E65100;font-weight:800"><i class="ti ti-hourglass" style="font-size:11px"></i>Change approval pending</span>`:'',
     ].filter(Boolean).join('');
     const nClients=(p.clients||[]).length,nSites=(p.sites||[]).length;
 
@@ -3325,7 +3433,7 @@ async function renderTeamPerformance(){
   rows.forEach(r=>r.pctDist=r.absMarks/totalMarks*100);
   rows.sort((a,b)=>b.absMarks-a.absMarks);
   const winner=rows[0];
-  const canEditInputs=CU?.isAdmin||(CU?.username||'').toLowerCase()==='pratim';
+  const canEditInputs=CU?.isAdmin||canApproveProjectChangesUser(CU?.username);
 
   const periodOptions=tpPeriods.map((p,i)=>`<option value="${i}" ${i===tpPeriodIdx?'selected':''}>${esc(p.label)}</option>`).join('');
   const th=(label)=>`<th style="padding:9px 10px;text-align:center;font-size:9.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;background:var(--pl);border-bottom:.5px solid var(--bd)">${label}</th>`;
@@ -3333,52 +3441,52 @@ async function renderTeamPerformance(){
     ?`<input type="number" min="0" max="100" step="0.1" value="${val}" onchange="tpUpdateManual('${paramKey}','${dept}',this.value)" style="width:56px;padding:3px 4px;text-align:center;border:.5px solid var(--bd);border-radius:5px;font-size:12px">`
     :`<span style="font-size:12.5px">${val.toFixed ? val.toFixed(1):val}</span>`;
 
-  root.innerHTML=`
-    <div class="card" style="margin-bottom:14px">
-      <div class="cb" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div>
-          <div style="font-weight:700;font-size:14px">Department scorecard</div>
-          <div style="font-size:11px;color:var(--t2);margin-top:2px">Rewards go to the whole winning department, split by salary ratio — separate from any individual sales incentive.</div>
-        </div>
-        <select id="tp-period-sel" class="fs" style="width:auto" onchange="tpPeriodIdx=parseInt(this.value);renderTeamPerformance()">${periodOptions}</select>
+  root.innerHTML=`<div class="leaderboard-shell">
+    <div class="leaderboard-hero">
+      <div>
+        <h2>Leaderboard</h2>
+        <p>Department performance workspace for Sales, Tech, PMO, and F&amp;A. Rewards go to the winning department as a team, separate from individual sales incentives.</p>
       </div>
+      <select id="tp-period-sel" class="fs" style="width:auto;min-width:260px;background:#fff" onchange="tpPeriodIdx=parseInt(this.value);renderTeamPerformance()">${periodOptions}</select>
     </div>
 
-    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#B8860B,#8B6914);border:none;color:#fff">
-      <div class="cb" style="display:flex;align-items:center;gap:12px">
-        <i class="ti ti-trophy" style="font-size:30px"></i>
-        <div><div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Leading department this period</div>
-        <div style="font-size:20px;font-weight:800">${esc(winner.dept)} <span style="font-size:13px;font-weight:600;opacity:.9">(${winner.pctDist.toFixed(1)}%)</span></div></div>
-      </div>
+    <div class="leaderboard-kpis">
+      <div class="leaderboard-kpi"><i class="ti ti-trophy"></i><div><b>${esc(winner.dept)}</b><span>Leading department</span></div></div>
+      <div class="leaderboard-kpi"><i class="ti ti-percentage"></i><div><b>${winner.pctDist.toFixed(1)}%</b><span>Score distribution</span></div></div>
+      <div class="leaderboard-kpi"><i class="ti ti-calendar-stats"></i><div><b>${esc(period.label.split(' ')[0])}</b><span>Selected period</span></div></div>
+      <div class="leaderboard-kpi"><i class="ti ti-users-group"></i><div><b>${DEPARTMENTS.length}</b><span>Departments scored</span></div></div>
     </div>
 
-    <div class="card" style="overflow:hidden;padding:0;margin-bottom:14px">
+    <div class="leaderboard-panel">
+      <div class="leaderboard-panel-head">
+        <div><div style="font-weight:800;font-size:14px">Department scorecard</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Editable cells save automatically per period. Each manual column should sum to 100.</div></div>
+      </div>
       <div style="overflow-x:auto">
-        <table style="border-collapse:collapse;width:100%;min-width:700px">
+        <table class="leaderboard-table">
           <thead><tr>${th('Department')}${th('Sales-New (30)')}${th('Billing &amp; Collection (25)')}${th('Attendance (8) - live')}${th('Project Completion (25)')}${th('HSM (12) - pending')}${th('Score')}${th('Rank')}</tr></thead>
-          <tbody>${rows.map((r,i)=>`<tr style="${i===0?'background:#FFF8E1':''}">
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);font-weight:700">${esc(r.dept)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('sales',r.dept,r.sales)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('collection',r.dept,r.collection)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;color:var(--t2);font-size:12.5px">${r.attendance.toFixed(1)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('project',r.dept,r.project)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('hsm',r.dept,r.hsm)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:800;color:${i===0?'#B8860B':'var(--t1)'}">${r.pctDist.toFixed(1)}%</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:700">#${i+1}</td>
+          <tbody>${rows.map((r,i)=>`<tr class="${i===0?'leaderboard-winner':''}">
+            <td style="font-weight:800">${esc(r.dept)}</td>
+            <td>${manualCell('sales',r.dept,r.sales)}</td>
+            <td>${manualCell('collection',r.dept,r.collection)}</td>
+            <td style="color:var(--t2)">${r.attendance.toFixed(1)}</td>
+            <td>${manualCell('project',r.dept,r.project)}</td>
+            <td>${manualCell('hsm',r.dept,r.hsm)}</td>
+            <td style="font-weight:900;color:${i===0?'var(--p)':'var(--t1)'}">${r.pctDist.toFixed(1)}%</td>
+            <td style="font-weight:800">#${i+1}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>
       ${canEditInputs?`<div style="padding:10px 14px;border-top:.5px solid var(--bd);font-size:10.5px;color:var(--t2)">Editable cells save automatically per period. Each column should sum to 100 across the four departments.</div>`:''}
     </div>
 
-    <div class="card">
+    <div class="leaderboard-panel">
       <div class="cb">
         <div style="font-weight:700;font-size:13px;margin-bottom:8px">Where each number comes from</div>
         ${TP_MANUAL_PARAMS.map(p=>`<div style="font-size:11.5px;color:var(--t2);margin-bottom:6px"><b style="color:var(--t1)">${esc(p.label)}:</b> ${esc(p.hint)} — currently entered manually${p.key==='hsm'?' (module not built yet)':', pending module integration'}.</div>`).join('')}
         <div style="font-size:11.5px;color:var(--t2)"><b style="color:var(--t1)">Attendance:</b> computed live from this Wiki's own Attendance records for the selected period, rolled up by each user's Department field in Manage Users.</div>
       </div>
     </div>
-  `;
+  </div>`;
 }
 async function tpUpdateManual(paramKey,dept,val){
   const period=tpPeriods[tpPeriodIdx];
@@ -3588,7 +3696,7 @@ function go(n){
   }
   if(n==='attendance')modalHideWikiTask();
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
-  if(n==='projects'&&!CU?.isAdmin){toast('Unauthorized access','err');return;}
+  if(n==='projects'&&!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
   el('v-'+n).style.display='block';
@@ -4436,19 +4544,23 @@ function openTaskDetails(id){
   ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
   ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
   ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
+  ${t.taskType==='project_change'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF8E1;color:#6D4C00;font-size:11.5px"><b>Project change approval</b> - Status: <b>${esc(t.projectChangeStatus||'pending')}</b></div>`:''}
   <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
     <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
     <div id="task-ack-info" style="font-size:12.5px;margin-top:6px">Loading...</div>
   </div>`;
   loadTaskAckInfo(t.id);
   const isExtensionAction=t.taskType==='project_extension'&&t.extensionStatus==='pending'&&t.assignedTo===CU.fullName;
+  const isProjectChangeAction=t.taskType==='project_change'&&(t.projectChangeStatus||'pending')==='pending'&&((String(t.assignedToUsername||'').toLowerCase()===userKey())||t.assignedTo===CU.fullName||isSuperUser());
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
     ${isExtensionAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectExtension('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
     ${isExtensionAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="decideProjectExtension('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
     ${isExtensionAction?`<button class="btn pri" onclick="decideProjectExtension('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
-    ${!isExtensionAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+    ${isProjectChangeAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectChange('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
+    ${isProjectChangeAction?`<button class="btn pri" onclick="decideProjectChange('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
+    ${!isExtensionAction&&!isProjectChangeAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
   modal.style.display='flex';
 }
 
