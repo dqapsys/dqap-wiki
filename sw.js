@@ -1,11 +1,15 @@
 // DQAP Wiki Service Worker
-// Version 78.28 - Leaderboard now has its own gold module theme (nav icon,
-// header, table, buttons); Chat messages use per-sender font colors instead
-// of colored boxes and are more compact; Keshav can now create projects in
-// Manage Projects, with any edit to an existing project routed to Pratim for
-// approval (reject/refer-to-Updesh), same pattern as Extension Requests.
+// Version 78.29 - Fixed mobile horizontal-scroll bug. Root causes: (1) several
+// mobile grid overrides (.stats, .g4/.g3/.g2/.dg) were missing !important, so
+// inline styles used throughout PMO/Attendance/PayMS/RMA/AMC silently defeated
+// them; (2) Chat's 280px-fixed two-column layout plus a non-shrinking compose
+// input could force page-level overflow. Added !important where needed, gave
+// Chat's grid a dedicated class-based mobile override, made the compose row
+// and similar input+button rows shrink-safe (min-width:0), and added an
+// overflow-x:hidden safety net on body/#app/.main so no future element can
+// force the whole page into horizontal scroll again.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.28-20260705-1';
+const CACHE_VERSION = 'dqap-wiki-v78.29-20260705-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
