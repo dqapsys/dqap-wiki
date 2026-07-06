@@ -1,4 +1,5 @@
 // DQAP Wiki Service Worker
+// Version 78.30 - Leaderboard theme, compact chat text colours, project approvals.
 // Version 78.29 - Mobile chat fit/send button and attendance score OOO credit.
 // Version 78.28 - PMO details table, chat bubbles, badge alignment, PWA assets.
 // Version 78.27 - Restored the "Leaderboard" sidebar link/page (kept, per
@@ -8,7 +9,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.29-20260706-1';
+const CACHE_VERSION = 'dqap-wiki-v78.30-20260706-2';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html', './manifest.json'];
 self.addEventListener('install', event => {
