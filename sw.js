@@ -1,17 +1,16 @@
 // DQAP Wiki Service Worker
-// Version 78.29 - Fixed mobile horizontal-scroll bug. Root causes: (1) several
-// mobile grid overrides (.stats, .g4/.g3/.g2/.dg) were missing !important, so
-// inline styles used throughout PMO/Attendance/PayMS/RMA/AMC silently defeated
-// them; (2) Chat's 280px-fixed two-column layout plus a non-shrinking compose
-// input could force page-level overflow. Added !important where needed, gave
-// Chat's grid a dedicated class-based mobile override, made the compose row
-// and similar input+button rows shrink-safe (min-width:0), and added an
-// overflow-x:hidden safety net on body/#app/.main so no future element can
-// force the whole page into horizontal scroll again.
+// Version 78.29 - Mobile chat fit/send button and attendance score OOO credit.
+// Version 78.28 - PMO details table, chat bubbles, badge alignment, PWA assets.
+// Version 78.27 - Restored the "Leaderboard" sidebar link/page (kept, per
+// request, only the old individual scoring was meant to be removed). Now
+// shows a department-based team scorecard: Sales/Tech/PMO/F&A scored on
+// Sales-New, Billing & Collection, Attendance, Project Completion, HSM.
+// Attendance is computed live from Wiki data by department; the other four
+// are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.29-20260705-1';
+const CACHE_VERSION = 'dqap-wiki-v78.29-20260706-1';
 const CACHE_NAME = CACHE_VERSION;
-const APP_SHELL = ['./', './index.html'];
+const APP_SHELL = ['./', './index.html', './manifest.json'];
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
