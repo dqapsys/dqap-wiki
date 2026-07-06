@@ -4,12 +4,13 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DQAP Wiki | Technical Knowledge Base</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23006994'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white'%3EDQ%3C/text%3E%3C/svg%3E">
 <meta name="theme-color" content="#006994">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DQAP Wiki">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="crm-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -20,11 +21,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_29_MOBILE_OVERFLOW_FIX
+// DQAP_WIKI_VERSION_78_29_MOBILE_CHAT_ATTENDANCE_OOO_SCORE
 const APP_VERSION="78.29";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260705-1";
+const APP_BUILD="20260706-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -42,12 +43,6 @@ const ATT_REPORT_USERS=['dev','updesh'];
 function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase()==="updesh"||(CU.fullName||"").toLowerCase().includes("updesh")));}
 // Named users granted edit rights across all modules regardless of their role.
 const EDIT_USERS=["updesh","pratim"];
-// Restricted project editors can CREATE projects directly, but any EDIT to an
-// existing project is queued for approval (same pattern as Extension Requests)
-// rather than saved immediately - see requestProjectEditApproval/decideProjectEdit.
-const RESTRICTED_PROJECT_EDITORS=["keshav"];
-function canManageProjects(u){return isPrivilegedEditor(u)||RESTRICTED_PROJECT_EDITORS.includes(String(u||"").toLowerCase());}
-function isRestrictedProjectEditor(u){return RESTRICTED_PROJECT_EDITORS.includes(String(u||"").toLowerCase())&&!isPrivilegedEditor(u);}
 function isPrivilegedEditor(u){return EDIT_USERS.includes(String(u||"").toLowerCase());}
 firebase.initializeApp({
   apiKey:"AIzaSyBV2ZQwfqvgPyzLz75wsSIg9N5gjPHY-R8",
@@ -106,7 +101,7 @@ const PAY_STATUSES=["Pending","Partial","Received"];
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#006994;--pd:#004A68;--pl:#E4F1FA;--bg:#F4F6FA;--card:#fff;--t1:#111;--t2:#666;--bd:rgba(0,0,0,.11);--bds:rgba(0,0,0,.22);--sb1:#006994;--sb2:#006994;--sw:220px;--rad:10px;--lb:#B8860B;--lbd:#8B6914;--lbl:#FFF8E1}
+:root{--p:#006994;--pd:#004A68;--pl:#E4F1FA;--bg:#F4F6FA;--card:#fff;--t1:#111;--t2:#666;--bd:rgba(0,0,0,.11);--bds:rgba(0,0,0,.22);--sb1:#006994;--sb2:#006994;--sw:220px;--rad:10px}
 body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--t1);font-size:13px}
 .lw{position:fixed;inset:0;background:linear-gradient(135deg,var(--sb1),var(--sb2));display:flex;align-items:center;justify-content:center;z-index:200}
 .lc{background:#fff;border-radius:16px;padding:28px 26px;width:360px;max-width:92vw;box-shadow:0 20px 56px rgba(0,0,0,.28)}
@@ -134,8 +129,6 @@ body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-ser
 .btn{padding:6px 13px;border-radius:7px;border:.5px solid var(--bds);background:transparent;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;color:var(--t1)}
 .btn:hover{background:#f0f0f0}
 .btn.pri{background:var(--p);color:#fff;border-color:var(--p)}.btn.pri:hover{background:var(--pd)}
-.lb-theme .btn.pri{background:var(--lb);border-color:var(--lb)}.lb-theme .btn.pri:hover{background:var(--lbd)}
-.lb-theme select.fs:focus,.lb-theme input:focus{border-color:var(--lb)!important;outline:none}
 .btn.grn{background:#1B5E20;color:#fff;border-color:#1B5E20}.btn.grn:hover{background:#2E7D32}
 .btn.ora{background:#E65100;color:#fff;border-color:#E65100}.btn.ora:hover{background:#BF360C}
 .btn.sm{padding:4px 10px;font-size:11px}
@@ -233,7 +226,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .proj-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .sub-list{display:flex;flex-direction:column;gap:4px;margin-top:7px;max-height:160px;overflow-y:auto}
 .sub-item{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px}
-.sub-add{display:flex;gap:5px;margin-top:8px;min-width:0}.sub-add>.fi{min-width:0}
+.sub-add{display:flex;gap:5px;margin-top:8px}
 .chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#fafafa;border:.5px solid var(--bd);border-radius:12px;font-size:11px;color:var(--t2)}
 /* PMO */
 .pmo-card{background:var(--card);border-radius:var(--rad);border:.5px solid var(--bd);margin-bottom:12px;overflow:hidden;transition:box-shadow .15s}
@@ -264,6 +257,30 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .compact-card-grid .pmo-card{margin-bottom:0;min-width:0}
 .compact-card-grid .pmo-card.is-expanded{grid-column:1/-1;width:100%}
 .compact-table-panel{max-width:1480px;margin:0 auto}
+.pmo-detail-table{width:100%;border-collapse:collapse;min-width:1180px}
+.pmo-detail-table th{padding:8px 9px;text-align:left;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:var(--t2);background:#fafafa;border-bottom:.5px solid var(--bd);white-space:nowrap}
+.pmo-detail-table td{padding:7px 9px;font-size:11.5px;border-bottom:.5px solid var(--bd);vertical-align:middle;white-space:nowrap}
+.pmo-detail-table tr:hover td{background:#fafafa}
+.pmo-detail-name{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--t1)}
+.pmo-detail-sub{font-size:10px;color:var(--t2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
+.pmo-detail-progress{display:flex;align-items:center;gap:7px;min-width:130px}
+.pmo-detail-progress .bar{height:7px;background:#ECEFF1;border-radius:99px;overflow:hidden;flex:1}
+.pmo-detail-progress .fill{height:100%;border-radius:99px}
+.pmo-detail-expanded td{background:#fff!important;padding:0;border-bottom:.5px solid var(--bd)}
+.chat-msg-row{display:flex;margin:8px 0}
+.chat-msg-row.mine{justify-content:flex-end}
+.chat-msg-row.theirs{justify-content:flex-start}
+.chat-bubble{max-width:min(72%,680px);padding:8px 10px;border-radius:12px;font-size:13px;line-height:1.45;box-shadow:0 1px 2px rgba(0,0,0,.05);white-space:pre-wrap}
+.chat-msg-row.mine .chat-bubble{background:#DFF3FF;color:#073B55;border-bottom-right-radius:4px}
+.chat-msg-row.theirs .chat-bubble{background:#F1F5F9;color:#111827;border-bottom-left-radius:4px}
+.chat-msg-row.flagged .chat-bubble{border-left:3px solid #c0392b;background:#FFF3F2}
+.chat-meta{font-size:10px;margin-bottom:3px;opacity:.74;display:flex;gap:5px;align-items:center;justify-content:space-between}
+.chat-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;width:100%;max-width:100%;overflow:hidden}
+.chat-sidebar,.chat-panel{min-width:0}
+.chat-card{margin:0;min-width:0;overflow:hidden}
+.chat-compose{display:flex;gap:8px;margin:8px 0;flex-shrink:0}
+.chat-compose input{min-width:0;flex:1;width:100%;padding:7px 10px;border:.5px solid var(--bds);border-radius:7px;font:inherit;font-size:12px;background:#fafafa;color:var(--t1)}
+.chat-send-btn{flex:0 0 auto;width:38px;justify-content:center;padding-left:0;padding-right:0}
 /* MOBILE */
 .mob-bar{display:none;background:linear-gradient(90deg,var(--sb1),var(--sb2));padding:0 14px;height:52px;flex-direction:row;align-items:center;justify-content:space-between;position:sticky;top:0;left:0;right:0;z-index:200;width:100%;flex-shrink:0}
 .mob-left{display:flex;align-items:center;gap:10px;height:100%}
@@ -274,32 +291,30 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .mob-overlay.open{display:block}
 .sidebar.mob-open{transform:translateX(0)!important}
 @media(max-width:768px){
-  html,body{overflow-x:hidden;max-width:100vw}
   .compact-card-grid{grid-template-columns:1fr}
-  #app{display:flex!important;flex-direction:column;min-height:100vh;overflow-x:hidden;max-width:100vw}
+  #app{display:flex!important;flex-direction:column;min-height:100vh}
   .mob-bar{display:flex}
   .sidebar{transform:translateX(-100%);transition:transform .25s ease;position:fixed;top:0;left:0;z-index:400;height:100vh;width:var(--sw)}
-  .main{margin-left:0!important;flex:1;display:flex;flex-direction:column;min-height:0;width:100%;overflow-x:hidden;max-width:100vw}
+  .main{margin-left:0!important;flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
   .topbar{display:none}
-  /* !important is required below: many stat/grid rows carry a redundant inline
-     style (e.g. style="grid-template-columns:repeat(4,1fr)") that otherwise
-     silently wins over a plain class rule inside a media query, even though
-     the class rule is what's meant to apply on mobile - it defeated every one
-     of these overrides until !important was added. */
-  .stats{grid-template-columns:1fr 1fr!important;gap:8px}
+  .stats{grid-template-columns:1fr 1fr;gap:8px}
   .sc{padding:10px 11px;gap:8px}
   .sv{font-size:18px}.sl{font-size:9.5px}
   .si{width:30px;height:30px}
   #v-dash .content>div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   #v-chat .content>div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  #v-chat .content{padding:8px 8px 10px;overflow-x:hidden}
+  .chat-layout{display:flex!important;flex-direction:column;gap:8px;overflow:visible}
+  .chat-sidebar{width:100%;max-height:34vh;overflow-y:auto}
+  .chat-panel{width:100%;max-width:100%;overflow:hidden}
+  .chat-card{width:100%;max-width:100%;border-radius:8px}
   #v-pmo .content div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
-  .chat-grid{grid-template-columns:1fr!important}
-  .g4,.g3{grid-template-columns:1fr 1fr!important}
-  .g2{grid-template-columns:1fr!important}
-  .dg{grid-template-columns:1fr 1fr!important}
-  .proj-body{grid-template-columns:1fr!important}
-  .lib-grid{grid-template-columns:1fr!important}
-  .content{padding:12px 14px;max-width:100vw;overflow-x:hidden}
+  .g4,.g3{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .dg{grid-template-columns:1fr 1fr}
+  .proj-body{grid-template-columns:1fr}
+  .lib-grid{grid-template-columns:1fr}
+  .content{padding:12px 14px}
   #lib-storage-bar{display:block!important;width:100%}
   .wtable{min-width:580px}
   .wtable th,.wtable td{padding:7px 8px;font-size:11px}
@@ -318,16 +333,17 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   #v-wiki .topbar .tr,#v-add .topbar .tr{flex-wrap:wrap;gap:5px}
   .stage-row{grid-template-columns:1fr 80px;grid-template-rows:auto auto}
   .stage-name{grid-column:1}.stage-pct-wrap{grid-column:2;grid-row:1}
-  .chat-pane{height:calc(100vh - 320px)!important}
-  .chat-thread-item{font-size:12px}
+  .chat-bubble{max-width:88%;font-size:11.5px;padding:7px 9px}
+  .chat-meta{font-size:8.8px;gap:4px;flex-wrap:wrap}
+  .chat-pane{height:calc(100vh - 210px)!important;min-height:360px;overflow:hidden}
+  .chat-thread-item{font-size:11px;padding:8px!important}
+  .chat-compose{position:sticky;top:0;z-index:2;background:var(--card);padding:6px 0;margin:0 0 6px}
+  .chat-compose input{font-size:11.5px;padding:7px 9px}
+  .chat-send-btn{width:36px;min-width:36px}
   #flag-updesh-modal>div{width:94vw!important;padding:16px!important}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  /* Any row that pairs a flexible input with a button (chat compose, quick-add
-     rows, etc.) needs its flex children allowed to shrink below their default
-     intrinsic width, or the row - and the page along with it - overflows. */
-  #chat-input,.flex-row-safe>input,.flex-row-safe>select{min-width:0}
 }
-@media(max-width:420px){.g4,.g3{grid-template-columns:1fr!important}.sc{padding:8px 10px}.sv{font-size:16px}}
+@media(max-width:420px){.g4,.g3{grid-template-columns:1fr}.sc{padding:8px 10px}.sv{font-size:16px}}
 </style>
 </head>
 <body>
@@ -396,7 +412,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy" style="color:#FFD54F"></i>Leaderboard</div>
+    <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy"></i>Leaderboard</div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
@@ -541,10 +557,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• DEBT MANAGEMENT â•â• -->
 <!-- â•â• DEBT MANAGEMENT (IFRAME - EXTERNAL APP) â•â• -->
 <div id="v-leaderboard" class="view" style="display:none">
-  <div class="topbar" style="border-top:3px solid var(--lb)">
-    <div><div class="pg-t"><i class="ti ti-trophy" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:var(--lb)"></i>Leaderboard</div><div class="pg-s">Team performance by department — Sales, Tech, PMO, F&amp;A</div></div>
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-trophy" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Leaderboard</div><div class="pg-s">Team performance by department — Sales, Tech, PMO, F&amp;A</div></div>
   </div>
-  <div class="content lb-theme" id="team-perf-root"></div>
+  <div class="content" id="team-perf-root"></div>
 </div>
 <div id="v-chat" class="view" style="display:none">
   <div class="topbar">
@@ -1418,10 +1434,10 @@ function startApp(){
   el('sb-user').textContent=CU.fullName;
   const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki v'+APP_VERSION+'-'+APP_BUILD;
   el('f-date').value=new Date().toISOString().split('T')[0];
-  // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins, Pratim, and restricted project editors (e.g. Keshav - create direct, edits go for approval).
+  // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
   if(CU.isAdmin||CU.canWrite){const cb=el('pmo-checklist-btn');if(cb)cb.style.display='flex';}
-  if(CU.isAdmin||canManageProjects(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
+  if(CU.isAdmin||isPrivilegedEditor(CU.username)){el('admin-sec').style.display='block';el('ni-projects').style.display='flex';}
   if(!CU.canWrite){
     ['lib-upload-btn-wrap','pmo-add-btn-wrap','pay-add-btn-wrap','rma-add-btn-wrap','budget-add-btn-wrap','amc-add-btn-wrap'].forEach(id=>{const e=el(id);if(e)e.style.display='none';});
   }
@@ -2156,6 +2172,94 @@ async function uploadProjectDoc(projId,key,inputId){
     renderPMO();
   }catch(e){toast('Upload failed: '+e.message,'err');}
 }
+function isPMOMaterialDispatchComplete(p){
+  const summary=getPMODashboardStage(p?.stages||[],'Dispatch');
+  return summary.pct>=100;
+}
+function pmoStageEditHtml(p){
+  const id=p.id;
+  return `<div style="padding:12px 14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:800;color:var(--p)">Stage progress</span>
+      <label style="font-size:11px;font-weight:600;color:var(--t2);margin-left:auto">Status</label>
+      <select class="fs" id="pmo-is-${id}" style="padding:4px 8px;font-size:12px;max-width:150px">
+        ${['Not Started','In Progress','On Hold','Delayed','Completed'].map(s=>{const dis=(s==='Completed'&&!allStagesComplete(p.stages))?' disabled':'';return `<option${p.status===s?' selected':''}${dis}>${s}</option>`;}).join('')}
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:0 16px">
+      ${(p.stages||[]).map((s,i)=>`
+        <div style="display:grid;grid-template-columns:150px 76px 1fr;gap:7px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--bd)">
+          <div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.stage)}">${esc(s.stage)}</div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <input type="number" class="fi" id="pmo-ie-${id}-${i}" min="0" max="100" value="${s.pct||0}" style="width:52px;text-align:center;padding:3px 5px;font-size:12px;font-weight:700" oninput="clampPct(this);syncPMOInlineStatus('${id}')">
+            <span style="font-size:10px;color:var(--t2)">%</span>
+          </div>
+          <input class="fi" id="pmo-ir-${id}-${i}" value="${esc(s.remarks||'')}" placeholder="Remarks" style="font-size:11px;padding:4px 7px">
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn sm" onclick="cancelPMOEdit()"><i class="ti ti-x"></i>Cancel</button>
+      <button class="btn sm pri" onclick="savePMOInline('${id}')"><i class="ti ti-device-floppy"></i>Save</button>
+    </div>
+  </div>`;
+}
+function pmoStageViewHtml(p,projRef,canEdit,pendingExt){
+  const done=(p.stages||[]).filter(s=>Number(s.pct)===100).length;
+  const targetVal=projRef.targetCompletionDate||projRef.originalTargetCompletionDate;
+  const targetLine=targetVal?`Target completion: <b>${new Date(targetVal).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</b>`:'Target completion date not set';
+  return `<div style="padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete · ${targetLine}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${canEdit?`<button class="btn sm pri" onclick="enterPMOEdit('${p.id}')"><i class="ti ti-edit"></i>Edit stages</button>`:''}
+        ${canEdit&&projRef.id?(pendingExt?`<span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:700">Extension pending review</span>`:`<button class="btn sm" onclick="openExtensionRequestModal('${projRef.id}')"><i class="ti ti-calendar-plus"></i>Extension Request</button>`):''}
+        ${CU?.isAdmin?`<button class="btn sm danger" onclick="deletePMO('${p.id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(300px,1fr));gap:0 16px">
+      ${(p.stages||[]).map(s=>`<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid var(--bd)">
+        <div style="font-size:11px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.stage)}">${esc(s.stage)}</div>
+        <div style="font-size:10.5px;font-weight:800;color:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'var(--t2)'};width:34px;text-align:right">${s.pct||0}%</div>
+        <div style="width:70px;height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;flex-shrink:0"><div style="height:100%;background:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'#f0f0f0'};width:${s.pct||0}%;border-radius:3px"></div></div>
+      </div>`).join('')}
+    </div>
+    ${(p.stages||[]).some(s=>s.remarks)?`<div style="margin-top:10px;font-size:10.5px;color:var(--t2);line-height:1.6"><b style="color:var(--t1)">Remarks:</b> ${(p.stages||[]).filter(s=>s.remarks).map(s=>`<span style="margin-right:10px"><b>${esc(s.stage)}:</b> ${esc(s.remarks)}</span>`).join('')}</div>`:''}
+    ${projRef.id?projectDocChecklistHtml(projRef):''}
+  </div>`;
+}
+function renderPMODetailsTable(list){
+  const c=el('pmo-list');
+  c.className='compact-table-panel';
+  if(!list.length){c.innerHTML=`<div class="empty"><i class="ti ti-chart-gantt eico"></i><div class="etit">${pmoData.length?'No projects match':'No PMO projects yet'}</div><div class="edesc">${CU?.isAdmin?'Add your first project using the button above.':'No projects have been added yet.'}</div></div>`;return;}
+  const rows=list.map(p=>{
+    const id=p.id,overall=p.overall||0;
+    const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
+    const pendingExt=projRef.pendingExtension&&projRef.pendingExtension.status==='pending'?projRef.pendingExtension:null;
+    const canEdit=CU?.canWrite||false;
+    const {allocated,consumed,pct:bgPct,status:bgStatus,gmValue,gmPct}=getProjBudget(p.projName);
+    const barColor=overall===100?'#1B5E20':overall>=60?'#0070C0':'#E65100';
+    const bgCol=bgPct>100?'#B71C1C':bgPct>=80?'#E65100':'#1B5E20';
+    const ldChipHtml=projRef.ldDate?renderLdChip(projRef.ldDate,isPMOMaterialDispatchComplete(p)):'';
+    const targetChipHtml=renderTargetDateChip(projRef);
+    const detail=pmoEditId===id?pmoStageEditHtml(p):pmoStageViewHtml(p,projRef,canEdit,pendingExt);
+    return `<tr onclick="if(!event.target.closest('button,input,select,textarea,a'))togglePMOCard('${id}')">
+      <td>${p.projNum?`<span class="badge b-act">${esc(p.projNum)}</span>`:''}</td>
+      <td><div class="pmo-detail-name" title="${esc(p.projName)}">${esc(p.projName)}</div><div class="pmo-detail-sub">${p.client?esc(p.client)+' · ':''}Updated ${(p.updatedAt||'').split('T')[0]||'-'}</div></td>
+      <td>${bpmoStatus(p.status)}</td>
+      <td><div class="pmo-detail-progress"><div class="bar"><div class="fill" style="width:${overall}%;background:${barColor}"></div></div><b style="color:${barColor};width:38px;text-align:right">${overall}%</b></div></td>
+      <td>${ldChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
+      <td>${targetChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
+      <td>${allocated?`<span style="color:var(--t2)">₹${fmtAmt(consumed)} / ₹${fmtAmt(allocated)}</span> ${bbudgetStatus(bgStatus)}`:'<span style="color:var(--t2)">-</span>'}</td>
+      <td>${gmValue!==null?`<span class="badge" style="background:${gmValue>=0?'#E8F5E9':'#FFEBEE'};color:${gmValue>=0?'#1B5E20':'#B71C1C'}">GM ${gmPct.toFixed(1)}% · ₹${fmtAmt(Math.abs(gmValue))}</span>`:'-'}</td>
+      <td><div class="pmo-detail-progress" style="min-width:95px"><div class="bar"><div class="fill" style="width:${Math.min(bgPct,100)}%;background:${bgCol}"></div></div><b style="color:${bgCol};width:32px;text-align:right">${bgPct}%</b></div></td>
+      <td style="text-align:right"><i class="ti ${pmoExpandedId===id?'ti-chevron-up':'ti-chevron-down'}" style="font-size:15px;color:var(--t2)"></i></td>
+    </tr>${pmoExpandedId===id?`<tr class="pmo-detail-expanded"><td colspan="10">${detail}</td></tr>`:''}`;
+  }).join('');
+  c.innerHTML=`<div class="card" style="overflow:hidden"><div class="table-wrap" style="overflow-x:auto"><table class="pmo-detail-table">
+    <thead><tr><th>Project ID</th><th>Project</th><th>Status</th><th>Overall</th><th>LD Date</th><th>Target</th><th>Budget</th><th>GM</th><th>Spent</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div></div>`;
+}
 function renderPMO(){
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
@@ -2173,6 +2277,7 @@ function renderPMO(){
   if(db)db.className='btn'+(pmoDashView==='chart'?' pri':'');
   if(det)det.className='btn'+(pmoDashView==='cards'?' pri':'');
   if(pmoDashView==='chart'){renderPMODashboard(list);return;}
+  renderPMODetailsTable(list);return;
   const c=el('pmo-list');
   c.className='compact-card-grid';
   if(!list.length){c.innerHTML=`<div class="empty"><i class="ti ti-chart-gantt eico"></i><div class="etit">${pmoData.length?'No projects match':'No PMO projects yet'}</div><div class="edesc">${CU?.isAdmin?'Add your first project using the button above.':'No projects have been added yet.'}</div></div>`;return;}
@@ -2932,98 +3037,10 @@ async function saveProjectInline(projId){
     toast('Project updated âœ“','ok');
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
-// â”€â”€ PROJECT EDIT APPROVAL (for restricted editors, e.g. Keshav) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Same pattern as the Extension Request flow: bundle the changed fields,
-// route to Pratim as a Task (Approve/Reject/Refer to Updesh), apply on
-// approval. Target completion dates are deliberately excluded here - those
-// only move via the dedicated PMO Extension Request flow.
-async function requestProjectEditApproval(projId){
-  if(!isRestrictedProjectEditor(CU?.username)){toast('Not applicable for your access level','err');return;}
-  const p=projectsData.find(x=>x.id===projId);if(!p)return;
-  if(p.pendingEdit&&p.pendingEdit.status==='pending'){toast('An edit request is already pending for this project','err');return;}
-  const gv=id=>(el(id)?.value||'').trim();
-  const cfg=budgetCfgData.find(c=>c.projectName===p.name)||{};
-  const proposed={
-    number:gv('pe-num-'+projId),
-    scope:gv('pe-scope-'+projId),
-    ldDate:gv('pe-lddate-'+projId),
-    pos:readPORows('pe-po-list-'+projId),
-    budgetAllocated:parseFloat(el('pe-alloc-'+projId)?.value)||0,
-    projectManager:gv('pe-pm-'+projId)
-  };
-  const poTotal=proposed.pos.reduce((s,po)=>s+(Number(po.value)||0),0);
-  if(!proposed.number){toast('Project number is required','err');return;}
-  if(!proposed.scope){toast('Select a Project Scope','err');return;}
-  if(!proposed.pos.some(po=>po.number)){toast('Add at least one PO (number)','err');return;}
-  if(!poTotal){toast('Enter PO value(s)','err');return;}
-  const before={number:p.number||'',scope:p.scope||'',ldDate:p.ldDate||'',pos:getPOs(p),budgetAllocated:cfg.budgetAllocated||0,projectManager:cfg.projectManager||''};
-  const changed=Object.keys(proposed).filter(k=>JSON.stringify(proposed[k])!==JSON.stringify(before[k]));
-  if(!changed.length){toast('No changes to submit','err');return;}
-  showLoad('Submitting for approval…');
-  try{
-    const now=new Date().toISOString();
-    const pendingEdit={changes:proposed,changedFields:changed,requestedBy:CU.fullName,requestedByUsername:CU.username,requestedAt:now,status:'pending'};
-    await db.collection(PROJ).doc(projId).update({pendingEdit,updatedAt:now});
-    const pratimUser=usersData.find(u=>(u.username||'').toLowerCase()==='pratim');
-    const pratimName=pratimUser?pratimUser.fullName:'Pratim';
-    const ref=db.collection(TASK_COL).doc();
-    await ref.set({
-      title:'Project Edit Request - '+p.name,
-      description:`Changed fields: ${changed.join(', ')}\n`+changed.map(k=>`${k}: ${JSON.stringify(before[k])} -> ${JSON.stringify(proposed[k])}`).join('\n'),
-      taskCode:genTaskCode(ref.id),
-      assignedBy:CU.fullName,assignedByRole:CU.role,
-      assignedTo:pratimName,assignedToRole:'admin',
-      supervisor:'',priority:'Medium',project:p.name,frequency:'One Time',
-      status:'Open',createdAt:now,updatedAt:now,
-      taskType:'project_edit_request',linkedProjectId:projId,
-      extensionStatus:'pending'
-    });
-    toast('Edit request sent to '+pratimName,'ok');
-    renderProjectsPage();
-  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
-}
-async function decideProjectEdit(taskId,decision){
-  const t=taskData.find(x=>x.id===taskId);if(!t||t.taskType!=='project_edit_request')return;
-  if(t.assignedTo!==CU.fullName){toast('Only the current assignee can act on this request','err');return;}
-  const proj=projectsData.find(x=>x.id===t.linkedProjectId);
-  const now=new Date().toISOString();
-  showLoad('Saving decision…');
-  try{
-    if(decision==='refer'){
-      if(t.referredBy){toast('Already referred once','err');return;}
-      await db.collection(TASK_COL).doc(taskId).update({assignedTo:'Updesh',assignedToRole:'admin',referredBy:CU.fullName,referredAt:now,description:t.description+`\n\nReferred to Updesh by ${CU.fullName}.`,updatedAt:now});
-      toast('Referred to Updesh','ok');
-    }else{
-      const remarks=prompt(decision==='approve'?'Approval remarks (optional):':'Rejection remarks (mandatory):','')||'';
-      if(decision==='reject'&&!remarks.trim()){toast('Rejection remarks are mandatory','err');return;}
-      if(proj&&proj.pendingEdit){
-        const pe=proj.pendingEdit;
-        const histEntry={changedFields:pe.changedFields,requestedBy:pe.requestedBy,requestedAt:pe.requestedAt,decision:decision==='approve'?'approved':'rejected',decidedBy:CU.fullName,decidedAt:now,remarks};
-        const upd={editHistory:[...(proj.editHistory||[]),histEntry],pendingEdit:null,updatedAt:now};
-        if(decision==='approve'){
-          const c=pe.changes;
-          upd.number=c.number;upd.scope=c.scope;upd.ldDate=c.ldDate;upd.pos=c.pos;upd.poNumber=c.pos[0]?.number||'';upd.poDate=c.pos[0]?.date||'';
-        }
-        await db.collection(PROJ).doc(proj.id).update(upd);
-        if(decision==='approve'){
-          const poTotal=pe.changes.pos.reduce((s,po)=>s+(Number(po.value)||0),0);
-          const cfg=budgetCfgData.find(cc=>cc.projectName===proj.name);
-          if(cfg&&cfg.id)await db.collection(BUDGET_CFG_COL).doc(cfg.id).update({poAmount:poTotal,budgetAllocated:pe.changes.budgetAllocated,projectManager:pe.changes.projectManager,updatedAt:now});
-          else await db.collection(BUDGET_CFG_COL).add({projectName:proj.name,poAmount:poTotal,budgetAllocated:pe.changes.budgetAllocated,projectManager:pe.changes.projectManager,createdAt:now,updatedAt:now});
-        }
-      }
-      await db.collection(TASK_COL).doc(taskId).update({status:'Completed',extensionStatus:decision==='approve'?'approved':'rejected',completedAt:now,completedByName:CU.fullName,updatedAt:now,description:t.description+`\n\n${decision==='approve'?'Approved':'Rejected'} by ${CU.fullName}${remarks?': '+remarks:''}.`});
-      toast('Edit request '+(decision==='approve'?'approved':'rejected'),'ok');
-    }
-    closeTaskDetails();
-  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
-}
 function renderProjectsPage(){
   const list=el('proj-list');
   if(!projectsData.length){list.innerHTML=`<div class="empty"><i class="ti ti-building eico"></i><div class="etit">No projects yet</div></div>`;return;}
   const canEdit=isPrivilegedEditor(CU?.username);
-  const canRequest=isRestrictedProjectEditor(CU?.username);
-  const canOpenEdit=canEdit||canRequest;
   list.innerHTML=projectsData.map(p=>{
     const isExp=(projExpandedId===p.id);
     const ldChip=p.ldDate?`<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">${renderLdChip(p.ldDate)}</span>`:'';
@@ -3039,9 +3056,7 @@ function renderProjectsPage(){
     let detail='';
     if(isExp){
       const cfg=budgetCfgData.find(c=>c.projectName===p.name)||{};
-      const dis=canOpenEdit?'':'disabled';
-      const disTarget=canEdit?'':'disabled'; // target dates only move via Save (Pratim/Updesh) or the PMO Extension Request flow - never via a restricted editor's edit request
-      const pendingEdit=p.pendingEdit&&p.pendingEdit.status==='pending'?p.pendingEdit:null;
+      const dis=canEdit?'':'disabled';
       const scopeOpts=(cur)=>{
         const groups=[['Project (appears in PMO)',['SITC','S&C','Supply Only','Services','ITC']],['Maintenance (appears in AMC)',['CAMC','N-CAMC']]];
         return `<option value="">Select scope</option>`+groups.map(([lbl,arr])=>`<optgroup label="${lbl}">`+arr.map(o=>`<option${o===cur?' selected':''}>${esc(o)}</option>`).join('')+`</optgroup>`).join('');
@@ -3049,7 +3064,6 @@ function renderProjectsPage(){
       const pmNames=[...new Set((usersData||[]).map(u=>u.fullName).filter(Boolean))].sort();
       const pmOpts=(cur)=>`<option value="">Select PM</option>`+pmNames.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
       detail=`<div style="border-top:.5px solid var(--bd);padding:14px 16px" onclick="event.stopPropagation()">
-        ${pendingEdit?`<div style="background:#FFF3E0;color:#E65100;padding:10px 12px;border-radius:8px;margin-bottom:14px;font-size:12px"><b>Edit request pending review</b> - submitted by ${esc(pendingEdit.requestedBy)} on ${esc(new Date(pendingEdit.requestedAt).toLocaleDateString('en-IN'))}. Fields are locked until Pratim/Updesh decides.</div>`:''}
 
         <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
         <div class="g3" style="margin-bottom:14px">
@@ -3061,13 +3075,13 @@ function renderProjectsPage(){
         <div class="fsec-t"><i class="ti ti-file-invoice"></i>Contract details</div>
         <label class="fl">Purchase Orders <span style="font-size:9px;color:var(--t2);font-weight:400">(PO No · Date · Value ₹)</span></label>
         <div id="pe-po-list-${p.id}" style="margin:6px 0"></div>
-        ${canOpenEdit?`<button type="button" class="btn sm pri" onclick="addPORow('pe-po-list-${p.id}')" style="margin-bottom:14px"><i class="ti ti-plus"></i>Add PO</button>`:''}
+        ${canEdit?`<button type="button" class="btn sm pri" onclick="addPORow('pe-po-list-${p.id}')" style="margin-bottom:14px"><i class="ti ti-plus"></i>Add PO</button>`:''}
         <div class="g3" style="margin-bottom:6px">
           <div class="fg"><label class="fl">LD Date <span style="font-size:9px;color:var(--t2);font-weight:400">(optional)</span></label><input type="date" class="fi" id="pe-lddate-${p.id}" value="${p.ldDate||''}" ${dis}></div>
-          <div class="fg"><label class="fl">Original Target Date <span style="font-size:9px;color:var(--t2);font-weight:400">(audit baseline — set once)</span></label><input type="date" class="fi" id="pe-origtarget-${p.id}" value="${p.originalTargetCompletionDate||''}" ${disTarget}></div>
-          <div class="fg"><label class="fl">Current Target Date <span style="font-size:9px;color:var(--t2);font-weight:400">(scored baseline)</span></label><input type="date" class="fi" id="pe-target-${p.id}" value="${p.targetCompletionDate||p.originalTargetCompletionDate||''}" ${disTarget}></div>
+          <div class="fg"><label class="fl">Original Target Date <span style="font-size:9px;color:var(--t2);font-weight:400">(audit baseline — set once)</span></label><input type="date" class="fi" id="pe-origtarget-${p.id}" value="${p.originalTargetCompletionDate||''}" ${dis}></div>
+          <div class="fg"><label class="fl">Current Target Date <span style="font-size:9px;color:var(--t2);font-weight:400">(scored baseline)</span></label><input type="date" class="fi" id="pe-target-${p.id}" value="${p.targetCompletionDate||p.originalTargetCompletionDate||''}" ${dis}></div>
         </div>
-        <div style="font-size:10px;color:var(--t2);margin-bottom:14px">${canRequest?'Target dates can only be changed via an Extension Request in PMO Details, not here.':'Normal course: Current Target Date only moves via an approved Extension Request in PMO Details. Editing it directly here bypasses that approval trail — use only to fix a data-entry mistake.'}</div>
+        <div style="font-size:10px;color:var(--t2);margin-bottom:14px">Normal course: Current Target Date only moves via an approved Extension Request in PMO Details. Editing it directly here bypasses that approval trail — use only to fix a data-entry mistake.</div>
 
         <div class="fsec-t"><i class="ti ti-report-money"></i>Budget configuration</div>
         <div class="g3" style="margin-bottom:6px">
@@ -3076,7 +3090,6 @@ function renderProjectsPage(){
         </div>
         <div style="font-size:10.5px;color:var(--t2);margin-bottom:14px">PO Amount auto-calculates as the total of all POs above (currently &#8377; ${fmtAmt(totalPOValue(p))}).</div>
         ${canEdit?`<div style="margin-bottom:18px"><button class="btn pri" onclick="saveProjectInline('${p.id}')"><i class="ti ti-device-floppy"></i>Save changes</button></div>`:''}
-        ${canRequest?`<div style="margin-bottom:18px">${pendingEdit?`<span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:700">Awaiting approval - can't submit another request yet</span>`:`<button class="btn pri" onclick="requestProjectEditApproval('${p.id}')"><i class="ti ti-send"></i>Request approval for changes</button>`}</div>`:''}
 
         <div class="fsec-t"><i class="ti ti-users"></i>Client &amp; site</div>
         <div class="g2" style="margin-bottom:2px">
@@ -3106,7 +3119,7 @@ function renderProjectsPage(){
           ${metaChips}
           <span class="chip"><i class="ti ti-briefcase" style="font-size:11px"></i>${nClients} client${nClients!==1?'s':''}</span>
           <span class="chip"><i class="ti ti-map-pin" style="font-size:11px"></i>${nSites} site${nSites!==1?'s':''}</span>
-          ${canOpenEdit?`<button class="btn sm pri" onclick="event.stopPropagation();openProjEdit('${p.id}')" title="Edit project"><i class="ti ti-edit"></i></button>`:''}
+          ${canEdit?`<button class="btn sm pri" onclick="event.stopPropagation();openProjEdit('${p.id}')" title="Edit project"><i class="ti ti-edit"></i></button>`:''}
           ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deleteProject('${p.id}','${esc(p.name)}')" title="Delete project"><i class="ti ti-trash"></i></button>`:''}
           <i class="ti ${isExp?'ti-chevron-up':'ti-chevron-down'}" style="font-size:15px;color:var(--t2);transition:transform .2s"></i>
         </div>
@@ -3120,7 +3133,7 @@ function renderProjectsPage(){
     const cont=el('pe-po-list-'+projExpandedId);
     if(pe&&cont){
       cont.innerHTML='';
-      const pos=getPOs(pe),ro=!canManageProjects(CU?.username);
+      const pos=getPOs(pe),ro=!isPrivilegedEditor(CU?.username);
       if(pos.length)pos.forEach(po=>addPORow('pe-po-list-'+projExpandedId,po,ro));
       else addPORow('pe-po-list-'+projExpandedId,null,ro);
     }
@@ -3233,6 +3246,15 @@ function tpUserDept(username){
   const u=(usersData||[]).find(x=>String(x.username||'').toLowerCase()===String(username||'').toLowerCase());
   return u?u.department:'';
 }
+function attScoreCredit(r){
+  if(!r)return 0;
+  if(r.status==='present')return r.isLate?0.5:1;
+  if(r.status==='ooo'){
+    const type=String(r.oof_type||r.oof_reason||'').toLowerCase();
+    return ['meeting','travel','training'].some(x=>type.includes(x))?1:0;
+  }
+  return 0;
+}
 
 async function tpComputeAttendanceShares(start,end){
   const deptTotals={};DEPARTMENTS.forEach(d=>deptTotals[d]=0);
@@ -3243,7 +3265,7 @@ async function tpComputeAttendanceShares(start,end){
       const uname=String(r.username||r.userId||'').toLowerCase();if(!uname)return;
       byUser[uname]=byUser[uname]||{credit:0,total:0};
       byUser[uname].total+=1;
-      if(r.status==='present')byUser[uname].credit+=(r.isLate?0.5:1);
+      byUser[uname].credit+=attScoreCredit(r);
     });
     Object.entries(byUser).forEach(([uname,v])=>{
       const dept=tpUserDept(uname);if(!dept||!deptTotals.hasOwnProperty(dept))return;
@@ -3306,7 +3328,7 @@ async function renderTeamPerformance(){
   const canEditInputs=CU?.isAdmin||(CU?.username||'').toLowerCase()==='pratim';
 
   const periodOptions=tpPeriods.map((p,i)=>`<option value="${i}" ${i===tpPeriodIdx?'selected':''}>${esc(p.label)}</option>`).join('');
-  const th=(label)=>`<th style="padding:9px 10px;text-align:center;font-size:9.5px;font-weight:700;color:var(--lbd);text-transform:uppercase;letter-spacing:.4px;background:var(--lbl);border-bottom:.5px solid var(--bd)">${label}</th>`;
+  const th=(label)=>`<th style="padding:9px 10px;text-align:center;font-size:9.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;background:var(--pl);border-bottom:.5px solid var(--bd)">${label}</th>`;
   const manualCell=(paramKey,dept,val)=>canEditInputs
     ?`<input type="number" min="0" max="100" step="0.1" value="${val}" onchange="tpUpdateManual('${paramKey}','${dept}',this.value)" style="width:56px;padding:3px 4px;text-align:center;border:.5px solid var(--bd);border-radius:5px;font-size:12px">`
     :`<span style="font-size:12.5px">${val.toFixed ? val.toFixed(1):val}</span>`;
@@ -3322,7 +3344,7 @@ async function renderTeamPerformance(){
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--lb),var(--lbd));border:none;color:#fff">
+    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#B8860B,#8B6914);border:none;color:#fff">
       <div class="cb" style="display:flex;align-items:center;gap:12px">
         <i class="ti ti-trophy" style="font-size:30px"></i>
         <div><div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Leading department this period</div>
@@ -3334,14 +3356,14 @@ async function renderTeamPerformance(){
       <div style="overflow-x:auto">
         <table style="border-collapse:collapse;width:100%;min-width:700px">
           <thead><tr>${th('Department')}${th('Sales-New (30)')}${th('Billing &amp; Collection (25)')}${th('Attendance (8) - live')}${th('Project Completion (25)')}${th('HSM (12) - pending')}${th('Score')}${th('Rank')}</tr></thead>
-          <tbody>${rows.map((r,i)=>`<tr style="${i===0?'background:var(--lbl)':''}">
+          <tbody>${rows.map((r,i)=>`<tr style="${i===0?'background:#FFF8E1':''}">
             <td style="padding:10px;border-bottom:.5px solid var(--bd);font-weight:700">${esc(r.dept)}</td>
             <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('sales',r.dept,r.sales)}</td>
             <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('collection',r.dept,r.collection)}</td>
             <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;color:var(--t2);font-size:12.5px">${r.attendance.toFixed(1)}</td>
             <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('project',r.dept,r.project)}</td>
             <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center">${manualCell('hsm',r.dept,r.hsm)}</td>
-            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:800;color:${i===0?'var(--lbd)':'var(--t1)'}">${r.pctDist.toFixed(1)}%</td>
+            <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:800;color:${i===0?'#B8860B':'var(--t1)'}">${r.pctDist.toFixed(1)}%</td>
             <td style="padding:10px;border-bottom:.5px solid var(--bd);text-align:center;font-weight:700">#${i+1}</td>
           </tr>`).join('')}</tbody>
         </table>
@@ -3647,8 +3669,9 @@ function brmaStatus(v){const m={Raised:'rai',Approved:'apr','Replacement Receive
 
 
 // â”€â”€ LD DATE HELPER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function ldStatus(ldDate){
+function ldStatus(ldDate,inactive=false){
   if(!ldDate)return null;
+  if(inactive)return{color:'#607D8B',bg:'#ECEFF1',icon:'ti-circle-check',label:'Inactive after dispatch',days:null,inactive:true};
   const today=new Date();today.setHours(0,0,0,0);
   const ld=new Date(ldDate);ld.setHours(0,0,0,0);
   const days=Math.round((ld-today)/(1000*60*60*24));
@@ -3657,8 +3680,8 @@ function ldStatus(ldDate){
   if(days<=60)return{color:'#E65100',bg:'#FFF3E0',icon:'ti-clock-exclamation',label:days+'d left',days};
   return{color:'#1B5E20',bg:'#E8F5E9',icon:'ti-circle-check',label:days+'d left',days};
 }
-function renderLdChip(ldDate){
-  const s=ldStatus(ldDate);
+function renderLdChip(ldDate,inactive=false){
+  const s=ldStatus(ldDate,inactive);
   if(!s)return'';
   const d=ldDate?new Date(ldDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'';
   return`<span class="ld-chip" style="background:${s.bg};color:${s.color}"><i class="ti ${s.icon}"></i>${s.label}</span>`
@@ -4413,23 +4436,19 @@ function openTaskDetails(id){
   ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
   ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
   ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
-  ${t.taskType==='project_edit_request'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Project edit request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
   <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
     <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
     <div id="task-ack-info" style="font-size:12.5px;margin-top:6px">Loading...</div>
   </div>`;
   loadTaskAckInfo(t.id);
   const isExtensionAction=t.taskType==='project_extension'&&t.extensionStatus==='pending'&&t.assignedTo===CU.fullName;
-  const isEditReqAction=t.taskType==='project_edit_request'&&t.extensionStatus==='pending'&&t.assignedTo===CU.fullName;
-  const isApprovalAction=isExtensionAction||isEditReqAction;
-  const decideFn=t.taskType==='project_extension'?'decideProjectExtension':'decideProjectEdit';
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
-    ${isApprovalAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="${decideFn}('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
-    ${isApprovalAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="${decideFn}('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
-    ${isApprovalAction?`<button class="btn pri" onclick="${decideFn}('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
-    ${!isApprovalAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask&&!isApprovalAction&&t.taskType!=='project_extension'&&t.taskType!=='project_edit_request'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask&&!isApprovalAction&&t.taskType!=='project_extension'&&t.taskType!=='project_edit_request'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+    ${isExtensionAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectExtension('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
+    ${isExtensionAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="decideProjectExtension('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
+    ${isExtensionAction?`<button class="btn pri" onclick="decideProjectExtension('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
+    ${!isExtensionAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
   modal.style.display='flex';
 }
 
@@ -4583,6 +4602,7 @@ function updateAMCNavBadge(){
   amcData.forEach(c=>{const s=amcVisitStatus(c);if(s.state==='overdue'||s.state==='due')n++;});
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
+  refreshAppBadge();
 }
 
 // â”€â”€ AMC DROPDOWNS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4890,13 +4910,21 @@ function approvalAppCounts(){
     chat:chatUnreadCount()
   };
 }
+function visibleNavBadgeTotal(){
+  return Array.from(document.querySelectorAll('.nav-badge')).reduce((sum,badge)=>{
+    if(!badge||badge.style.display==='none')return sum;
+    const txt=String(badge.textContent||'').trim();
+    if(!txt)return sum;
+    return sum+(txt.endsWith('+')?Number(txt.slice(0,-1))||0:Number(txt)||0);
+  },0);
+}
 function refreshAppBadge(){
   const c=approvalAppCounts();
   setNavBadge('crm-nav-badge',c.crm);
   setNavBadge('debt-nav-badge',c.debt);
   setNavBadge('payms-nav-badge',c.payms);
   setNavBadge('chat-nav-badge',c.chat);
-  const total=c.task+c.crm+c.debt+c.payms+c.chat;
+  const total=visibleNavBadgeTotal();
   try{
     if('setAppBadge' in navigator){
       if(total>0)navigator.setAppBadge(total).catch(()=>{});
@@ -5051,29 +5079,23 @@ function chatThreadListHtml(){
     </div>`;
   }).join('');
 }
-function chatColorForUser(username){
-  const palette=Object.values(attUserColors);
-  const s=String(username||'');
-  let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
-  return palette[h%palette.length];
-}
 function chatMessagePaneHtml(){
   const thread=chatThreadsData.find(t=>t.id===activeChatThreadId);
   if(!thread)return'<div class="empty" style="padding:30px">Select a conversation on the left, or start a new one.</div>';
   const canPost=thread.type!=='broadcast'||canPostBroadcast();
   const msgHtml=chatMessagesData.length?chatMessagesData.map(m=>{
     const flagged=m.priority==='flag';
-    const col=chatColorForUser(m.senderUsername);
-    return`<div style="margin-bottom:6px;line-height:1.3">
-      <span style="font-size:11px;font-weight:700;color:${col}">${esc(m.senderName||m.senderUsername)}</span>
-      ${flagged?' <span style="color:#c0392b;font-weight:800;font-size:9.5px">· PRIORITY</span>':''}
-      <span style="font-size:10px;color:var(--t2)"> · ${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</span>
-      <div style="font-size:12.5px;white-space:pre-wrap;color:${flagged?'#c0392b':'var(--t1)'}">${esc(m.text)}</div>
+    const mine=String(m.senderUsername||'').toLowerCase()===userKey();
+    return`<div class="chat-msg-row ${mine?'mine':'theirs'}${flagged?' flagged':''}">
+      <div class="chat-bubble">
+        <div class="chat-meta"><span><b>${mine?'You':esc(m.senderName||m.senderUsername)}</b>${flagged?' <span style="color:#c0392b;font-weight:800">· PRIORITY</span>':''}</span><span>${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</span></div>
+        <div>${esc(m.text)}</div>
+      </div>
     </div>`;
   }).join(''):'<div class="empty">No messages yet.</div>';
   return`<div class="chat-pane" style="display:flex;flex-direction:column;height:calc(100vh - 230px);max-height:100%">
     <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd)">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
-    ${canPost?`<div class="flex-row-safe" style="display:flex;gap:8px;margin:8px 0;flex-shrink:0;min-width:0"><input id="chat-input" placeholder="Type a message..." style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri" onclick="sendChatMessage()" style="flex-shrink:0"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
+    ${canPost?`<div class="chat-compose"><input id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri chat-send-btn" onclick="sendChatMessage()" title="Send"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
     <div id="chat-msg-box" style="flex:1;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column-reverse">
       ${msgHtml}
     </div>
@@ -5087,11 +5109,11 @@ function chatGroupMemberCheckboxesHtml(){
 }
 function renderChat(){
   const root=el('chat-root');if(!root)return;
-  root.innerHTML=`<div class="chat-grid" style="display:grid;grid-template-columns:280px 1fr;gap:16px">
-    <div>
-      <div class="flex-row-safe" style="display:flex;gap:6px;margin-bottom:10px;min-width:0">
-        <select id="chat-new-dm-user" style="flex:1;min-width:0"><option value="">Start a new chat...</option>${chatNewDmOptionsHtml()}</select>
-        <button class="btn sm" onclick="const u=g('chat-new-dm-user');if(u)openDM(u)" style="flex-shrink:0"><i class="ti ti-plus"></i></button>
+  root.innerHTML=`<div class="chat-layout">
+    <div class="chat-sidebar">
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <select id="chat-new-dm-user" style="flex:1"><option value="">Start a new chat...</option>${chatNewDmOptionsHtml()}</select>
+        <button class="btn sm" onclick="const u=g('chat-new-dm-user');if(u)openDM(u)"><i class="ti ti-plus"></i></button>
       </div>
       ${canCreateChatGroup()?`<button class="btn sm" style="width:100%;margin-bottom:10px" onclick="toggleNewGroupForm()"><i class="ti ti-users"></i>New Group</button>
       <div id="new-group-form" style="display:none;border:.5px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:10px">
@@ -5101,7 +5123,7 @@ function renderChat(){
       </div>`:''}
       <div>${chatThreadListHtml()}</div>
     </div>
-    <div class="card" style="margin:0">${chatMessagePaneHtml()}</div>
+    <div class="card chat-card">${chatMessagePaneHtml()}</div>
   </div>`;
 }
 function toggleNewGroupForm(){const f=el('new-group-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
@@ -5132,9 +5154,10 @@ async function updateAttendanceNavBadge(){
   if(!CU||!db){setNavBadge('attendance-nav-badge',0);return;}
   const today=attDateKey();
   const dayType=attDayType(today);
-  if(!dayType.requiresEntry){setNavBadge('attendance-nav-badge',0);return;}
+  if(!dayType.requiresEntry){setNavBadge('attendance-nav-badge',0);refreshAppBadge();return;}
   const rec=await attGet(attUserKey(),today);
   setNavBadge('attendance-nav-badge',rec?0:1);
+  refreshAppBadge();
 }
 // ATTENDANCE MODULE FUNCTIONS (variables declared at top, safe to use here)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5347,9 +5370,9 @@ async function attRenderAdm(){
 async function attRenderRank(){
   const start=attMonthKey()+'-01';const end=attDateKey(new Date(new Date().getFullYear(),new Date().getMonth()+1,0));
   const rows=await attFetchRange(start,end);
-  const team=attTeamUsers().map(u=>{const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);const present=mine.filter(r=>r.status==='present').length;const late=mine.filter(r=>r.isLate).length;return {...u,present,late,score:present*10-late*2};}).sort((a,b)=>b.score-a.score);
+  const team=attTeamUsers().map(u=>{const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);const present=mine.filter(r=>r.status==='present').length;const scoreOOO=mine.filter(r=>r.status==='ooo'&&attScoreCredit(r)>0).length;const late=mine.filter(r=>r.isLate).length;return {...u,present,scoreOOO,late,score:Math.round(mine.reduce((s,r)=>s+attScoreCredit(r)*10,0))};}).sort((a,b)=>b.score-a.score);
   const medals=['#1','#2','#3'];
-  const h=team.map((it,idx)=>`<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center;font-weight:800;color:var(--p)">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present - ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`).join('');
+  const h=team.map((it,idx)=>`<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center;font-weight:800;color:var(--p)">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present${it.scoreOOO?' + '+it.scoreOOO+' work OOO':''} - ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`).join('');
   const r=el('att-rank-list'); if(r)r.innerHTML=h;
 }
 
