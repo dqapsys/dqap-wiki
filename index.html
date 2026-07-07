@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-8";
+const APP_BUILD="20260706-10";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -710,8 +710,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-chart-gantt" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>PMO Dashboard</div><div class="pg-s">Project Management — live status of all active projects</div></div>
     <div class="tr" id="pmo-add-btn-wrap">
-      <button class="btn pri" id="pmo-dash-btn" onclick="pmoReturnToChart=false;setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
-      <button class="btn" id="pmo-det-btn" onclick="pmoReturnToChart=false;setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
+      <button class="btn pri" id="pmo-dash-btn" onclick="setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
+      <button class="btn" id="pmo-det-btn" onclick="setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
       <button class="btn pri" onclick="go('pmo-add')"><i class="ti ti-plus"></i>New PMO project</button>
     </div>
   </div>
@@ -1377,7 +1377,7 @@ let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
 let amcExpandedId=null,amcVisitForId=null;
-let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart',pmoReturnToChart=false;
+let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
 const MAX_PDF=5*1024*1024;
 
@@ -1926,45 +1926,72 @@ function renderPMODashboard(list){
     c.innerHTML=`<div class="card"><div class="cb" style="text-align:center;padding:32px;color:var(--t2)"><i class="ti ti-chart-gantt" style="font-size:36px;display:block;margin-bottom:10px"></i>No projects match the current filter</div></div>`;
     return;
   }
-  const th=(label,align)=>`<th style="padding:11px 14px;text-align:${align||'left'};font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;background:var(--pl);border-bottom:.5px solid var(--bd);white-space:nowrap">${label}</th>`;
+  const SEG=70,NAME_W=215,TOTAL_W=50;
+  const minW=NAME_W+PMO_STAGES.length*SEG+TOTAL_W;
+  // Both tables share the same fixed layout — column widths MUST match.
+  const tbl=`border-collapse:collapse;table-layout:fixed;width:${minW}px`;
+
+  // ── Fixed header cells: horizontal text, word-wrapped, colour stripe bottom ──
+  const thCols=PMO_STAGES.map((s,i)=>`
+    <th style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:6px 3px;border-left:.5px solid var(--bd);border-bottom:3px solid ${STAGE_COLORS[i]};background:var(--pl);vertical-align:middle;text-align:center">
+      <div style="font-size:8.5px;font-weight:700;color:var(--t1);line-height:1.35;word-break:break-word;overflow-wrap:anywhere">${STAGE_SHORT[i]}</div>
+    </th>`).join('');
+
+  // ── Data rows ──
   const rows=list.map(p=>{
-    const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
-    const cfg=budgetCfgData.find(cf=>cf.projectName===p.projName)||{};
+    const stages=p.stages||[];
+    const tds=PMO_STAGES.map((stageName,i)=>{
+      const summary=getPMODashboardStage(stages,stageName);
+      const pct=summary.pct,col=STAGE_COLORS[i]||'#999';
+      return `<td style="width:${SEG}px;min-width:${SEG}px;max-width:${SEG}px;padding:4px 3px;border-left:.5px solid var(--bd)">
+        <div style="background:#e8e8e8;border-radius:3px;height:22px;overflow:hidden;position:relative" title="${esc(summary.title)}">
+          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px"></div>
+          ${pct>0?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:${pct>=55?'#fff':'#444'};pointer-events:none">${pct}%</span>`:''}
+        </div>
+      </td>`;
+    }).join('');
     const ov=p.overall||0;
     const pctCol=ov===100?'#1B5E20':ov>=60?'var(--p)':'#E65100';
-    const {allocated,pct:bgPct,status:bgStatus}=getProjBudget(p.projName);
-    const target=projRef.targetCompletionDate||projRef.originalTargetCompletionDate;
-    const tStatus=target?ldStatus(target):null;
-    const targetCell=target
-      ?`<div style="font-size:12px;font-weight:600;color:${tStatus.color}">${new Date(target).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div><div style="font-size:9.5px;color:var(--t2)">${tStatus.label}</div>`
-      :`<span style="color:#aaa;font-size:11.5px">Not set</span>`;
-    return`<tr style="cursor:pointer" onclick="switchToPMODetails('${p.id}')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">
-        <div style="font-size:13px;font-weight:700;color:var(--t1)">${p.projNum?`<span style="font-size:9px;font-weight:700;background:var(--pl);color:var(--p);padding:1px 6px;border-radius:8px;margin-right:6px;vertical-align:1px">${esc(p.projNum)}</span>`:''}${esc(p.projName)}</div>
+    const stCol={'Not Started':'#78909C','In Progress':'#0070C0','Completed':'#1B5E20','On Hold':'#F57F17','Delayed':'#B71C1C'}[p.status]||'#666';
+    return `<tr style="border-bottom:.5px solid var(--bd)">
+      <td style="width:${NAME_W}px;min-width:${NAME_W}px;max-width:${NAME_W}px;padding:5px 8px 5px 12px;position:sticky;left:0;background:var(--card);z-index:2;border-right:.5px solid var(--bd);box-shadow:2px 0 4px rgba(0,0,0,.07)">
+        <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.projName)}">
+          ${p.projNum?`<span style="font-size:8.5px;font-weight:700;background:var(--pl);color:var(--p);padding:1px 5px;border-radius:7px;margin-right:4px">${esc(p.projNum)}</span>`:''}${esc(p.projName)}
+        </div>
+        <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:7px;background:${stCol}22;color:${stCol};margin-top:2px;display:inline-block">${p.status}</span>
       </td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t1)">${esc(p.client||'-')}</td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t1)">${esc(cfg.projectManager||'-')}</td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">${bpmoStatus(p.status)}</td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);text-align:right;font-size:13px;font-weight:800;color:${pctCol}">${ov}%</td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">${targetCell}</td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd)">${allocated?bbudgetStatus(bgStatus):'<span style="color:#aaa;font-size:11.5px">-</span>'}</td>
-      <td style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:11.5px;color:var(--t2);white-space:nowrap">${(p.updatedAt||'').split('T')[0]||'-'}</td>
+      ${tds}
+      <td style="width:${TOTAL_W}px;min-width:${TOTAL_W}px;text-align:center;font-size:12px;font-weight:800;color:${pctCol};border-left:.5px solid var(--bd)">${ov}%</td>
     </tr>`;
   }).join('');
-  c.innerHTML=`<div class="card" style="overflow:hidden;padding:0">
-    <div style="overflow-x:auto">
-      <table style="border-collapse:collapse;width:100%;min-width:920px">
-        <thead><tr>${th('Project')}${th('Client')}${th('PM')}${th('Status')}${th('Overall','right')}${th('Target Completion')}${th('Budget')}${th('Updated')}</tr></thead>
-        <tbody>${rows}</tbody>
+
+  // ── Legend ──
+  const legend=PMO_STAGES.map((s,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--t1);white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${STAGE_COLORS[i]};flex-shrink:0"></span>${STAGE_SHORT[i]}</span>`).join('');
+
+  c.innerHTML=`<div class="card" style="overflow:hidden">
+
+    <!-- Fixed header: overflow:hidden + no scrollbar; synced by body onscroll -->
+    <div id="pmo-hw" style="overflow:hidden;border-bottom:.5px solid var(--bd)">
+      <table style="${tbl}">
+        <thead><tr>
+          <th style="width:${NAME_W}px;min-width:${NAME_W}px;max-width:${NAME_W}px;background:var(--pl);padding:8px 8px 10px 12px;text-align:left;font-size:9.5px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.5px;border-right:.5px solid var(--bd);vertical-align:bottom">Project</th>
+          ${thCols}
+          <th style="width:${TOTAL_W}px;min-width:${TOTAL_W}px;background:var(--pl);padding:8px 4px;text-align:center;font-size:9.5px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.5px;border-left:.5px solid var(--bd);vertical-align:bottom">Done</th>
+        </tr></thead>
       </table>
     </div>
+
+    <!-- Scrollable body: syncs horizontal scroll back to header -->
+    <div id="pmo-bw" style="overflow-x:auto;overflow-y:auto;max-height:62vh"
+         onscroll="var h=el('pmo-hw');if(h)h.scrollLeft=this.scrollLeft">
+      <table style="${tbl}"><tbody>${rows}</tbody></table>
+    </div>
+
+    <div style="border-top:.5px solid var(--bd);padding:10px 14px">
+      <div style="font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Legend — hover any cell for detail</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${legend}</div>
+    </div>
   </div>`;
-}
-function switchToPMODetails(id){
-  pmoExpandedId=id;
-  pmoReturnToChart=true; // came from a Dashboard row click - collapsing this card should go back there, not strand the user in Details
-  setPMOView('cards');
-  setTimeout(()=>{const c=el('pmc-'+id);if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);
 }
 function docKey(label){return String(label||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30)+'_'+Math.random().toString(36).slice(2,7)}
 function startProjectDocTemplateListen(){
@@ -2436,10 +2463,8 @@ function renderPMO(){
 }
 
 function togglePMOCard(id){
-  const wasOpen=(pmoExpandedId===id);
-  if(wasOpen){pmoExpandedId=null;pmoEditId=null;}
-  else{pmoExpandedId=id;pmoEditId=null;pmoReturnToChart=false;} // manually opening a (different) card cancels any pending "return to Dashboard"
-  if(wasOpen&&pmoReturnToChart){pmoReturnToChart=false;setPMOView('chart');return;}
+  if(pmoExpandedId===id){pmoExpandedId=null;pmoEditId=null;}
+  else{pmoExpandedId=id;pmoEditId=null;}
   renderPMO();
 }
 function enterPMOEdit(id){pmoExpandedId=id;pmoEditId=id;renderPMO();}
@@ -3879,7 +3904,7 @@ function toggleBudgetCard(projName){
 function renderBudgetList(){
   if(CU?.isUser)return;
   const wrap=el('budget-list');if(!wrap)return;
-  wrap.className='compact-card-grid';
+  wrap.className='compact-table-panel';
   const q=(el('budget-search')?.value||'').toLowerCase().trim();
   let projs=projectsData.slice().sort((a,b)=>a.name.localeCompare(b.name));
   if(q)projs=projs.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.number||'').toLowerCase().includes(q));
@@ -3889,7 +3914,7 @@ function renderBudgetList(){
     return;
   }
 
-  wrap.innerHTML=projs.map(p=>{
+  const rows=projs.map(p=>{
     const projName=p.name;
     const safeName=projName.replace(/'/g,"\\'");
     const {consumed,allocated,poAmount,pct,status,gmValue,gmPct}=getProjBudget(projName);
@@ -3976,34 +4001,21 @@ function renderBudgetList(){
       </div>`;
     }
 
-    return`<div class="pmo-card${isExpanded?' is-expanded':''}" id="bgc-${p.id}">
-      <div style="cursor:pointer;user-select:none" onclick="toggleBudgetCard('${safeName}')">
-        <div class="pmo-hd">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-              ${p.number?`<span style="font-size:10px;background:var(--pl);color:var(--p);padding:1px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${esc(p.number)}</span>`:''}
-              <div class="pmo-title" style="min-width:0">${esc(projName)}</div>
-              ${bbudgetStatus(status)}
-              ${gmBadge}
-            </div>
-            <div class="pmo-sub">${allocated?`Allocated ₹${fmtAmt(allocated)} · Consumed ₹${fmtAmt(consumed)}`:'No budget configured'}${ldChip?' &nbsp;·&nbsp; ':''}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-            <div style="text-align:right">
-              <div class="pmo-pct" style="color:${barCol}">${pct}%</div>
-              <div style="font-size:10px;color:var(--t2)">used</div>
-            </div>
-            <i class="ti ${isExpanded?'ti-chevron-up':'ti-chevron-down'}" style="font-size:14px;color:var(--t2)"></i>
-          </div>
-        </div>
-        <div style="padding:6px 16px 8px">
-          <div class="pmo-bar-wrap"><div class="pmo-bar-fill" style="width:${Math.min(pct,100)}%;background:${barCol}"></div></div>
-        </div>
-        ${ldChip?`<div style="padding:0 16px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-gavel" style="font-size:11px"></i> LD</span>${ldChip}</div>`:''}
-      </div>
-      ${detail}
-    </div>`;
+    return `<tr onclick="if(!event.target.closest('button,input,select,textarea,a'))toggleBudgetCard('${safeName}')" id="bgc-${p.id}">
+      <td>${p.number?`<span class="badge b-act">${esc(p.number)}</span>`:''}</td>
+      <td><div class="pmo-detail-name" title="${esc(projName)}">${esc(projName)}</div><div class="pmo-detail-sub">${allocated?`Allocated ₹${fmtAmt(allocated)} · Consumed ₹${fmtAmt(consumed)}`:'No budget configured'}</div></td>
+      <td>${bbudgetStatus(status)}</td>
+      <td><div class="pmo-detail-progress"><div class="bar"><div class="fill" style="width:${Math.min(pct,100)}%;background:${barCol}"></div></div><b style="color:${barCol};width:38px;text-align:right">${pct}%</b></div></td>
+      <td>${gmBadge||'<span style="color:var(--t2)">-</span>'}</td>
+      <td>${ldChip||'<span style="color:var(--t2)">-</span>'}</td>
+      <td style="text-align:right"><i class="ti ${isExpanded?'ti-chevron-up':'ti-chevron-down'}" style="font-size:15px;color:var(--t2)"></i></td>
+    </tr>${isExpanded?`<tr class="pmo-detail-expanded"><td colspan="7">${detail}</td></tr>`:''}`;
   }).join('');
+
+  wrap.innerHTML=`<div class="card" style="overflow:hidden"><div class="table-wrap" style="overflow-x:auto"><table class="pmo-detail-table">
+    <thead><tr><th>Project ID</th><th>Project</th><th>Status</th><th>Utilization</th><th>GM</th><th>LD Date</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div></div>`;
 }
 
 // â”€â”€ PMO BUDGET STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
