@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DQAP | ORBIT</title>
+<title>DQAP Orbit | Operations Base</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23006994'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white'%3EDQ%3C/text%3E%3C/svg%3E">
 <meta name="theme-color" content="#006994">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DQAP Wiki">
+<meta name="apple-mobile-web-app-title" content="DQAP Orbit">
 <link rel="apple-touch-icon" href="crm-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-4";
+const APP_BUILD="20260706-8";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -271,14 +271,18 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .pmo-detail-progress .bar{height:7px;background:#ECEFF1;border-radius:99px;overflow:hidden;flex:1}
 .pmo-detail-progress .fill{height:100%;border-radius:99px}
 .pmo-detail-expanded td{background:#fff!important;padding:0;border-bottom:.5px solid var(--bd)}
-.chat-msg-row{display:flex;margin:1px 0;align-items:flex-start}
+.chat-msg-row{display:flex;margin:3px 0;align-items:flex-end}
 .chat-msg-row.mine{justify-content:flex-end}
 .chat-msg-row.theirs{justify-content:flex-start}
-.chat-bubble{max-width:min(72%,620px);padding:1px 2px;border-radius:0;font-size:12px;line-height:1.25;white-space:pre-wrap;border:none;background:none}
-.chat-msg-row.mine .chat-bubble{color:#006994;text-align:right}
-.chat-msg-row.theirs .chat-bubble{color:#2E7D32;text-align:left}
-.chat-msg-row.flagged .chat-bubble{color:#B71C1C}
-.chat-meta{font-size:8.5px;margin-bottom:0;opacity:.62;display:flex;gap:5px;align-items:center;justify-content:space-between;color:var(--t2)}
+.chat-bubble{max-width:min(70%,600px);padding:5px 9px 4px;border-radius:8px;font-size:12.5px;line-height:1.36;white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.chat-msg-row.mine .chat-bubble{background:#DCF8C6;color:#111}
+.chat-msg-row.theirs .chat-bubble{background:#FFFFFF;color:#111;border:.5px solid var(--bd)}
+.chat-msg-row.flagged .chat-bubble{background:#FDE4E1;border:.5px solid #E9A29A}
+.chat-sender-name{font-size:10.5px;font-weight:700;margin-bottom:1px;display:block}
+.chat-priority-tag{color:#c0392b;font-weight:800}
+.chat-msg-time{font-size:9.5px;color:#00000073;margin-left:6px;white-space:nowrap;float:right;margin-top:3px}
+.chat-day-sep{display:flex;justify-content:center;margin:8px 0}
+.chat-day-sep span{background:#E9EDF2;color:var(--t2);font-size:10px;font-weight:700;padding:3px 11px;border-radius:9px}
 .chat-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;width:100%;max-width:100%;overflow:hidden}
 .chat-sidebar,.chat-panel{min-width:0}
 .chat-card{margin:0;min-width:0;overflow:hidden}
@@ -354,8 +358,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   #v-wiki .topbar .tr,#v-add .topbar .tr{flex-wrap:wrap;gap:5px}
   .stage-row{grid-template-columns:1fr 80px;grid-template-rows:auto auto}
   .stage-name{grid-column:1}.stage-pct-wrap{grid-column:2;grid-row:1}
-  .chat-bubble{max-width:88%;font-size:11px;padding:1px 2px}
-  .chat-meta{font-size:8px;gap:4px;flex-wrap:wrap}
+  .chat-bubble{max-width:88%;font-size:11.5px;padding:5px 8px 4px}
+  .chat-sender-name{font-size:10px}
+  .chat-msg-time{font-size:9px}
   .chat-pane{height:calc(100vh - 210px)!important;min-height:360px;overflow:hidden}
   .chat-thread-item{font-size:11px;padding:6px 8px!important;margin-bottom:1px!important}
   .chat-compose{position:sticky;top:0;z-index:2;background:var(--card);padding:6px 0;margin:0 0 6px}
@@ -371,7 +376,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </style>
 </head>
 <body>
-<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DQAP Wiki...</div></div>
+<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DQAP Orbit...</div></div>
 
 <!-- LOGIN -->
 <div class="lw" id="lw" style="display:none">
@@ -379,8 +384,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div style="text-align:center;margin-bottom:20px">
       <img src="dqap-logo.png" alt="DQAP" style="height:56px;object-fit:contain;display:inline-block;margin-bottom:12px" onerror="this.style.display='none';document.getElementById('logo-fb').style.display='block'">
       <div id="logo-fb" style="display:none;font-size:24px;font-weight:700;color:var(--p);margin-bottom:12px">dqap</div>
-      <div style="font-size:16px;font-weight:600">DQAP Wiki</div>
-      <div style="font-size:12px;color:var(--t2);margin-top:3px">Technical Knowledge Base</div>
+      <div style="font-size:16px;font-weight:600">DQAP Orbit</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:3px">Operations Base</div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl r">Username</label><input class="fi" id="l-user" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')el('l-pass').focus()"></div>
     <div class="fg" style="margin-bottom:5px"><label class="fl r">Password</label><input type="password" class="fi" id="l-pass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
@@ -460,7 +465,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <button class="btn sm" onclick="openFlagToUpdeshModal()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:8px"><i class="ti ti-flag"></i>Write to Updesh</button>
     <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px"><i class="ti ti-logout"></i>Sign out</button>
-    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Wiki - v-</div>
+    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Orbit - v-</div>
   </div>
 </nav>
 <div id="project-doc-template-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
@@ -487,7 +492,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• DASHBOARD â•â• -->
 <div id="v-dash" class="view">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DQAP Wiki — System Engineering Knowledge Base</div></div>
+    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DQAP Orbit — Operations Base</div></div>
     <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
   </div>
   <div class="content">
@@ -1394,7 +1399,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   el('lib-cat').innerHTML='<option value="">Select category</option>'+catOpts;
   el('lib-filter-cat').innerHTML='<option value="">All categories</option>'+catOpts;
   buildStagesForm();
-  showLoad('Loading DQAP Wiki...');
+  showLoad('Loading DQAP Orbit...');
   await seedAdmin();
   const s=sessionStorage.getItem('dqap_sess')||localStorage.getItem('dqap_sess_persist');
   if(s){try{const raw=JSON.parse(s);
@@ -1443,7 +1448,7 @@ async function login(){
 }
 
 function logout(){
-  if(!confirm('Sign out of DQAP Wiki?'))return;
+  if(!confirm('Sign out of DQAP Orbit?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
@@ -1456,7 +1461,7 @@ function logout(){
 
 function startApp(){
   el('sb-user').textContent=CU.fullName;
-  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Wiki v'+APP_VERSION+'-'+APP_BUILD;
+  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Orbit v'+APP_VERSION+'-'+APP_BUILD;
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
@@ -2861,7 +2866,7 @@ function downloadPDF(){if(!CU?.isAdmin)return;const a=document.createElement('a'
 function exportExcel(){
   const data=filtered.length?filtered:DB.entries;if(!data.length){toast('No entries','err');return;}
   const rows=data.map(e=>({'Entry #':e.entryNumber||'','Date':e.date||'','Engineer':e.engineer||'','Project':e.project||'','Client':e.client||'','Site':e.location||'','Phase':e.phase||'','Category':e.category||'','Severity':e.severity||'','Status':e.status||'','System Type':e.systemType||'','Equipment':e.equipment||'','Software':e.software||'','Protocol':e.protocol||'','Error Code':e.errorCode||'','Time to Resolve':e.timeToResolve||'','Problem Title':e.title||'','Problem':e.problem||'','Symptoms':e.symptoms||'','Root Cause':e.rootCause||'','Solution':e.solution||'','Preventive':e.preventive||'','References':e.references||'','Tags':(e.tags||[]).join(', '),'Created':(e.createdAt||'').split('T')[0],'Updated':(e.updatedAt||'').split('T')[0]}));
-  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DQAP Wiki');
+  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DQAP Orbit');
   XLSX.writeFile(wb,'DQAP_Wiki_'+new Date().toISOString().split('T')[0]+'.xlsx');toast('Excel downloaded âœ“','ok');
 }
 function sendNotification(e){
@@ -5192,20 +5197,46 @@ function chatThreadListHtml(){
     </div>`;
   }).join('');
 }
+function chatColorForUser(username){
+  const palette=Object.values(attUserColors);
+  const s=String(username||'');
+  let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
+  return palette[h%palette.length];
+}
+function chatDayKey(dateVal){const d=new Date(dateVal);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();}
+function chatDayLabel(dateVal){
+  const d=new Date(dateVal);
+  const today=new Date();
+  const yesterday=new Date();yesterday.setDate(today.getDate()-1);
+  if(chatDayKey(d)===chatDayKey(today))return'Today';
+  if(chatDayKey(d)===chatDayKey(yesterday))return'Yesterday';
+  const diffDays=Math.round((today.setHours(0,0,0,0)-new Date(d).setHours(0,0,0,0))/86400000);
+  if(diffDays>=0&&diffDays<7)return d.toLocaleDateString('en-IN',{weekday:'long'});
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
 function chatMessagePaneHtml(){
   const thread=chatThreadsData.find(t=>t.id===activeChatThreadId);
   if(!thread)return'<div class="empty" style="padding:30px">Select a conversation on the left, or start a new one.</div>';
   const canPost=thread.type!=='broadcast'||canPostBroadcast();
-  const msgHtml=chatMessagesData.length?chatMessagesData.map(m=>{
+  const showSenderNames=thread.type==='group'||thread.type==='broadcast';
+  const rows=[];
+  chatMessagesData.forEach((m,i)=>{
     const flagged=m.priority==='flag';
     const mine=String(m.senderUsername||'').toLowerCase()===userKey();
-    return`<div class="chat-msg-row ${mine?'mine':'theirs'}${flagged?' flagged':''}">
+    const timeStr=esc(new Date(m.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}));
+    const nameLine=(showSenderNames&&!mine)?`<span class="chat-sender-name" style="color:${chatColorForUser(m.senderUsername)}">${esc(m.senderName||m.senderUsername)}</span>`:'';
+    const priorityTag=flagged?'<span class="chat-priority-tag">PRIORITY · </span>':'';
+    rows.push(`<div class="chat-msg-row ${mine?'mine':'theirs'}${flagged?' flagged':''}">
       <div class="chat-bubble">
-        <div class="chat-meta"><span><b>${mine?'You':esc(m.senderName||m.senderUsername)}</b>${flagged?' <span style="color:#c0392b;font-weight:800">· PRIORITY</span>':''}</span><span>${esc(new Date(m.createdAt).toLocaleString('en-IN'))}</span></div>
-        <div>${esc(m.text)}</div>
+        ${nameLine}<span>${esc(m.text)}</span><span class="chat-msg-time">${priorityTag}${timeStr}</span>
       </div>
-    </div>`;
-  }).join(''):'<div class="empty">No messages yet.</div>';
+    </div>`);
+    const older=chatMessagesData[i+1];
+    if(!older||chatDayKey(m.createdAt)!==chatDayKey(older.createdAt)){
+      rows.push(`<div class="chat-day-sep"><span>${esc(chatDayLabel(m.createdAt))}</span></div>`);
+    }
+  });
+  const msgHtml=chatMessagesData.length?rows.join(''):'<div class="empty">No messages yet.</div>';
   return`<div class="chat-pane" style="display:flex;flex-direction:column;height:calc(100vh - 230px);max-height:100%">
     <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd)">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
     ${canPost?`<div class="chat-compose"><input id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri chat-send-btn" onclick="sendChatMessage()" title="Send"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
