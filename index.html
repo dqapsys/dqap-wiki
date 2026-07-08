@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-16";
+const APP_BUILD="20260706-18";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -3445,6 +3445,7 @@ function tpUserDept(username){
 }
 function attScoreCredit(r){
   if(!r)return 0;
+  if(r.disputeStatus==='confirmed')return 0; // confirmed false claim - no credit, same as an absence
   if(r.status==='present')return r.isLate?0.5:1;
   if(r.status==='ooo'){
     if(r.approvalStatus==='pending'||r.approvalStatus==='rejected')return 0; // no credit until approved
@@ -4623,6 +4624,7 @@ function openTaskDetails(id){
   ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
   ${t.taskType==='project_change'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF8E1;color:#6D4C00;font-size:11.5px"><b>Project change approval</b> - Status: <b>${esc(t.projectChangeStatus||'pending')}</b></div>`:''}
   ${t.taskType==='attendance_approval'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#F3E8FF;color:#6A1B9A;font-size:11.5px"><b>Attendance approval</b> - Status: <b>${esc(t.approvalStatus||'pending')}</b></div>`:''}
+  ${t.taskType==='attendance_dispute'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFEBEE;color:#B71C1C;font-size:11.5px"><b>Attendance dispute</b> - Status: <b>${esc(t.disputeDecision||'pending')}</b></div>`:''}
   <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
     <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
     <div id="task-ack-info" style="font-size:12.5px;margin-top:6px">Loading...</div>
@@ -4631,6 +4633,7 @@ function openTaskDetails(id){
   const isExtensionAction=t.taskType==='project_extension'&&t.extensionStatus==='pending'&&t.assignedTo===CU.fullName;
   const isProjectChangeAction=t.taskType==='project_change'&&(t.projectChangeStatus||'pending')==='pending'&&((String(t.assignedToUsername||'').toLowerCase()===userKey())||t.assignedTo===CU.fullName||isSuperUser());
   const isAttendanceApprovalAction=t.taskType==='attendance_approval'&&(t.approvalStatus||'pending')==='pending'&&(t.assignedTo===CU.fullName||isSuperUser());
+  const isAttendanceDisputeAction=t.taskType==='attendance_dispute'&&(t.disputeDecision||'pending')==='pending'&&isSuperUser();
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
     ${isExtensionAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectExtension('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
     ${isExtensionAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="decideProjectExtension('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
@@ -4639,9 +4642,12 @@ function openTaskDetails(id){
     ${isProjectChangeAction?`<button class="btn pri" onclick="decideProjectChange('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
     ${isAttendanceApprovalAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideAttendanceApproval('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
     ${isAttendanceApprovalAction?`<button class="btn pri" onclick="decideAttendanceApproval('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
-    ${!isExtensionAction&&!isProjectChangeAction&&!isAttendanceApprovalAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+    ${isAttendanceDisputeAction?`<button class="btn" onclick="decideAttendanceDispute('${t.id}','dismiss')">Dismiss</button>`:''}
+    ${isAttendanceDisputeAction?`<button class="btn danger" onclick="decideAttendanceDispute('${t.id}','confirm_late')" title="They did show up, just misrepresented when"><i class="ti ti-clock"></i>Confirm - Late, Not Absent (Half-day LOP)</button>`:''}
+    ${isAttendanceDisputeAction?`<button class="btn danger" onclick="decideAttendanceDispute('${t.id}','confirm_noshow')" title="They did not attend at all that day"><i class="ti ti-alert-triangle"></i>Confirm - Full No-show (Full-day LOP)</button>`:''}
+    ${!isExtensionAction&&!isProjectChangeAction&&!isAttendanceApprovalAction&&!isAttendanceDisputeAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'&&t.taskType!=='attendance_dispute'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'&&t.taskType!=='attendance_dispute'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
   modal.style.display='flex';
 }
 
@@ -5501,6 +5507,76 @@ function attComputeLopForTrigger(countBefore){
   const showWarning=triggerNumber===2;
   return {triggerNumber,lopHalfDay,showWarning};
 }
+// â”€â”€ ATTENDANCE DISPUTE / FLAG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Self-marked Present/OOO is trust-based, so someone claiming to be in office
+// while they weren't needs a real consequence, not just a report footnote.
+// Only the person's own reporting manager, or Updesh/an admin, can raise a
+// flag - this isn't open to any colleague, to avoid it becoming a political
+// tool. Confirming a flag is deliberately NOT left to the same manager who
+// raised it (avoids one person being accuser, judge and jury) - it always
+// goes to Updesh for a final decision, same escalation pattern already used
+// for partner-removal and project-change disputes elsewhere in this app.
+function attCanFlagUser(targetUsername){
+  if(isSuperUser())return true;
+  const me=String(CU?.username||'').toLowerCase();
+  const target=(usersData||[]).find(u=>String(u.username||'').toLowerCase()===String(targetUsername||'').toLowerCase());
+  return !!(target&&String(target.reportingManager||'').toLowerCase()===me);
+}
+async function flagAttendanceDispute(username,date,summary){
+  if(!attCanFlagUser(username)){toast('Only that person\'s reporting manager or Updesh can flag a record','err');return;}
+  const reason=(prompt(`Why are you disputing this record (${summary||date})?\n\nBe specific - this goes to Updesh for a final decision.`)||'').trim();
+  if(!reason){toast('A reason is required to raise a dispute','err');return;}
+  showLoad('Raising dispute…');
+  try{
+    const now=new Date().toISOString();
+    const targetUser=(usersData||[]).find(u=>String(u.username||'').toLowerCase()===String(username).toLowerCase());
+    await db.collection(ATTENDANCE_COL).doc(attDocId(username,date)).update({
+      disputeStatus:'flagged',disputeReason:reason,disputedBy:CU.fullName,disputedByUsername:CU.username,disputedAt:now
+    });
+    const ref=db.collection(TASK_COL).doc();
+    await ref.set({
+      title:`Attendance Dispute - ${targetUser?.fullName||username} - ${date}`,
+      description:`${CU.fullName} disputes the attendance marked for ${targetUser?.fullName||username} on ${date}.\nReason: ${reason}`,
+      taskCode:genTaskCode(ref.id),
+      assignedBy:CU.fullName,assignedByRole:CU.role,
+      assignedTo:'Updesh Verma',assignedToRole:'admin',
+      supervisor:'',priority:'High',project:'',frequency:'One Time',
+      status:'Open',createdAt:now,updatedAt:now,
+      taskType:'attendance_dispute',attendanceUsername:username,attendanceDate:date,
+      disputeDecision:'pending'
+    });
+    toast('Dispute raised - sent to Updesh for a decision','ok');
+    attRenderAdm();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function decideAttendanceDispute(taskId,decision){
+  const t=taskData.find(x=>x.id===taskId);if(!t||t.taskType!=='attendance_dispute')return;
+  if(!isSuperUser()){toast('Only Updesh can decide an attendance dispute','err');return;}
+  const isConfirm=decision==='confirm_late'||decision==='confirm_noshow';
+  const remarks=prompt(isConfirm?'Decision remarks (optional):':'Dismissal remarks (optional):','')||'';
+  showLoad('Saving decision…');
+  try{
+    const now=new Date().toISOString();
+    const updates={
+      disputeStatus:isConfirm?'confirmed':'dismissed',
+      disputeDecisionBy:CU.fullName,disputeDecisionAt:now,disputeDecisionRemarks:remarks,disputeSeverity:isConfirm?decision:null
+    };
+    // A misrepresented-lateness claim (they did show up, just fudged the time)
+    // gets the same half-day LOP as ordinary lateness. A full no-show falsely
+    // claimed as Present/OOO gets a full-day LOP instead - matching what an
+    // honest full-day absence would have cost, so lying about it is never
+    // cheaper than admitting it. Never left as just "half-day" for a no-show,
+    // which would otherwise make getting caught barely worse than the truth.
+    if(decision==='confirm_late'){updates.lopHalfDay=true;updates.lopFullDay=false;}
+    if(decision==='confirm_noshow'){updates.lopFullDay=true;updates.lopHalfDay=false;}
+    await db.collection(ATTENDANCE_COL).doc(attDocId(t.attendanceUsername,t.attendanceDate)).update(updates);
+    const outcomeText=decision==='confirm_late'?'Confirmed (misrepresented lateness) - half-day LOP applied':decision==='confirm_noshow'?'Confirmed (full no-show) - full-day LOP applied':'Dismissed';
+    await db.collection(TASK_COL).doc(taskId).update({status:'Completed',disputeDecision:isConfirm?'confirmed':'dismissed',completedAt:now,completedByName:CU.fullName,updatedAt:now,description:(t.description||'')+`\n\n${outcomeText} by ${CU.fullName}${remarks?': '+remarks:''}.`});
+    toast(outcomeText,'ok');
+    closeTaskDetails();
+    if(typeof attRender==='function')attRender();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
 function attShowLopWarning(count){
   const div=document.createElement('div');
   div.className='lw';
@@ -5590,19 +5666,27 @@ async function attRender(){
   else if(attCurrentTab==='adm')await attRenderAdm();
   else if(attCurrentTab==='rank')await attRenderRank();
 }
+function attLopTag(r){
+  if(r.lopFullDay)return ' - Full-day LOP';
+  if(r.lopHalfDay)return ' - Half-day LOP';
+  return '';
+}
 function attStatusLabel(r){
   if(!r)return'Pending';
-  if(r.status==='present')return `Present${r.isLate?' - Late':''}${r.checkin_time?' - '+r.checkin_time:''}${r.lopHalfDay?' - Half-day LOP':''}`;
+  const disputeTag=r.disputeStatus==='flagged'?' - âš  DISPUTED (pending Updesh review)':(r.disputeStatus==='confirmed'?(r.lopFullDay?' - âš  CONFIRMED FULL NO-SHOW (full-day LOP applied)':' - âš  CONFIRMED FALSE CLAIM (half-day LOP applied)'):(r.disputeStatus==='dismissed'?' - Dispute dismissed':''));
+  if(r.status==='present')return `Present${r.isLate?' - Late':''}${r.checkin_time?' - '+r.checkin_time:''}${attLopTag(r)}${disputeTag}`;
   if(r.status==='ooo'){
     const approvalTag=r.approvalStatus==='pending'?' - Awaiting manager approval':(r.approvalStatus==='rejected'?' - Rejected by manager':(r.approvalStatus==='approved'?' - Approved':''));
-    return `OOO - ${r.oof_reason}${r.isLate?' - Late':''}${r.remarks?' - '+r.remarks:''}${approvalTag}${r.lopHalfDay?' - Half-day LOP':''}`;
+    return `OOO - ${r.oof_reason}${r.isLate?' - Late':''}${r.remarks?' - '+r.remarks:''}${approvalTag}${attLopTag(r)}${disputeTag}`;
   }
-  if(r.status==='half-day-absent')return `Half-day Absent${r.lopHalfDay?' - Half-day LOP':''}`;
-  if(r.status==='full-day-absent')return `Full-day Absent${r.lopHalfDay?' - Half-day LOP':''}`;
+  if(r.status==='half-day-absent')return `Half-day Absent${attLopTag(r)}`;
+  if(r.status==='full-day-absent')return `Full-day Absent${attLopTag(r)}`;
   return r.status||'Pending';
 }
 function attStatusBg(r){
   if(!r)return'';
+  if(r.disputeStatus==='confirmed')return r.lopFullDay?'#EF9A9A':'#FFCDD2';
+  if(r.disputeStatus==='flagged')return '#FFE0B2';
   if(r.status==='present')return r.isLate?'#FFF3E0':'#E8F5E9';
   if(r.status==='ooo'){
     if(r.approvalStatus==='pending')return '#F3E8FF';
@@ -5722,7 +5806,8 @@ async function attRenderMonthlyReport(){
     const halfDayAbsent=mine.filter(r=>r.status==='half-day-absent').length;
     const fullDayAbsent=mine.filter(r=>r.status==='full-day-absent').length;
     const lopHalfDays=mine.filter(r=>r.lopHalfDay).length;
-    return {u,present,oooWorking,oooLeave,oooPending,late,halfDayAbsent,fullDayAbsent,lopHalfDays,total:mine.length};
+    const lopFullDays=mine.filter(r=>r.lopFullDay).length;
+    return {u,present,oooWorking,oooLeave,oooPending,late,halfDayAbsent,fullDayAbsent,lopHalfDays,lopFullDays,total:mine.length};
   }).sort((a,b)=>a.u.name.localeCompare(b.u.name));
   const body=data.map(x=>`<tr>
     <td style="padding:8px;font-weight:700">${esc(x.u.name)}<br><span style="font-size:10px;color:var(--t2)">@${esc(x.u.key)}</span></td>
@@ -5734,16 +5819,22 @@ async function attRenderMonthlyReport(){
     <td style="padding:8px;text-align:center;color:${x.halfDayAbsent?'#E65100':'var(--t1)'};font-weight:700">${x.halfDayAbsent}</td>
     <td style="padding:8px;text-align:center;color:${x.fullDayAbsent?'#B71C1C':'var(--t1)'};font-weight:700">${x.fullDayAbsent}</td>
     <td style="padding:8px;text-align:center;color:${x.lopHalfDays?'#B71C1C':'var(--t1)'};font-weight:800">${x.lopHalfDays}</td>
+    <td style="padding:8px;text-align:center;color:${x.lopFullDays?'#B71C1C':'var(--t1)'};font-weight:800">${x.lopFullDays}</td>
     <td style="padding:8px;text-align:center">${x.total}</td>
   </tr>`).join('');
-  const detailRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>`<tr>
+  const detailRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>{
+    const uname=String(r.username||r.userId||'').toLowerCase();
+    const canFlag=['present','ooo'].includes(r.status)&&!r.disputeStatus&&attCanFlagUser(uname);
+    const summary=esc(attStatusLabel(r));
+    return`<tr>
     <td style="padding:7px">${esc(r.date)}</td><td style="padding:7px">${esc(r.fullName||r.username||r.userId)}</td>
-    <td style="padding:7px">${esc(attStatusLabel(r))}</td>
+    <td style="padding:7px">${summary}</td>
     <td style="padding:7px;text-align:center">${r.monthlyTriggerNumber||'-'}</td>
-  </tr>`).join('');
+    <td style="padding:7px">${canFlag?`<button class="btn sm" style="border-color:#B71C1C;color:#B71C1C" onclick="flagAttendanceDispute('${uname}','${r.date}','${summary.replace(/'/g,"\\'")}')"><i class="ti ti-flag"></i>Flag</button>`:''}</td>
+  </tr>`;}).join('');
   const out=el('att-monthly-report');
-  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:920px"><thead><tr><th>User</th><th>Present</th><th>OOO – Working<br><span style="font-weight:400;font-size:9px">Meeting/Travel/Training/WFH</span></th><th>OOO – Leave<br><span style="font-weight:400;font-size:9px">Leave/Other</span></th><th>Pending Approval</th><th>Late</th><th>Half-day Absent</th><th>Full-day Absent</th><th>Half-day LOP</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
-  <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;color:var(--p)">Daily details</summary><div style="overflow-x:auto;margin-top:8px"><table class="wtable" style="min-width:720px"><thead><tr><th>Date</th><th>User</th><th>Status</th><th>Monthly Trigger #</th></tr></thead><tbody>${detailRows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--t2)">No daily records</td></tr>'}</tbody></table></div></details>`;
+  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:1000px"><thead><tr><th>User</th><th>Present</th><th>OOO – Working<br><span style="font-weight:400;font-size:9px">Meeting/Travel/Training/WFH</span></th><th>OOO – Leave<br><span style="font-weight:400;font-size:9px">Leave/Other</span></th><th>Pending Approval</th><th>Late</th><th>Half-day Absent</th><th>Full-day Absent</th><th>Half-day LOP</th><th>Full-day LOP</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
+  <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;color:var(--p)">Daily details</summary><div style="font-size:10.5px;color:var(--t2);margin:8px 0 4px">"Flag" is only shown for a person's own reporting manager or Updesh, and only while a record isn't already disputed.</div><div style="overflow-x:auto"><table class="wtable" style="min-width:800px"><thead><tr><th>Date</th><th>User</th><th>Status</th><th>Monthly Trigger #</th><th>Action</th></tr></thead><tbody>${detailRows||'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--t2)">No daily records</td></tr>'}</tbody></table></div></details>`;
 }
 async function attExportMonthlyReport(){
   if(!attCanViewReports()){toast('Login required to export attendance reports','err');return;}
@@ -5767,6 +5858,7 @@ async function attExportMonthlyReport(){
       'Half-day Absent':mine.filter(r=>r.status==='half-day-absent').length,
       'Full-day Absent':mine.filter(r=>r.status==='full-day-absent').length,
       'Half-day LOP applied':mine.filter(r=>r.lopHalfDay).length,
+      'Full-day LOP applied':mine.filter(r=>r.lopFullDay).length,
       'Total marked':mine.length
     };
   }).sort((a,b)=>a.Name.localeCompare(b.Name));
@@ -5779,6 +5871,7 @@ async function attExportMonthlyReport(){
     'Late':r.isLate?'Yes':'No',
     'Monthly Trigger #':r.monthlyTriggerNumber||'',
     'Half-day LOP':r.lopHalfDay?'Yes':'No',
+    'Full-day LOP':r.lopFullDay?'Yes':'No',
     'Auto-marked':r.autoMarked?'Yes':'No',
     'Remarks':r.remarks||''
   }));
