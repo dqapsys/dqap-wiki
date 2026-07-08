@@ -1,7 +1,7 @@
 {
-  "name": "DQAP Wiki",
-  "short_name": "DQAP Wiki",
-  "description": "DQAP System Engineering Technical Knowledge Base",
+  "name": "DORBIT",
+  "short_name": "DORBIT",
+  "description": "DQAP operations Base",
   "start_url": ".",
   "scope": "./",
   "display": "standalone",
