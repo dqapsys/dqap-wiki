@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-18";
+const APP_BUILD="20260706-19";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5771,9 +5771,11 @@ async function attRenderAdm(){
     const badge=rec?(rec.status==='present'?(rec.isLate?'Late':'Present'):(rec.status==='ooo'?rec.oof_reason+(rec.approvalStatus==='pending'?' (Pending)':rec.approvalStatus==='rejected'?' (Rejected)':''):(rec.status==='half-day-absent'?'Half-day Absent':'Full-day Absent'))):(noEntryDay?(dayType.type==='saturday'?'WFH':dayType.label):'Pending');
     const status=rec?attStatusLabel(rec):(noEntryDay?dayType.label:'Pending');
     const badgeColor=rec?(rec.status==='ooo'&&rec.approvalStatus==='pending'?'#6A1B9A':rec.status==='ooo'&&rec.approvalStatus==='rejected'?'#C62828':(badgeBg[rec.status]||'#757575')):(noEntryDay?'#1565C0':'#757575');
-    return `<div class="card" style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
+    const canFlag=rec&&['present','ooo'].includes(rec.status)&&!rec.disputeStatus&&attCanFlagUser(u.key);
+    const flagBtn=canFlag?`<button class="btn sm" style="border-color:#B71C1C;color:#B71C1C;margin-top:6px" onclick="flagAttendanceDispute('${u.key}','${today}','${esc(status).replace(/'/g,"\\'")}')"><i class="ti ti-flag"></i>Flag</button>`:'';
+    return `<div class="card" style="display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
       <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${esc(status)}</div></div>
-      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${badgeColor};color:#fff">${esc(badge)}</span></div>
+      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${badgeColor};color:#fff">${esc(badge)}</span><br>${flagBtn}</div>
     </div>`;
   }).join('');
   const adm=el('att-admin'); if(adm)adm.innerHTML=h||'<div class="empty">No users found.</div>';
