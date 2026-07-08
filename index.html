@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-13";
+const APP_BUILD="20260706-14";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5434,7 +5434,7 @@ async function attMonthTriggerStats(user,date=new Date(),excludeDate=null){
   const start=monthKey+'-01';
   const endDate=new Date(date.getFullYear(),date.getMonth()+1,0);
   const rows=await attFetchRange(start,attDateKey(endDate),user);
-  const triggerDays=rows.filter(r=>r.date!==excludeDate&&(r.isLate||r.status==='half-day-absent'||r.status==='full-day-absent'));
+  const triggerDays=rows.filter(r=>r.date!==excludeDate&&attDayType(r.date).requiresEntry&&(r.isLate||r.status==='half-day-absent'||r.status==='full-day-absent'));
   return {count:triggerDays.length,monthKey};
 }
 // Given how many triggers already exist this month (excluding today), decide
@@ -5843,7 +5843,7 @@ async function attCheckIn(){
   const existing=await attGet(attUserKey(),ds);
   if(existing){toast('Attendance already recorded for today','err');return;}
   const minutesNow=attMinutesNow(now);
-  const late=minutesNow>=ATT_ONTIME_CUTOFF_MIN;
+  const late=attDayType(ds).requiresEntry&&minutesNow>=ATT_ONTIME_CUTOFF_MIN;
   let lop={triggerNumber:null,lopHalfDay:false,showWarning:false};
   if(late){
     const {count}=await attMonthTriggerStats(attUserKey(),now,ds);
@@ -5918,7 +5918,7 @@ async function attSaveOOO(){
     remarks=el('att-remarks')?.value?.trim()||'';
   }
   const minutesNow=attMinutesNow(now);
-  const late=minutesNow>=ATT_ONTIME_CUTOFF_MIN;
+  const late=attDayType(ds).requiresEntry&&minutesNow>=ATT_ONTIME_CUTOFF_MIN;
   let lop={triggerNumber:null,lopHalfDay:false,showWarning:false};
   if(late){
     const {count}=await attMonthTriggerStats(attUserKey(),now,ds);
