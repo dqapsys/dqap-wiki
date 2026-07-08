@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DQAP Orbit | Operations Base</title>
+<title>DORBIT | Operations Base</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23006994'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white'%3EDQ%3C/text%3E%3C/svg%3E">
 <meta name="theme-color" content="#006994">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DQAP Orbit">
+<meta name="apple-mobile-web-app-title" content="DORBIT">
 <link rel="apple-touch-icon" href="crm-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-10";
+const APP_BUILD="20260706-11";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -376,7 +376,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </style>
 </head>
 <body>
-<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DQAP Orbit...</div></div>
+<div class="lo" id="lo"><div class="spinner"></div><div class="lt" id="lt">Loading DORBIT...</div></div>
 
 <!-- LOGIN -->
 <div class="lw" id="lw" style="display:none">
@@ -384,7 +384,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div style="text-align:center;margin-bottom:20px">
       <img src="dqap-logo.png" alt="DQAP" style="height:56px;object-fit:contain;display:inline-block;margin-bottom:12px" onerror="this.style.display='none';document.getElementById('logo-fb').style.display='block'">
       <div id="logo-fb" style="display:none;font-size:24px;font-weight:700;color:var(--p);margin-bottom:12px">dqap</div>
-      <div style="font-size:16px;font-weight:600">DQAP Orbit</div>
+      <div style="font-size:16px;font-weight:600">DORBIT</div>
       <div style="font-size:12px;color:var(--t2);margin-top:3px">Operations Base</div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl r">Username</label><input class="fi" id="l-user" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')el('l-pass').focus()"></div>
@@ -465,7 +465,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <button class="btn sm" onclick="openFlagToUpdeshModal()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:8px"><i class="ti ti-flag"></i>Write to Updesh</button>
     <button class="btn sm" onclick="logout()" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.78);margin-top:4px"><i class="ti ti-logout"></i>Sign out</button>
-    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DQAP Orbit - v-</div>
+    <div id="sb-version" style="text-align:center;font-size:9px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px">DORBIT - v-</div>
   </div>
 </nav>
 <div id="project-doc-template-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
@@ -492,7 +492,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• DASHBOARD â•â• -->
 <div id="v-dash" class="view">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DQAP Orbit — Operations Base</div></div>
+    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DORBIT — Operations Base</div></div>
     <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
   </div>
   <div class="content">
@@ -1399,7 +1399,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   el('lib-cat').innerHTML='<option value="">Select category</option>'+catOpts;
   el('lib-filter-cat').innerHTML='<option value="">All categories</option>'+catOpts;
   buildStagesForm();
-  showLoad('Loading DQAP Orbit...');
+  showLoad('Loading DORBIT...');
   await seedAdmin();
   const s=sessionStorage.getItem('dqap_sess')||localStorage.getItem('dqap_sess_persist');
   if(s){try{const raw=JSON.parse(s);
@@ -1448,7 +1448,7 @@ async function login(){
 }
 
 function logout(){
-  if(!confirm('Sign out of DQAP Orbit?'))return;
+  if(!confirm('Sign out of DORBIT?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
@@ -1461,7 +1461,7 @@ function logout(){
 
 function startApp(){
   el('sb-user').textContent=CU.fullName;
-  const verEl=el('sb-version');if(verEl)verEl.textContent='DQAP Orbit v'+APP_VERSION+'-'+APP_BUILD;
+  const verEl=el('sb-version');if(verEl)verEl.textContent='DORBIT v'+APP_VERSION+'-'+APP_BUILD;
   el('f-date').value=new Date().toISOString().split('T')[0];
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
@@ -2891,7 +2891,7 @@ function downloadPDF(){if(!CU?.isAdmin)return;const a=document.createElement('a'
 function exportExcel(){
   const data=filtered.length?filtered:DB.entries;if(!data.length){toast('No entries','err');return;}
   const rows=data.map(e=>({'Entry #':e.entryNumber||'','Date':e.date||'','Engineer':e.engineer||'','Project':e.project||'','Client':e.client||'','Site':e.location||'','Phase':e.phase||'','Category':e.category||'','Severity':e.severity||'','Status':e.status||'','System Type':e.systemType||'','Equipment':e.equipment||'','Software':e.software||'','Protocol':e.protocol||'','Error Code':e.errorCode||'','Time to Resolve':e.timeToResolve||'','Problem Title':e.title||'','Problem':e.problem||'','Symptoms':e.symptoms||'','Root Cause':e.rootCause||'','Solution':e.solution||'','Preventive':e.preventive||'','References':e.references||'','Tags':(e.tags||[]).join(', '),'Created':(e.createdAt||'').split('T')[0],'Updated':(e.updatedAt||'').split('T')[0]}));
-  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DQAP Orbit');
+  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DORBIT');
   XLSX.writeFile(wb,'DQAP_Wiki_'+new Date().toISOString().split('T')[0]+'.xlsx');toast('Excel downloaded âœ“','ok');
 }
 function sendNotification(e){
