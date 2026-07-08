@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-11";
+const APP_BUILD="20260706-13";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -34,7 +34,10 @@ const attUserColors={'u001':'#1565C0','u002':'#2E7D32','u003':'#F57F17','u004':'
 let attCurrentUser='u001';
 let attSelectedOOO=null;
 let attCurrentTab='emp';
-const ATT_CHECKIN_HOUR=9, ATT_CHECKIN_MINUTE=30, ATT_LATE_GRACE_MINUTES=20;
+let attLastAutoMarkCheck=0;
+const ATT_ONTIME_CUTOFF_MIN=9*60+50;   // 09:50 - marking after this is Late
+const ATT_HALFDAY_CUTOFF_MIN=11*60;    // 11:00 - unmarked by now => half-day absent
+const ATT_FULLDAY_CUTOFF_MIN=13*60;    // 13:00 - unmarked by now => full-day absent
 const ATT_REPORT_USERS=['dev','updesh'];
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // DEBT MANAGEMENT GLOBAL VARIABLES
@@ -423,10 +426,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
-  <div class="sb-logo">
+  <div class="sb-logo" style="flex-direction:column;gap:6px">
     <div style="background:#fff;border-radius:6px;padding:5px 12px;display:flex;align-items:center;justify-content:center;width:100%">
       <img src="dqap-logo.png" alt="DQAP" style="height:24px;width:calc(var(--sw) - 48px);object-fit:contain;display:block;margin:0 auto" onerror="this.style.display='none';document.getElementById('sb-logo-fb').style.display='block'">
       <span id="sb-logo-fb" style="display:none;color:var(--p);font-size:13px;font-weight:700">dqap</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.85)">
+      <i class="ti ti-satellite" style="font-size:13px"></i>
+      <span style="font-size:11.5px;font-weight:700;letter-spacing:1.5px">DORBIT</span>
     </div>
   </div>
   <div class="sb-nav">
@@ -791,7 +798,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div id="att-report-controls" class="card" style="display:none;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
           <div><div style="font-weight:700;font-size:13px">Monthly Attendance Report</div><div style="font-size:11px;color:var(--t2)">Visible only to Dev and Updesh</div></div>
-          <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><input id="att-report-month" type="month" class="fi" style="width:auto"><button class="btn pri" onclick="attRenderMonthlyReport()">Generate Report</button></div>
+          <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><input id="att-report-month" type="month" class="fi" style="width:auto"><button class="btn pri" onclick="attRenderMonthlyReport()">Generate Report</button><button class="btn" onclick="attExportMonthlyReport()"><i class="ti ti-file-spreadsheet"></i>Export to Excel</button></div>
         </div>
         <div id="att-monthly-report" style="margin-top:12px"></div>
       </div>
@@ -1463,6 +1470,7 @@ function startApp(){
   el('sb-user').textContent=CU.fullName;
   const verEl=el('sb-version');if(verEl)verEl.textContent='DORBIT v'+APP_VERSION+'-'+APP_BUILD;
   el('f-date').value=new Date().toISOString().split('T')[0];
+  attAutoMarkAbsences(); // catch up any unmarked past days the moment DORBIT opens, not just when Attendance is viewed
   // Admin section header + Manage Users: admins and Updesh only. Manage Projects: admins only.
   if(isSuperUser()){el('admin-sec').style.display='block';el('ni-users').style.display='flex';}
   if(CU.isAdmin||CU.canWrite){const cb=el('pmo-checklist-btn');if(cb)cb.style.display='flex';}
@@ -5393,13 +5401,12 @@ function importHolidayCsv(){
 }
 function attDocId(user,date){return `${String(user||'').toLowerCase()}_${date}`;}
 function attMonthKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
-function attCheckinCutoffMinutes(){return ATT_CHECKIN_HOUR*60+ATT_CHECKIN_MINUTE+ATT_LATE_GRACE_MINUTES;}
 function attMinutesNow(d=new Date()){return d.getHours()*60+d.getMinutes();}
 function attWeekStartKey(d=new Date()){
   const x=new Date(d);const day=x.getDay();const diff=(day===0?-6:1-day);
   x.setDate(x.getDate()+diff);return attDateKey(x);
 }
-function attIsLate(d=new Date()){return attMinutesNow(d)>attCheckinCutoffMinutes();}
+function attIsLate(d=new Date()){return attMinutesNow(d)>=ATT_ONTIME_CUTOFF_MIN;}
 function attTrustStatus(){
   const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
   return {verified:true,type:String(c?.type||c?.effectiveType||'unknown').toLowerCase(),reason:'Trust-based self marking'};
@@ -5418,12 +5425,95 @@ async function attFetchRange(start,end,user=null){
   if(user)rows=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===String(user).toLowerCase());
   return rows;
 }
-async function attWeekLateStats(user,date=new Date()){
-  const start=attWeekStartKey(date);const endDate=new Date(start);endDate.setDate(endDate.getDate()+6);
+// Monthly LOP trigger count: a "trigger" is any day this month where the user
+// was Late, or auto-marked half-day/full-day absent. excludeDate lets a
+// same-day recompute (e.g. half-day absent upgrading to full-day absent at
+// 13:00) count as ONE trigger, not two.
+async function attMonthTriggerStats(user,date=new Date(),excludeDate=null){
+  const monthKey=attMonthKey(date);
+  const start=monthKey+'-01';
+  const endDate=new Date(date.getFullYear(),date.getMonth()+1,0);
   const rows=await attFetchRange(start,attDateKey(endDate),user);
-  const late=rows.filter(r=>r.status==='present'&&r.isLate).length;
-  const penalties=Math.floor(late/2);
-  return {late,penalties,start,end:attDateKey(endDate)};
+  const triggerDays=rows.filter(r=>r.date!==excludeDate&&(r.isLate||r.status==='half-day-absent'||r.status==='full-day-absent'));
+  return {count:triggerDays.length,monthKey};
+}
+// Given how many triggers already exist this month (excluding today), decide
+// what today's trigger number is, whether it crosses into an LOP half-day,
+// and whether the warning dialog should fire (exactly at trigger #2).
+function attComputeLopForTrigger(countBefore){
+  const triggerNumber=countBefore+1;
+  const lopHalfDay=triggerNumber>=4&&triggerNumber%2===0;
+  const showWarning=triggerNumber===2;
+  return {triggerNumber,lopHalfDay,showWarning};
+}
+function attShowLopWarning(count){
+  const div=document.createElement('div');
+  div.className='lw';
+  div.style.zIndex='500';
+  div.innerHTML=`<div class="lc" style="text-align:center">
+    <i class="ti ti-alert-triangle" style="font-size:40px;color:#E65100;margin-bottom:10px;display:block"></i>
+    <div style="font-size:16px;font-weight:800;margin-bottom:8px">Attendance Warning</div>
+    <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">You've had <b>${count} late / absent triggers</b> this month. From the 4th trigger onward, every additional 2 triggers results in a <b>half-day Loss of Pay (LOP)</b>. This counter resets on the 1st of next month.</div>
+    <button class="btn pri" onclick="this.closest('.lw').remove()" style="width:100%">I Understand</button>
+  </div>`;
+  document.body.appendChild(div);
+}
+// Runs whenever DORBIT is opened (app load) and again whenever the Attendance
+// page is viewed. For every team member, walks day-by-day from the 1st of the
+// CURRENT month through today. Any past working day with nothing marked is
+// unconditionally past the 13:00 cutoff, so it's set to full-day-absent; today
+// itself uses the live half-day/full-day cutoff based on the current time.
+// Each day that becomes (or already is) a trigger day advances a running
+// monthly counter per user, so trigger numbers and the 4th/6th/8th-trigger LOP
+// rule stay correct even when several days are caught up in one pass. This is
+// a client-triggered catch-up, not a real server cron: if nobody opens DORBIT
+// on a given day, nothing happens FOR that day until the next time anyone
+// does - at which point every day since is calculated and marked in one go.
+async function attAutoMarkAbsences(){
+  const now=Date.now();
+  if(now-attLastAutoMarkCheck<120000)return; // throttle to once per 2 minutes per session
+  attLastAutoMarkCheck=now;
+  const nowDate=new Date();
+  const todayDs=attDateKey(nowDate);
+  const team=attTeamUsers();
+  for(const u of team){
+    let triggerCount=0;
+    const cursor=new Date(nowDate.getFullYear(),nowDate.getMonth(),1);
+    while(attDateKey(cursor)<=todayDs){
+      const ds=attDateKey(cursor);
+      const dayType=attDayType(ds);
+      if(dayType.requiresEntry){
+        try{
+          const existing=await attGet(u.key,ds);
+          const isToday=(ds===todayDs);
+          let targetStatus=null;
+          if(!existing||!['present','ooo'].includes(existing.status)){
+            if(isToday){
+              const minutesNow=attMinutesNow(nowDate);
+              if(minutesNow>=ATT_FULLDAY_CUTOFF_MIN)targetStatus='full-day-absent';
+              else if(minutesNow>=ATT_HALFDAY_CUTOFF_MIN)targetStatus='half-day-absent';
+            }else{
+              targetStatus='full-day-absent'; // any past day is unconditionally beyond the 13:00 cutoff
+            }
+          }
+          if(targetStatus&&(!existing||existing.status!==targetStatus)){
+            const lop=attComputeLopForTrigger(triggerCount);
+            await db.collection(ATTENDANCE_COL).doc(attDocId(u.key,ds)).set({
+              username:u.key,userId:u.key,fullName:u.name,date:ds,month:attMonthKey(cursor),weekStart:attWeekStartKey(cursor),
+              status:targetStatus,isLate:false,autoMarked:true,
+              monthlyTriggerNumber:lop.triggerNumber,lopHalfDay:lop.lopHalfDay,
+              createdAt:existing?.createdAt||new Date().toISOString(),autoMarkedAt:new Date().toISOString()
+            },{merge:true});
+            if(u.key===attUserKey()&&lop.showWarning)attShowLopWarning(lop.triggerNumber);
+            triggerCount=lop.triggerNumber;
+          }else if(existing&&(existing.isLate||existing.status==='half-day-absent'||existing.status==='full-day-absent')){
+            triggerCount++; // already a correct trigger day from before - keep the running count accurate
+          }
+        }catch(e){/* best-effort per day; keep going */}
+      }
+      cursor.setDate(cursor.getDate()+1);
+    }
+  }
 }
 function attSwitchTab(t){
   if(t==='adm'&&!attCanViewReports()){toast('Login required to view attendance reports','err');t='emp';}
@@ -5437,11 +5527,28 @@ function attSwitchTab(t){
 }
 async function attRender(){
   attCurrentUser=attUserKey();
+  attAutoMarkAbsences();
   const admBtn=el('att-btn-adm'); if(admBtn)admBtn.style.display=attCanViewReports()?'block':'none';
   if(attCurrentTab==='adm'&&!attCanViewReports())attCurrentTab='emp';
   if(attCurrentTab==='emp')await attRenderEmp();
   else if(attCurrentTab==='adm')await attRenderAdm();
   else if(attCurrentTab==='rank')await attRenderRank();
+}
+function attStatusLabel(r){
+  if(!r)return'Pending';
+  if(r.status==='present')return `Present${r.isLate?' - Late':''}${r.checkin_time?' - '+r.checkin_time:''}${r.lopHalfDay?' - Half-day LOP':''}`;
+  if(r.status==='ooo')return `OOO - ${r.oof_reason}${r.isLate?' - Late':''}${r.remarks?' - '+r.remarks:''}${r.lopHalfDay?' - Half-day LOP':''}`;
+  if(r.status==='half-day-absent')return `Half-day Absent${r.lopHalfDay?' - Half-day LOP':''}`;
+  if(r.status==='full-day-absent')return `Full-day Absent${r.lopHalfDay?' - Half-day LOP':''}`;
+  return r.status||'Pending';
+}
+function attStatusBg(r){
+  if(!r)return'';
+  if(r.status==='present')return r.isLate?'#FFF3E0':'#E8F5E9';
+  if(r.status==='ooo')return r.isLate?'#FFF3E0':'#E3F2FD';
+  if(r.status==='half-day-absent')return '#FFE0B2';
+  if(r.status==='full-day-absent')return '#FFCDD2';
+  return '';
 }
 async function attRenderEmp(){
   attCurrentUser=attUserKey();
@@ -5455,7 +5562,7 @@ async function attRenderEmp(){
   if(trust){trust.textContent='Trust-based self marking';trust.style.background='#E8F5E9';trust.style.color='#2E7D32';}
   const checkInBtn=el('att-checkin-btn'),oooBtn=el('att-ooo-btn');
   if(rec){
-    el('att-today').textContent=rec.status==='present'?`Checked in ${rec.checkin_time}${rec.isLate?' - Late':''}${rec.halfDayPenalty?' - Half-day penalty':''}`:`OOO - ${rec.oof_reason}`;
+    el('att-today').textContent=attStatusLabel(rec);
     if(checkInBtn){checkInBtn.disabled=true;checkInBtn.style.opacity='.5';checkInBtn.title='Attendance already recorded today';}
     if(oooBtn){oooBtn.disabled=true;oooBtn.style.opacity='.5';oooBtn.title='Attendance already recorded today';}
   }else if(dayType.type==='holiday'){
@@ -5475,12 +5582,13 @@ async function attRenderEmp(){
     if(checkInBtn){checkInBtn.disabled=false;checkInBtn.style.opacity='1';checkInBtn.title='Trust-based office self check-in';}
     if(oooBtn){oooBtn.disabled=false;oooBtn.style.opacity='1';oooBtn.title='Mark working outside office';}
   }
-  const stats=await attWeekLateStats(attCurrentUser);
+  const {count:monthlyTriggers}=await attMonthTriggerStats(attCurrentUser);
   const alert=el('att-late-alert');
   if(alert){
-    if(stats.late>=2){
+    if(monthlyTriggers>=2){
+      const lopCount=Math.max(0,Math.floor((monthlyTriggers-2)/2));
       alert.style.display='block';
-      alert.innerHTML=`<div class="alert danger" style="margin:0"><i class="ti ti-alert-triangle"></i><span>${stats.late} late arrivals this week. Half-day absent penalty: ${stats.penalties}.</span></div>`;
+      alert.innerHTML=`<div class="alert danger" style="margin:0"><i class="ti ti-alert-triangle"></i><span>${monthlyTriggers} late/absent trigger${monthlyTriggers===1?'':'s'} this month.${lopCount?' Half-day LOP applied: '+lopCount+'.':' From the 4th trigger, every 2 triggers cost a half-day LOP.'}</span></div>`;
     }else{alert.style.display='none';alert.innerHTML='';}
   }
   const now=new Date();const start=new Date(now);start.setDate(now.getDate()-9);
@@ -5489,9 +5597,8 @@ async function attRenderEmp(){
     const d=new Date(start);d.setDate(start.getDate()+i);const ds=attDateKey(d);const r=await attGet(attCurrentUser,ds);
     const short=d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     if(r){
-      const bg=r.status==='present'?(r.isLate?'#FFF3E0':'#E8F5E9'):'#E3F2FD';
-      const tx=r.status==='present'?`${r.checkin_time}${r.isLate?' - Late':''}${r.halfDayPenalty?' - Half-day penalty':''}`:`${r.oof_reason}${r.remarks?' - '+esc(r.remarks):''}`;
-      h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;font-weight:600">${r.status==='present'?'In office':'OOO'} - ${tx}</div></div>`;
+      const bg=attStatusBg(r);
+      h+=`<div class="card" style="display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;padding:10px;background:${bg}"><div style="font-size:10px;font-weight:700;color:var(--t2)">${short}</div><div style="font-size:12px;font-weight:600">${esc(attStatusLabel(r))}</div></div>`;
     }else{
       const dayType=attDayType(ds);
       const bg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':''));
@@ -5510,15 +5617,16 @@ async function attRenderAdm(){
   const team=attTeamUsers();
   const rows=await Promise.all(team.map(async u=>({u,rec:await attGet(u.key,today)})));
   rows.sort((a,b)=>(a.rec?.status||'z').localeCompare(b.rec?.status||'z')||a.u.name.localeCompare(b.u.name));
+  const badgeBg={present:'#4CAF50',ooo:'#2196F3','half-day-absent':'#EF6C00','full-day-absent':'#C62828'};
   const h=rows.map(({u,rec})=>{
-    const present=rec?.status==='present',ooo=rec?.status==='ooo';
     const noEntryDay=!rec&&!dayType.requiresEntry;
-    const bg=present?(rec.isLate?'#FFF3E0':'#E8F5E9'):(ooo?'#E3F2FD':(noEntryDay?(dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':'#E3F2FD')):'#F5F5F5'));
-    const badge=present?(rec.isLate?'Late':'Present'):(ooo?rec.oof_reason:(noEntryDay?(dayType.type==='saturday'?'WFH':dayType.label):'Pending'));
-    const status=present?`Present - ${rec.checkin_time}${rec.halfDayPenalty?' - Half-day penalty':''}`:(ooo?`OOO - ${rec.oof_reason}`:(noEntryDay?dayType.label:'Pending'));
+    const bg=rec?attStatusBg(rec):(noEntryDay?(dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':'#E3F2FD')):'#F5F5F5');
+    const badge=rec?(rec.status==='present'?(rec.isLate?'Late':'Present'):(rec.status==='ooo'?rec.oof_reason:(rec.status==='half-day-absent'?'Half-day Absent':'Full-day Absent'))):(noEntryDay?(dayType.type==='saturday'?'WFH':dayType.label):'Pending');
+    const status=rec?attStatusLabel(rec):(noEntryDay?dayType.label:'Pending');
+    const badgeColor=rec?(badgeBg[rec.status]||'#757575'):(noEntryDay?'#1565C0':'#757575');
     return `<div class="card" style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
-      <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${status}</div></div>
-      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${present?'#4CAF50':ooo?'#2196F3':(noEntryDay?'#1565C0':'#757575')};color:#fff">${esc(badge)}</span></div>
+      <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${esc(status)}</div></div>
+      <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${badgeColor};color:#fff">${esc(badge)}</span></div>
     </div>`;
   }).join('');
   const adm=el('att-admin'); if(adm)adm.innerHTML=h||'<div class="empty">No users found.</div>';
@@ -5546,25 +5654,71 @@ async function attRenderMonthlyReport(){
     const present=mine.filter(r=>r.status==='present').length;
     const ooo=mine.filter(r=>r.status==='ooo').length;
     const late=mine.filter(r=>r.isLate).length;
-    const halfDay=mine.filter(r=>r.halfDayPenalty).length;
-    return {u,present,ooo,late,halfDay,total:mine.length};
+    const halfDayAbsent=mine.filter(r=>r.status==='half-day-absent').length;
+    const fullDayAbsent=mine.filter(r=>r.status==='full-day-absent').length;
+    const lopHalfDays=mine.filter(r=>r.lopHalfDay).length;
+    return {u,present,ooo,late,halfDayAbsent,fullDayAbsent,lopHalfDays,total:mine.length};
   }).sort((a,b)=>a.u.name.localeCompare(b.u.name));
   const body=data.map(x=>`<tr>
     <td style="padding:8px;font-weight:700">${esc(x.u.name)}<br><span style="font-size:10px;color:var(--t2)">@${esc(x.u.key)}</span></td>
     <td style="padding:8px;text-align:center">${x.present}</td>
     <td style="padding:8px;text-align:center">${x.ooo}</td>
     <td style="padding:8px;text-align:center;color:${x.late>=2?'#B71C1C':'var(--t1)'};font-weight:700">${x.late}</td>
-    <td style="padding:8px;text-align:center;color:${x.halfDay?'#B71C1C':'var(--t1)'};font-weight:700">${x.halfDay}</td>
+    <td style="padding:8px;text-align:center;color:${x.halfDayAbsent?'#E65100':'var(--t1)'};font-weight:700">${x.halfDayAbsent}</td>
+    <td style="padding:8px;text-align:center;color:${x.fullDayAbsent?'#B71C1C':'var(--t1)'};font-weight:700">${x.fullDayAbsent}</td>
+    <td style="padding:8px;text-align:center;color:${x.lopHalfDays?'#B71C1C':'var(--t1)'};font-weight:800">${x.lopHalfDays}</td>
     <td style="padding:8px;text-align:center">${x.total}</td>
   </tr>`).join('');
   const detailRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>`<tr>
     <td style="padding:7px">${esc(r.date)}</td><td style="padding:7px">${esc(r.fullName||r.username||r.userId)}</td>
-    <td style="padding:7px">${r.status==='present'?'Present':'OOO'}</td>
-    <td style="padding:7px">${esc(r.checkin_time||r.oof_reason||'-')}${r.isLate?' - Late':''}${r.halfDayPenalty?' - Half-day penalty':''}</td>
+    <td style="padding:7px">${esc(attStatusLabel(r))}</td>
+    <td style="padding:7px;text-align:center">${r.monthlyTriggerNumber||'-'}</td>
   </tr>`).join('');
   const out=el('att-monthly-report');
-  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:680px"><thead><tr><th>User</th><th>Present</th><th>OOO</th><th>Late</th><th>Half-day penalties</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
-  <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;color:var(--p)">Daily details</summary><div style="overflow-x:auto;margin-top:8px"><table class="wtable" style="min-width:720px"><thead><tr><th>Date</th><th>User</th><th>Status</th><th>Details</th></tr></thead><tbody>${detailRows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--t2)">No daily records</td></tr>'}</tbody></table></div></details>`;
+  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:820px"><thead><tr><th>User</th><th>Present</th><th>OOO</th><th>Late</th><th>Half-day Absent</th><th>Full-day Absent</th><th>Half-day LOP</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
+  <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;color:var(--p)">Daily details</summary><div style="overflow-x:auto;margin-top:8px"><table class="wtable" style="min-width:720px"><thead><tr><th>Date</th><th>User</th><th>Status</th><th>Monthly Trigger #</th></tr></thead><tbody>${detailRows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--t2)">No daily records</td></tr>'}</tbody></table></div></details>`;
+}
+async function attExportMonthlyReport(){
+  if(!attCanViewReports()){toast('Login required to export attendance reports','err');return;}
+  const input=el('att-report-month');
+  const month=input?.value||attMonthKey();
+  const [yy,mm]=month.split('-').map(Number);
+  const start=`${month}-01`;
+  const end=attDateKey(new Date(yy,mm,0));
+  const rows=await attFetchRange(start,end);
+  const team=attTeamUsers();
+  const summaryRows=team.map(u=>{
+    const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);
+    return {
+      'Name':u.name,'Username':u.key,
+      'Present':mine.filter(r=>r.status==='present').length,
+      'OOO':mine.filter(r=>r.status==='ooo').length,
+      'Late':mine.filter(r=>r.isLate).length,
+      'Half-day Absent':mine.filter(r=>r.status==='half-day-absent').length,
+      'Full-day Absent':mine.filter(r=>r.status==='full-day-absent').length,
+      'Half-day LOP applied':mine.filter(r=>r.lopHalfDay).length,
+      'Total marked':mine.length
+    };
+  }).sort((a,b)=>a.Name.localeCompare(b.Name));
+  const dailyRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>({
+    'Date':r.date,'Name':r.fullName||r.username||r.userId,
+    'Status':{present:'Present',ooo:'OOO','half-day-absent':'Half-day Absent','full-day-absent':'Full-day Absent'}[r.status]||r.status,
+    'Check-in / OOO Reason':r.checkin_time||r.oof_reason||'-',
+    'Late':r.isLate?'Yes':'No',
+    'Monthly Trigger #':r.monthlyTriggerNumber||'',
+    'Half-day LOP':r.lopHalfDay?'Yes':'No',
+    'Auto-marked':r.autoMarked?'Yes':'No',
+    'Remarks':r.remarks||''
+  }));
+  try{
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summaryRows),'Summary');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(dailyRows),'Daily Detail');
+    XLSX.writeFile(wb,`Attendance_${month}.xlsx`);
+    toast('Attendance report exported','ok');
+  }catch(e){
+    toast('Export failed: '+e.message,'err');
+  }
 }
 
 async function attRenderEmpCalendar(){
@@ -5688,21 +5842,25 @@ async function attCheckIn(){
   const ds=attDateKey(now);
   const existing=await attGet(attUserKey(),ds);
   if(existing){toast('Attendance already recorded for today','err');return;}
-  const late=attIsLate(now);
-  const priorStats=await attWeekLateStats(attUserKey(),now);
-  const lateCountAfter=priorStats.late+(late?1:0);
-  const halfDayPenalty=late&&lateCountAfter>=2&&lateCountAfter%2===0;
+  const minutesNow=attMinutesNow(now);
+  const late=minutesNow>=ATT_ONTIME_CUTOFF_MIN;
+  let lop={triggerNumber:null,lopHalfDay:false,showWarning:false};
+  if(late){
+    const {count}=await attMonthTriggerStats(attUserKey(),now,ds);
+    lop=attComputeLopForTrigger(count);
+  }
   try{
     await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set({
       username:attUserKey(),userId:attUserKey(),fullName:attUserName(),date:ds,month:attMonthKey(now),weekStart:attWeekStartKey(now),
-      checkin_time:tm,checkinMinutes:attMinutesNow(now),scheduledCheckin:'09:30',lateAfterMinutes:ATT_LATE_GRACE_MINUTES,
-      status:'present',isLate:late,weeklyLateCount:lateCountAfter,halfDayPenalty,
+      checkin_time:tm,checkinMinutes:minutesNow,scheduledCheckin:'09:50',
+      status:'present',isLate:late,monthlyTriggerNumber:lop.triggerNumber,lopHalfDay:lop.lopHalfDay,
       verificationMode:'trust-based-self-marking',networkType:network.type||'unknown',
       timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:new Date().toISOString()
     });
-    if(lateCountAfter>=3)toast(`${lateCountAfter} late arrivals this week`,'err');
-    else if(halfDayPenalty)toast('Second late arrival this week: half-day absent penalty marked','err');
-    else toast(`Checked in at ${tm}${late?' - Late':''}`,'ok');
+    if(lop.lopHalfDay)toast(`Checked in at ${tm} - Late (trigger #${lop.triggerNumber} this month) - Half-day LOP applied`,'err');
+    else if(late)toast(`Checked in at ${tm} - Late (trigger #${lop.triggerNumber} this month)`,'err');
+    else toast(`Checked in at ${tm}`,'ok');
+    if(lop.showWarning)attShowLopWarning(lop.triggerNumber);
     setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
@@ -5759,17 +5917,27 @@ async function attSaveOOO(){
   if(attSelectedOOO==='meeting'){
     remarks=el('att-remarks')?.value?.trim()||'';
   }
+  const minutesNow=attMinutesNow(now);
+  const late=minutesNow>=ATT_ONTIME_CUTOFF_MIN;
+  let lop={triggerNumber:null,lopHalfDay:false,showWarning:false};
+  if(late){
+    const {count}=await attMonthTriggerStats(attUserKey(),now,ds);
+    lop=attComputeLopForTrigger(count);
+  }
   try{
     await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set({
       username:attUserKey(),userId:attUserKey(),fullName:attUserName(),date:ds,month:attMonthKey(now),weekStart:attWeekStartKey(now),
       status:'ooo',oof_type:attSelectedOOO,oof_reason:lab[attSelectedOOO],
-      remarks:remarks,
+      remarks:remarks,isLate:late,monthlyTriggerNumber:lop.triggerNumber,lopHalfDay:lop.lopHalfDay,
       verificationMode:'trust-based-ooo',
       timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:new Date().toISOString()
     });
-    toast(`Marked as ${lab[attSelectedOOO]}`,'ok');
+    if(lop.lopHalfDay)toast(`Marked as ${lab[attSelectedOOO]} - Late (trigger #${lop.triggerNumber} this month) - Half-day LOP applied`,'err');
+    else if(late)toast(`Marked as ${lab[attSelectedOOO]} - Late (trigger #${lop.triggerNumber} this month)`,'err');
+    else toast(`Marked as ${lab[attSelectedOOO]}`,'ok');
     attSelectedOOO=null;
     attCloseOOO();
+    if(lop.showWarning)attShowLopWarning(lop.triggerNumber);
     setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
   }catch(e){
     toast(`Error: ${e.message}`,'err');
