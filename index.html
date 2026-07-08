@@ -25,7 +25,7 @@
 const APP_VERSION="78.31";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-14";
+const APP_BUILD="20260706-16";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -36,6 +36,21 @@ let attSelectedOOO=null;
 let attCurrentTab='emp';
 let attLastAutoMarkCheck=0;
 const ATT_ONTIME_CUTOFF_MIN=9*60+50;   // 09:50 - marking after this is Late
+// Single source of truth for OOO reason classification. "category" decides
+// scoring credit (working = same credit as being in office; leave = zero,
+// same as not working); "requiresApproval" decides whether the day's status
+// stays pending (no credit, but still avoids an absence mark) until the
+// person's reporting manager approves or rejects it. Read everywhere a
+// report, export, or the scoring function needs to know what an OOO reason
+// actually means - never re-implement this list elsewhere.
+const OOO_REASONS={
+  meeting:{label:'Meeting',category:'working',requiresApproval:false},
+  travel:{label:'Travel',category:'working',requiresApproval:false},
+  training:{label:'Training',category:'working',requiresApproval:false},
+  wfh:{label:'Work From Home',category:'working',requiresApproval:true},
+  leave:{label:'Leave',category:'leave',requiresApproval:true},
+  other:{label:'Other',category:'leave',requiresApproval:false}
+};
 const ATT_HALFDAY_CUTOFF_MIN=11*60;    // 11:00 - unmarked by now => half-day absent
 const ATT_FULLDAY_CUTOFF_MIN=13*60;    // 13:00 - unmarked by now => full-day absent
 const ATT_REPORT_USERS=['dev','updesh'];
@@ -1311,7 +1326,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <div class="card">
       <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
-      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Department</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Department</th><th>Reporting Manager</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -3149,6 +3164,24 @@ async function decideProjectChange(taskId,decision){
     closeTaskDetails();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
+async function decideAttendanceApproval(taskId,decision){
+  const t=taskData.find(x=>x.id===taskId);if(!t||t.taskType!=='attendance_approval')return;
+  if(t.assignedTo!==CU.fullName&&!isSuperUser()){toast('Only the assigned manager can act on this request','err');return;}
+  const remarks=prompt(decision==='approve'?'Approval remarks (optional):':'Rejection remarks (mandatory):','')||'';
+  if(decision==='reject'&&!remarks.trim()){toast('Rejection remarks are mandatory','err');return;}
+  showLoad('Saving decision…');
+  try{
+    const now=new Date().toISOString();
+    await db.collection(ATTENDANCE_COL).doc(attDocId(t.attendanceUsername,t.attendanceDate)).update({
+      approvalStatus:decision==='approve'?'approved':'rejected',
+      approvalDecidedBy:CU.fullName,approvalDecidedAt:now,approvalRemarks:remarks
+    });
+    await db.collection(TASK_COL).doc(taskId).update({status:'Completed',approvalStatus:decision==='approve'?'approved':'rejected',completedAt:now,completedByName:CU.fullName,updatedAt:now,description:(t.description||'')+`\n\n${decision==='approve'?'Approved':'Rejected'} by ${CU.fullName}${remarks?': '+remarks:''}.`});
+    toast('Attendance request '+(decision==='approve'?'approved':'rejected - will be re-evaluated as absent if the day has already passed'),decision==='approve'?'ok':'err');
+    closeTaskDetails();
+    if(typeof attRender==='function')attRender();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
 async function saveProjectInline(projId){
   if(!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Only authorized project users can edit projects','err');return;}
   const p=projectsData.find(x=>x.id===projId);if(!p)return;
@@ -3299,17 +3332,19 @@ async function loadUsers(){
       <td><code style="background:#f5f5f5;padding:1px 6px;border-radius:5px;font-size:11px">${esc(u.username)}</code></td>
       <td style="font-size:12px;color:var(--t2)">${u.email ? esc(u.email) : '<span style="color:#aaa">— not set —</span>'}</td>
       <td>${u.department?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:600">${esc(u.department)}</span>`:'<span style="color:#aaa;font-size:11px">— not set —</span>'}</td>
+      <td>${u.reportingManager?esc(u.reportingManager):'<span style="color:#aaa;font-size:11px">— not set —</span>'}</td>
       <td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td>
       <td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn sm" onclick="editUser('${u.id}', '${esc(u.fullName)}', '${esc(u.username)}', '${u.email||''}', '${u.role||(u.isAdmin?'admin':'user')}')"><i class="ti ti-edit"></i>Edit</button>
         <button class="btn sm" onclick="changeDept('${u.id}','${u.department||''}','${esc(u.fullName)}')"><i class="ti ti-building"></i>Dept</button>
+        <button class="btn sm" onclick="changeManager('${u.id}','${u.reportingManager||''}','${esc(u.fullName)}')"><i class="ti ti-user-check"></i>Manager</button>
         <button class="btn sm" onclick="changeRole('${u.id}','${u.role||(u.isAdmin?'admin':'user')}','${esc(u.fullName)}')"><i class="ti ti-shield"></i>Role</button>
         <button class="btn sm" onclick="resetPwd('${u.id}','${esc(u.fullName)}')"><i class="ti ti-key"></i>Reset</button>
         <button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
+    :'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
   }catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 async function changeRole(id,currentRole,name){
@@ -3342,6 +3377,21 @@ async function changeDept(id,currentDept,name){
   try{
     await db.collection(USERS).doc(id).update({department:match||'',updatedAt:new Date().toISOString()});
     toast('Department updated âœ“','ok');await loadUsers();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+// Reporting manager - used for WFH/Leave approval routing in Attendance, and
+// generally as the single source of truth for "who is whose manager" (avoids
+// duplicating a separate manager-hierarchy config elsewhere in the app).
+async function changeManager(id,currentManager,name){
+  const options=(usersData||[]).map(u=>u.username).filter(Boolean);
+  const choice=prompt(`Set reporting manager for ${name}\n\nCurrent: ${currentManager||'(not set)'}\n\nType the manager's username exactly (leave blank to clear).\nExisting usernames: ${options.join(', ')}`,currentManager||'');
+  if(choice===null)return;
+  const trimmed=choice.trim().toLowerCase();
+  if(trimmed&&!options.some(u=>String(u).toLowerCase()===trimmed)){toast('No user found with that username','err');return;}
+  showLoad('Updating reporting manager…');
+  try{
+    await db.collection(USERS).doc(id).update({reportingManager:trimmed||'',updatedAt:new Date().toISOString()});
+    toast('Reporting manager updated âœ“','ok');await loadUsers();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
@@ -3397,8 +3447,9 @@ function attScoreCredit(r){
   if(!r)return 0;
   if(r.status==='present')return r.isLate?0.5:1;
   if(r.status==='ooo'){
-    const type=String(r.oof_type||r.oof_reason||'').toLowerCase();
-    return ['meeting','travel','training'].some(x=>type.includes(x))?1:0;
+    if(r.approvalStatus==='pending'||r.approvalStatus==='rejected')return 0; // no credit until approved
+    const def=OOO_REASONS[r.oof_type]||{};
+    return def.category==='working'?1:0;
   }
   return 0;
 }
@@ -4571,6 +4622,7 @@ function openTaskDetails(id){
   ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
   ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
   ${t.taskType==='project_change'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF8E1;color:#6D4C00;font-size:11.5px"><b>Project change approval</b> - Status: <b>${esc(t.projectChangeStatus||'pending')}</b></div>`:''}
+  ${t.taskType==='attendance_approval'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#F3E8FF;color:#6A1B9A;font-size:11.5px"><b>Attendance approval</b> - Status: <b>${esc(t.approvalStatus||'pending')}</b></div>`:''}
   <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
     <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
     <div id="task-ack-info" style="font-size:12.5px;margin-top:6px">Loading...</div>
@@ -4578,15 +4630,18 @@ function openTaskDetails(id){
   loadTaskAckInfo(t.id);
   const isExtensionAction=t.taskType==='project_extension'&&t.extensionStatus==='pending'&&t.assignedTo===CU.fullName;
   const isProjectChangeAction=t.taskType==='project_change'&&(t.projectChangeStatus||'pending')==='pending'&&((String(t.assignedToUsername||'').toLowerCase()===userKey())||t.assignedTo===CU.fullName||isSuperUser());
+  const isAttendanceApprovalAction=t.taskType==='attendance_approval'&&(t.approvalStatus||'pending')==='pending'&&(t.assignedTo===CU.fullName||isSuperUser());
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
     ${isExtensionAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectExtension('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
     ${isExtensionAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="decideProjectExtension('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
     ${isExtensionAction?`<button class="btn pri" onclick="decideProjectExtension('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
     ${isProjectChangeAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectChange('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
     ${isProjectChangeAction?`<button class="btn pri" onclick="decideProjectChange('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
-    ${!isExtensionAction&&!isProjectChangeAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+    ${isAttendanceApprovalAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideAttendanceApproval('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
+    ${isAttendanceApprovalAction?`<button class="btn pri" onclick="decideAttendanceApproval('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
+    ${!isExtensionAction&&!isProjectChangeAction&&!isAttendanceApprovalAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
   modal.style.display='flex';
 }
 
@@ -5486,8 +5541,9 @@ async function attAutoMarkAbsences(){
         try{
           const existing=await attGet(u.key,ds);
           const isToday=(ds===todayDs);
+          const alreadyHandled=existing&&(existing.status==='present'||(existing.status==='ooo'&&existing.approvalStatus!=='rejected'));
           let targetStatus=null;
-          if(!existing||!['present','ooo'].includes(existing.status)){
+          if(!alreadyHandled){
             if(isToday){
               const minutesNow=attMinutesNow(nowDate);
               if(minutesNow>=ATT_FULLDAY_CUTOFF_MIN)targetStatus='full-day-absent';
@@ -5537,7 +5593,10 @@ async function attRender(){
 function attStatusLabel(r){
   if(!r)return'Pending';
   if(r.status==='present')return `Present${r.isLate?' - Late':''}${r.checkin_time?' - '+r.checkin_time:''}${r.lopHalfDay?' - Half-day LOP':''}`;
-  if(r.status==='ooo')return `OOO - ${r.oof_reason}${r.isLate?' - Late':''}${r.remarks?' - '+r.remarks:''}${r.lopHalfDay?' - Half-day LOP':''}`;
+  if(r.status==='ooo'){
+    const approvalTag=r.approvalStatus==='pending'?' - Awaiting manager approval':(r.approvalStatus==='rejected'?' - Rejected by manager':(r.approvalStatus==='approved'?' - Approved':''));
+    return `OOO - ${r.oof_reason}${r.isLate?' - Late':''}${r.remarks?' - '+r.remarks:''}${approvalTag}${r.lopHalfDay?' - Half-day LOP':''}`;
+  }
   if(r.status==='half-day-absent')return `Half-day Absent${r.lopHalfDay?' - Half-day LOP':''}`;
   if(r.status==='full-day-absent')return `Full-day Absent${r.lopHalfDay?' - Half-day LOP':''}`;
   return r.status||'Pending';
@@ -5545,7 +5604,11 @@ function attStatusLabel(r){
 function attStatusBg(r){
   if(!r)return'';
   if(r.status==='present')return r.isLate?'#FFF3E0':'#E8F5E9';
-  if(r.status==='ooo')return r.isLate?'#FFF3E0':'#E3F2FD';
+  if(r.status==='ooo'){
+    if(r.approvalStatus==='pending')return '#F3E8FF';
+    if(r.approvalStatus==='rejected')return '#FFCDD2';
+    return r.isLate?'#FFF3E0':'#E3F2FD';
+  }
   if(r.status==='half-day-absent')return '#FFE0B2';
   if(r.status==='full-day-absent')return '#FFCDD2';
   return '';
@@ -5621,9 +5684,9 @@ async function attRenderAdm(){
   const h=rows.map(({u,rec})=>{
     const noEntryDay=!rec&&!dayType.requiresEntry;
     const bg=rec?attStatusBg(rec):(noEntryDay?(dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':'#E3F2FD')):'#F5F5F5');
-    const badge=rec?(rec.status==='present'?(rec.isLate?'Late':'Present'):(rec.status==='ooo'?rec.oof_reason:(rec.status==='half-day-absent'?'Half-day Absent':'Full-day Absent'))):(noEntryDay?(dayType.type==='saturday'?'WFH':dayType.label):'Pending');
+    const badge=rec?(rec.status==='present'?(rec.isLate?'Late':'Present'):(rec.status==='ooo'?rec.oof_reason+(rec.approvalStatus==='pending'?' (Pending)':rec.approvalStatus==='rejected'?' (Rejected)':''):(rec.status==='half-day-absent'?'Half-day Absent':'Full-day Absent'))):(noEntryDay?(dayType.type==='saturday'?'WFH':dayType.label):'Pending');
     const status=rec?attStatusLabel(rec):(noEntryDay?dayType.label:'Pending');
-    const badgeColor=rec?(badgeBg[rec.status]||'#757575'):(noEntryDay?'#1565C0':'#757575');
+    const badgeColor=rec?(rec.status==='ooo'&&rec.approvalStatus==='pending'?'#6A1B9A':rec.status==='ooo'&&rec.approvalStatus==='rejected'?'#C62828':(badgeBg[rec.status]||'#757575')):(noEntryDay?'#1565C0':'#757575');
     return `<div class="card" style="display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px;background:${bg};border-left:4px solid ${u.color}">
       <div><div style="font-weight:700;font-size:13px">${esc(u.name)}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${esc(status)}</div></div>
       <div style="text-align:right"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:${badgeColor};color:#fff">${esc(badge)}</span></div>
@@ -5652,17 +5715,21 @@ async function attRenderMonthlyReport(){
   const data=team.map(u=>{
     const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);
     const present=mine.filter(r=>r.status==='present').length;
-    const ooo=mine.filter(r=>r.status==='ooo').length;
+    const oooWorking=mine.filter(r=>r.status==='ooo'&&OOO_REASONS[r.oof_type]?.category==='working').length;
+    const oooLeave=mine.filter(r=>r.status==='ooo'&&OOO_REASONS[r.oof_type]?.category==='leave').length;
+    const oooPending=mine.filter(r=>r.status==='ooo'&&r.approvalStatus==='pending').length;
     const late=mine.filter(r=>r.isLate).length;
     const halfDayAbsent=mine.filter(r=>r.status==='half-day-absent').length;
     const fullDayAbsent=mine.filter(r=>r.status==='full-day-absent').length;
     const lopHalfDays=mine.filter(r=>r.lopHalfDay).length;
-    return {u,present,ooo,late,halfDayAbsent,fullDayAbsent,lopHalfDays,total:mine.length};
+    return {u,present,oooWorking,oooLeave,oooPending,late,halfDayAbsent,fullDayAbsent,lopHalfDays,total:mine.length};
   }).sort((a,b)=>a.u.name.localeCompare(b.u.name));
   const body=data.map(x=>`<tr>
     <td style="padding:8px;font-weight:700">${esc(x.u.name)}<br><span style="font-size:10px;color:var(--t2)">@${esc(x.u.key)}</span></td>
     <td style="padding:8px;text-align:center">${x.present}</td>
-    <td style="padding:8px;text-align:center">${x.ooo}</td>
+    <td style="padding:8px;text-align:center">${x.oooWorking}</td>
+    <td style="padding:8px;text-align:center">${x.oooLeave}</td>
+    <td style="padding:8px;text-align:center;color:${x.oooPending?'#6A1B9A':'var(--t1)'};font-weight:${x.oooPending?700:400}">${x.oooPending}</td>
     <td style="padding:8px;text-align:center;color:${x.late>=2?'#B71C1C':'var(--t1)'};font-weight:700">${x.late}</td>
     <td style="padding:8px;text-align:center;color:${x.halfDayAbsent?'#E65100':'var(--t1)'};font-weight:700">${x.halfDayAbsent}</td>
     <td style="padding:8px;text-align:center;color:${x.fullDayAbsent?'#B71C1C':'var(--t1)'};font-weight:700">${x.fullDayAbsent}</td>
@@ -5675,7 +5742,7 @@ async function attRenderMonthlyReport(){
     <td style="padding:7px;text-align:center">${r.monthlyTriggerNumber||'-'}</td>
   </tr>`).join('');
   const out=el('att-monthly-report');
-  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:820px"><thead><tr><th>User</th><th>Present</th><th>OOO</th><th>Late</th><th>Half-day Absent</th><th>Full-day Absent</th><th>Half-day LOP</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
+  if(out)out.innerHTML=`<div style="overflow-x:auto"><table class="wtable" style="min-width:920px"><thead><tr><th>User</th><th>Present</th><th>OOO – Working<br><span style="font-weight:400;font-size:9px">Meeting/Travel/Training/WFH</span></th><th>OOO – Leave<br><span style="font-weight:400;font-size:9px">Leave/Other</span></th><th>Pending Approval</th><th>Late</th><th>Half-day Absent</th><th>Full-day Absent</th><th>Half-day LOP</th><th>Total marked</th></tr></thead><tbody>${body||'<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--t2)">No records</td></tr>'}</tbody></table></div>
   <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;color:var(--p)">Daily details</summary><div style="overflow-x:auto;margin-top:8px"><table class="wtable" style="min-width:720px"><thead><tr><th>Date</th><th>User</th><th>Status</th><th>Monthly Trigger #</th></tr></thead><tbody>${detailRows||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--t2)">No daily records</td></tr>'}</tbody></table></div></details>`;
 }
 async function attExportMonthlyReport(){
@@ -5692,7 +5759,10 @@ async function attExportMonthlyReport(){
     return {
       'Name':u.name,'Username':u.key,
       'Present':mine.filter(r=>r.status==='present').length,
-      'OOO':mine.filter(r=>r.status==='ooo').length,
+      'OOO - Working (Meeting/Travel/Training/WFH)':mine.filter(r=>r.status==='ooo'&&OOO_REASONS[r.oof_type]?.category==='working').length,
+      'OOO - Leave (Leave/Other)':mine.filter(r=>r.status==='ooo'&&OOO_REASONS[r.oof_type]?.category==='leave').length,
+      'OOO Pending Approval':mine.filter(r=>r.status==='ooo'&&r.approvalStatus==='pending').length,
+      'OOO Rejected':mine.filter(r=>r.status==='ooo'&&r.approvalStatus==='rejected').length,
       'Late':mine.filter(r=>r.isLate).length,
       'Half-day Absent':mine.filter(r=>r.status==='half-day-absent').length,
       'Full-day Absent':mine.filter(r=>r.status==='full-day-absent').length,
@@ -5703,7 +5773,9 @@ async function attExportMonthlyReport(){
   const dailyRows=rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.fullName||a.username).localeCompare(String(b.fullName||b.username))).map(r=>({
     'Date':r.date,'Name':r.fullName||r.username||r.userId,
     'Status':{present:'Present',ooo:'OOO','half-day-absent':'Half-day Absent','full-day-absent':'Full-day Absent'}[r.status]||r.status,
+    'OOO Category':r.status==='ooo'?(OOO_REASONS[r.oof_type]?.category==='working'?'Working':'Leave'):'',
     'Check-in / OOO Reason':r.checkin_time||r.oof_reason||'-',
+    'Approval Status':r.status==='ooo'?(r.approvalStatus||(OOO_REASONS[r.oof_type]?.requiresApproval?'pending':'not required')):'',
     'Late':r.isLate?'Yes':'No',
     'Monthly Trigger #':r.monthlyTriggerNumber||'',
     'Half-day LOP':r.lopHalfDay?'Yes':'No',
@@ -5868,11 +5940,9 @@ async function attCheckIn(){
 }
 
 function attShowOOO(){
-  const opts=['wfh','meeting','travel','leave','training','other'];
-  const lab={'wfh':'Work from home','meeting':'Meeting','travel':'Travel','leave':'Leave','training':'Training','other':'Other'};
   let h='';
-  opts.forEach(o=>{
-    h+=`<button class="card" onclick="attPickOOO('${o}')" id="att-opt-${o}" style="padding:10px;text-align:left;cursor:pointer;border:1.5px solid var(--bd);background:transparent;font-weight:500;font-family:inherit;font-size:13px">${lab[o]}</button>`;
+  Object.entries(OOO_REASONS).forEach(([key,def])=>{
+    h+=`<button class="card" onclick="attPickOOO('${key}')" id="att-opt-${key}" style="padding:10px;text-align:left;cursor:pointer;border:1.5px solid var(--bd);background:transparent;font-weight:500;font-family:inherit;font-size:13px;display:flex;justify-content:space-between;align-items:center">${def.label}${def.requiresApproval?'<span style="font-size:9.5px;color:var(--t2);font-weight:400">Needs manager approval</span>':''}</button>`;
   });
   const op=el('att-ooo-list');
   if(op)op.innerHTML=h;
@@ -5882,7 +5952,7 @@ function attShowOOO(){
 
 function attPickOOO(t){
   attSelectedOOO=t;
-  ['wfh','meeting','travel','leave','training','other'].forEach(x=>{
+  Object.keys(OOO_REASONS).forEach(x=>{
     const b=el(`att-opt-${x}`);
     if(b){
       if(x===t){
@@ -5896,10 +5966,11 @@ function attPickOOO(t){
       }
     }
   });
-  // Show remarks box only for meeting
+  // Remarks are useful context for a meeting, and near-mandatory context for
+  // anything a manager will need to approve.
   const rmkBox=el('att-remarks-box');
   if(rmkBox){
-    rmkBox.style.display=t==='meeting'?'block':'none';
+    rmkBox.style.display=(t==='meeting'||OOO_REASONS[t]?.requiresApproval)?'block':'none';
   }
 }
 
@@ -5912,11 +5983,12 @@ async function attSaveOOO(){
   const ds=attDateKey(now);
   const existing=await attGet(attUserKey(),ds);
   if(existing){toast('Attendance already recorded for today','err');return;}
-  const lab={'wfh':'WFH','meeting':'Meeting','travel':'Travel','leave':'Leave','training':'Training','other':'Other'};
+  const def=OOO_REASONS[attSelectedOOO]||{label:attSelectedOOO,category:'leave',requiresApproval:false};
   let remarks='';
-  if(attSelectedOOO==='meeting'){
+  if(attSelectedOOO==='meeting'||def.requiresApproval){
     remarks=el('att-remarks')?.value?.trim()||'';
   }
+  if(def.requiresApproval&&!remarks){toast(`Please add a short reason - your manager will see this on the approval request`,'err');return;}
   const minutesNow=attMinutesNow(now);
   const late=attDayType(ds).requiresEntry&&minutesNow>=ATT_ONTIME_CUTOFF_MIN;
   let lop={triggerNumber:null,lopHalfDay:false,showWarning:false};
@@ -5925,16 +5997,42 @@ async function attSaveOOO(){
     lop=attComputeLopForTrigger(count);
   }
   try{
-    await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set({
+    const record={
       username:attUserKey(),userId:attUserKey(),fullName:attUserName(),date:ds,month:attMonthKey(now),weekStart:attWeekStartKey(now),
-      status:'ooo',oof_type:attSelectedOOO,oof_reason:lab[attSelectedOOO],
+      status:'ooo',oof_type:attSelectedOOO,oof_reason:def.label,
       remarks:remarks,isLate:late,monthlyTriggerNumber:lop.triggerNumber,lopHalfDay:lop.lopHalfDay,
       verificationMode:'trust-based-ooo',
       timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:new Date().toISOString()
-    });
-    if(lop.lopHalfDay)toast(`Marked as ${lab[attSelectedOOO]} - Late (trigger #${lop.triggerNumber} this month) - Half-day LOP applied`,'err');
-    else if(late)toast(`Marked as ${lab[attSelectedOOO]} - Late (trigger #${lop.triggerNumber} this month)`,'err');
-    else toast(`Marked as ${lab[attSelectedOOO]}`,'ok');
+    };
+    if(def.requiresApproval){
+      const me=(usersData||[]).find(u=>String(u.username||'').toLowerCase()===attUserKey());
+      const managerUsername=me?.reportingManager||'';
+      const managerUser=managerUsername?(usersData||[]).find(u=>String(u.username||'').toLowerCase()===managerUsername.toLowerCase()):null;
+      // No manager configured for this person - route to Updesh rather than
+      // silently letting an unapproved WFH/Leave through uncontested.
+      const approverName=managerUser?managerUser.fullName:'Updesh';
+      record.approvalStatus='pending';
+      record.approverUsername=managerUser?managerUser.username:'updesh';
+      await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set(record);
+      const ref=db.collection(TASK_COL).doc();
+      await ref.set({
+        title:`${def.label} Approval - ${attUserName()} - ${ds}`,
+        description:`${attUserName()} marked ${def.label} for ${ds}.\nReason: ${remarks}`,
+        taskCode:genTaskCode(ref.id),
+        assignedBy:attUserName(),assignedByRole:CU?.role||'user',
+        assignedTo:approverName,assignedToRole:'manager',
+        supervisor:'',priority:'Medium',project:'',frequency:'One Time',
+        status:'Open',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+        taskType:'attendance_approval',attendanceUsername:attUserKey(),attendanceDate:ds,
+        approvalStatus:'pending'
+      });
+      toast(`Marked as ${def.label} - sent to ${approverName} for approval`,'ok');
+    }else{
+      await db.collection(ATTENDANCE_COL).doc(attDocId(attUserKey(),ds)).set(record);
+      if(lop.lopHalfDay)toast(`Marked as ${def.label} - Late (trigger #${lop.triggerNumber} this month) - Half-day LOP applied`,'err');
+      else if(late)toast(`Marked as ${def.label} - Late (trigger #${lop.triggerNumber} this month)`,'err');
+      else toast(`Marked as ${def.label}`,'ok');
+    }
     attSelectedOOO=null;
     attCloseOOO();
     if(lop.showWarning)attShowLopWarning(lop.triggerNumber);
