@@ -1,4 +1,5 @@
-// DQAP Wiki Service Worker
+// DORBIT Service Worker
+// Version 78.31 - DORBIT rebrand (name only - see manifest.json for the same change)
 // Version 78.31 - PayMS expense link switches and cache-busted PayMS launcher.
 // Version 78.30 - Leaderboard theme, compact chat text colours, project approvals.
 // Version 78.29 - Mobile chat fit/send button and attendance score OOO credit.
@@ -10,7 +11,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.31-20260706-3';
+const CACHE_VERSION = 'dqap-wiki-v78.31-20260706-11';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html', './manifest.json'];
 self.addEventListener('install', event => {
@@ -64,7 +65,7 @@ self.addEventListener('fetch', event => {
         return (await cache.match(request)) ||
           (await cache.match('./')) ||
           (await cache.match('./index.html')) ||
-          new Response('DQAP Wiki is offline. Reconnect and try again.', {
+          new Response('DORBIT is offline. Reconnect and try again.', {
             status: 503,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }
           });
