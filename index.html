@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,11 +22,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
-// DQAP_WIKI_VERSION_78_31_PAYMS_EXPENSE_LINK_SWITCHES
-const APP_VERSION="78.31";
+// DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
+const APP_VERSION="78.32";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260706-19";
+const APP_BUILD="20260712-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -459,6 +460,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS<span id="payms-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="openCSS()"             id="ni-css"><i class="ti ti-headset"></i>CSS</div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
@@ -3769,7 +3771,24 @@ function openPayMS(){
     toast('Error opening PayMS','err');
   }
 }
-function loadDebtFrame(){
+function openCSS(){
+  const sess = currentWikiSession();
+  if(!sess){
+    toast('Please login to Wiki first','err');
+    return;
+  }
+  try {
+    try{localStorage.setItem('dqap_css_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
+    const base = location.protocol === 'file:' ? 'CSS/index.html?v=20260712.1' : 'https://dqapsys.github.io/dqap-CSS/?v=20260712.1';
+    const url = `${base}#sess=${encodeURIComponent(sess)}`;
+    const cssWindow = window.open(url, '_blank');
+    if(cssWindow) cssWindow.opener=null;
+    else toast('Please allow pop-ups for the Wiki portal','err');
+  } catch(e) {
+    console.error('Error opening CSS:', e);
+    toast('Error opening CSS','err');
+  }
+}function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=currentWikiSession();
   if(!frame||!sess)return;
@@ -6281,3 +6300,5 @@ function attCloseOOO(){
 </script>
 </body>
 </html>
+
+
