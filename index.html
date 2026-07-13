@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,6 +82,7 @@ const CHAT_THREADS_COL="dqap_chat_threads",CHAT_MSG_COL="dqap_chat_messages";
 const ACK_LOG_COL="dqap_acknowledgements",FLAG_COL="dqap_flags_to_updesh";
 const HOLIDAYS_COL="dqap_holidays";
 const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections";
+const CSS_TICKET_COL="css_tickets";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
 const AMC_SCOPES=["CAMC","N-CAMC"];
@@ -460,7 +462,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS<span id="payms-nav-badge" class="nav-badge" style="display:none"></span></div>
-    <div class="ni" onclick="openCSS()"             id="ni-css"><i class="ti ti-headset"></i>CSS</div>
+    <div class="ni" onclick="openCSS()"             id="ni-css"><i class="ti ti-headset"></i>CSS<span id="css-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
@@ -1395,9 +1397,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
-let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[];
+let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],cssTicketsData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
-let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null;
+let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,cssTicketsUnsub=null;
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
 let amcExpandedId=null,amcVisitForId=null;
@@ -1475,9 +1477,9 @@ function logout(){
   if(!confirm('Sign out of DORBIT?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -3779,7 +3781,7 @@ function openCSS(){
   }
   try {
     try{localStorage.setItem('dqap_css_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
-    const base = location.protocol === 'file:' ? 'CSS/index.html?v=20260712.1' : 'https://dqapsys.github.io/dqap-CSS/?v=20260712.1';
+    const base = location.protocol === 'file:' ? 'CSS/index.html?v=20260713.1' : 'https://dqapsys.github.io/dqap-CSS/?v=20260713.1';
     const url = `${base}#sess=${encodeURIComponent(sess)}`;
     const cssWindow = window.open(url, '_blank');
     if(cssWindow) cssWindow.opener=null;
@@ -5125,6 +5127,7 @@ function approvalAppCounts(){
     crm:crmApprovalCount(),
     debt:debtApprovalCount(),
     payms:paymsApprovalCount(),
+    css:cssTicketNotificationCount(),
     chat:chatUnreadCount()
   };
 }
@@ -5141,6 +5144,7 @@ function refreshAppBadge(){
   setNavBadge('crm-nav-badge',c.crm);
   setNavBadge('debt-nav-badge',c.debt);
   setNavBadge('payms-nav-badge',c.payms);
+  setNavBadge('css-nav-badge',c.css);
   setNavBadge('chat-nav-badge',c.chat);
   const total=visibleNavBadgeTotal();
   try{
@@ -5179,6 +5183,26 @@ function paymsApprovalCount(){
     return false;
   }).length;
 }
+function cssStatusKey(s){
+  const k=String(s||'Pending').trim().toLowerCase();
+  if(k==='open'||k==='pending reply')return'pending';
+  if(k==='in progress')return'started';
+  return k;
+}
+function cssTicketNotificationCount(){
+  if(!CU)return 0;
+  const u=userKey(),name=userNameKey();
+  return cssTicketsData.filter(t=>{
+    const status=cssStatusKey(t.status);
+    if(status==='closed')return false;
+    const assignee=String(t.assignee||'').trim().toLowerCase();
+    const assigneeName=String(t.assigneeName||'').trim().toLowerCase();
+    const unassigned=!assignee&&!assigneeName;
+    if(u==='pratim'&&unassigned)return true;
+    const assignedToMe=assignee===u||assignee===name||assigneeName===name||assigneeName===u;
+    return assignedToMe&&status==='pending'&&!t.assignedDialogClosedAt;
+  }).length;
+}
 function startExternalApprovalBadgeListeners(){
   const u=userKey();if(!u)return;
   if(crmNotifyUnsub)crmNotifyUnsub();
@@ -5186,6 +5210,7 @@ function startExternalApprovalBadgeListeners(){
   if(paymsReqUnsub)paymsReqUnsub();
   if(debtCommitUnsub)debtCommitUnsub();
   if(debtCollectionUnsub)debtCollectionUnsub();
+  if(cssTicketsUnsub)cssTicketsUnsub();
   if(chatDMUnsub)chatDMUnsub();
   if(chatBroadcastUnsub)chatBroadcastUnsub();
   crmNotifyUnsub=db.collection(CRM_NOTIFICATIONS_COL).where('recipientUsername','==',u).onSnapshot(sn=>{crmNotificationsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
@@ -5195,6 +5220,7 @@ function startExternalApprovalBadgeListeners(){
   paymsReqUnsub=db.collection(PAYMS_REQ_COL).where('status','in',['PENDING_MANAGER','PENDING_PRATIM','PENDING_UPDESH','READY_FOR_PAYMENT']).onSnapshot(sn=>{paymsRequestsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   debtCommitUnsub=db.collection(DEBT_COMMITMENTS_COL).onSnapshot(sn=>{debtCommitmentsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   debtCollectionUnsub=db.collection(DEBT_COLLECTIONS_COL).onSnapshot(sn=>{debtCollectionsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  cssTicketsUnsub=db.collection(CSS_TICKET_COL).onSnapshot(sn=>{cssTicketsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   chatDMUnsub=db.collection(CHAT_THREADS_COL).where('members','array-contains',u).onSnapshot(sn=>{chatMemberThreadsRaw=sn.docs.map(d=>({id:d.id,...d.data()}));mergeChatThreads();refreshAppBadge();if(isChatViewOpen())renderChat();},()=>{});
   chatBroadcastUnsub=db.collection(CHAT_THREADS_COL).where('type','==','broadcast').onSnapshot(sn=>{chatBroadcastThreadsRaw=sn.docs.map(d=>({id:d.id,...d.data()}));mergeChatThreads();refreshAppBadge();if(isChatViewOpen())renderChat();ensureBroadcastThreadExists(sn.empty);},()=>{});
 }
@@ -6300,5 +6326,3 @@ function attCloseOOO(){
 </script>
 </body>
 </html>
-
-
