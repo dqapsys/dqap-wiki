@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.35";
+const APP_VERSION="78.36";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260715-2";
+const APP_BUILD="20260715-3";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -134,6 +134,7 @@ body{font-family:'Aptos','Aptos Display','DM Sans','Segoe UI',system-ui,sans-ser
 .sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
 .sb-sec{font-size:9px;font-weight:600;opacity:.38;letter-spacing:1.6px;text-transform:uppercase;padding:4px 8px 6px}
 .nav-badge{background:#D32F2F;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;min-width:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+#chat-nav-badge{background:#2E7D32;box-shadow:0 0 0 2px rgba(76,175,80,.18),0 1px 3px rgba(0,0,0,.22)}
 .ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.78);margin-bottom:1px}
 .ni:hover{background:rgba(255,255,255,.14);color:#fff}
 .ni.active{background:rgba(255,255,255,.22);color:#fff;font-weight:500}
@@ -455,7 +456,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="sb-nav">
     <div class="sb-sec">Operations</div>
-    <div class="ni" onclick="go('chat')"             id="ni-chat"><i class="ti ti-message-circle"></i>Chat<span id="chat-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="openChatView()"         id="ni-chat"><i class="ti ti-message-circle"></i>Chat<span id="chat-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
@@ -497,6 +498,17 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div style="background:#fff;border-radius:12px;padding:22px;width:min(480px,94vw);max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)">
     <div style="font-weight:700;font-size:15px;margin-bottom:10px"><i class="ti ti-folder-cog"></i> Manage Document Checklist</div>
     <div id="project-doc-template-body"></div>
+  </div>
+</div>
+
+<div id="chat-arrival-modal" style="display:none;position:fixed;right:18px;bottom:18px;z-index:100000;width:min(390px,calc(100vw - 28px));background:#fff;border:2px solid #2E7D32;border-radius:13px;box-shadow:0 16px 45px rgba(0,0,0,.3);overflow:hidden">
+  <div style="background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:9px">
+    <i class="ti ti-message-circle" style="font-size:20px"></i><div style="font-size:12px;font-weight:800;letter-spacing:.4px">NEW DIRECT MESSAGE</div>
+  </div>
+  <div style="padding:13px 14px">
+    <div id="chat-arrival-sender" style="font-size:13px;font-weight:800;color:#1B5E20;margin-bottom:5px">New message</div>
+    <div id="chat-arrival-text" style="font-size:12px;color:var(--t2);line-height:1.5;word-break:break-word"></div>
+    <div style="display:flex;gap:7px;justify-content:flex-end;margin-top:12px"><button class="btn sm" onclick="dismissChatArrival()">Dismiss</button><button class="btn sm" style="background:#2E7D32;color:#fff;border-color:#2E7D32" onclick="openArrivingChat()"><i class="ti ti-message-circle"></i>Open Chat</button></div>
   </div>
 </div>
 <div id="wiki-update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center">
@@ -629,6 +641,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-chat" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-message-circle" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Chat</div><div class="pg-s">Company announcements, groups and direct messages</div></div>
+    <div class="tr"><button class="btn" id="chat-alert-permission-btn" onclick="enableChatNotifications()"><i class="ti ti-bell"></i>Enable message alerts</button></div>
   </div>
   <div class="content" id="chat-root"></div>
 </div>
@@ -1423,6 +1436,7 @@ let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=nu
 let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,cssTicketsUnsub=null;
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
+let chatThreadNotificationBaseline=new Map(),chatNotificationBaselineReady=false,arrivingChatThreadId='',chatArrivalTimer=null;
 let amcExpandedId=null,amcVisitForId=null;
 let activeBudgetProject='',pmoExpandedId=null,pmoEditId=null,projExpandedId=null,pmoDashView='chart';
 let npClients=[],npSites=[];
@@ -1501,6 +1515,7 @@ function logout(){
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
   DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  chatThreadsData=[];chatMessagesData=[];chatMemberThreadsRaw=[];chatBroadcastThreadsRaw=[];chatThreadNotificationBaseline=new Map();chatNotificationBaselineReady=false;arrivingChatThreadId='';dismissChatArrival();
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
   showLogin();
@@ -5242,6 +5257,11 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(refreshing)return;refreshing=true;showWikiUpdateModal();
   });
+  navigator.serviceWorker.addEventListener('message',event=>{
+    if(event.data?.type==='OPEN_CHAT_THREAD'&&event.data.threadId){
+      window.focus();openChatView();setTimeout(()=>openChatThread(event.data.threadId),150);
+    }
+  });
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(reg=>{
       console.log('SW registered:',reg.scope);
@@ -5277,6 +5297,12 @@ function closeWikiUpdateModal(){
   if(modal)modal.style.display='none';
 }
 function forceWikiRefresh(){window.location.reload();}
+document.addEventListener('keydown',event=>{
+  const modal=el('wiki-update-modal');
+  if(modal&&modal.style.display==='flex'&&event.shiftKey&&!event.ctrlKey&&!event.altKey&&String(event.key).toLowerCase()==='r'){
+    event.preventDefault();forceWikiRefresh();
+  }
+});
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function setNavBadge(id,count){
@@ -5324,6 +5350,7 @@ function refreshAppBadge(){
       else navigator.clearAppBadge().catch(()=>{});
     }
   }catch(e){}
+  document.title=c.chat>0?`(${c.chat}) New chat - DORBIT | Operations Base`:'DORBIT | Operations Base';
 }
 function crmApprovalCount(){
   if(!CU)return 0;
@@ -5392,8 +5419,55 @@ function startExternalApprovalBadgeListeners(){
   debtCommitUnsub=db.collection(DEBT_COMMITMENTS_COL).onSnapshot(sn=>{debtCommitmentsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   debtCollectionUnsub=db.collection(DEBT_COLLECTIONS_COL).onSnapshot(sn=>{debtCollectionsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   cssTicketsUnsub=db.collection(CSS_TICKET_COL).onSnapshot(sn=>{cssTicketsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
-  chatDMUnsub=db.collection(CHAT_THREADS_COL).where('members','array-contains',u).onSnapshot(sn=>{chatMemberThreadsRaw=sn.docs.map(d=>({id:d.id,...d.data()}));mergeChatThreads();refreshAppBadge();if(isChatViewOpen())renderChat();},()=>{});
+  chatDMUnsub=db.collection(CHAT_THREADS_COL).where('members','array-contains',u).onSnapshot(handleChatMemberSnapshot,()=>{});
   chatBroadcastUnsub=db.collection(CHAT_THREADS_COL).where('type','==','broadcast').onSnapshot(sn=>{chatBroadcastThreadsRaw=sn.docs.map(d=>({id:d.id,...d.data()}));mergeChatThreads();refreshAppBadge();if(isChatViewOpen())renderChat();ensureBroadcastThreadExists(sn.empty);},()=>{});
+}
+function handleChatMemberSnapshot(sn){
+  const fresh=sn.docs.map(d=>({id:d.id,...d.data()}));
+  if(chatNotificationBaselineReady){
+    fresh.forEach(t=>{
+      const previous=chatThreadNotificationBaseline.get(t.id)||'';
+      const arrived=t.type==='dm'&&t.lastMessageBy&&t.lastMessageBy!==userKey()&&t.lastMessageAt&&String(t.lastMessageAt)>String(previous);
+      if(arrived)notifyIncomingDM(t);
+    });
+  }
+  chatThreadNotificationBaseline=new Map(fresh.map(t=>[t.id,t.lastMessageAt||t.createdAt||'']));chatNotificationBaselineReady=true;
+  chatMemberThreadsRaw=fresh;mergeChatThreads();refreshAppBadge();if(isChatViewOpen())renderChat();
+}
+function chatNotificationSender(t){
+  const username=String(t.lastMessageBy||'').toLowerCase(),u=usersData.find(x=>String(x.username||'').toLowerCase()===username);
+  return u?(u.fullName||u.username):(t.lastMessageBy||'Someone');
+}
+function notifyIncomingDM(t){
+  arrivingChatThreadId=t.id;
+  const modal=el('chat-arrival-modal'),sender=el('chat-arrival-sender'),text=el('chat-arrival-text');
+  if(sender)sender.textContent='Message from '+chatNotificationSender(t);if(text)text.textContent=t.lastMessageText||'New direct message';if(modal)modal.style.display='block';
+  if(chatArrivalTimer)clearTimeout(chatArrivalTimer);chatArrivalTimer=setTimeout(dismissChatArrival,15000);
+  showBrowserDMNotification(t);
+}
+function dismissChatArrival(){const modal=el('chat-arrival-modal');if(modal)modal.style.display='none';if(chatArrivalTimer)clearTimeout(chatArrivalTimer);chatArrivalTimer=null;}
+function openArrivingChat(){const id=arrivingChatThreadId;dismissChatArrival();openChatView();if(id)setTimeout(()=>openChatThread(id),100);}
+function openChatView(){go('chat');updateChatNotificationButton();}
+function updateChatNotificationButton(){
+  const b=el('chat-alert-permission-btn');if(!b)return;
+  if(!('Notification' in window)){b.style.display='none';return;}
+  b.style.display='inline-flex';
+  if(Notification.permission==='granted'){b.innerHTML='<i class="ti ti-bell-check"></i>Message alerts enabled';b.disabled=true;}
+  else if(Notification.permission==='denied'){b.innerHTML='<i class="ti ti-bell-off"></i>Alerts blocked in browser';b.disabled=true;}
+  else{b.innerHTML='<i class="ti ti-bell"></i>Enable message alerts';b.disabled=false;}
+}
+async function enableChatNotifications(){
+  if(!('Notification' in window))return toast('Browser notifications are not supported on this device','err');
+  try{const p=await Notification.requestPermission();updateChatNotificationButton();toast(p==='granted'?'Message popup notifications enabled':'Notification permission was not enabled',p==='granted'?'ok':'err');}
+  catch(e){toast('Could not enable notifications: '+e.message,'err');}
+}
+async function showBrowserDMNotification(t){
+  if(!('Notification' in window)||Notification.permission!=='granted'||(!document.hidden&&document.hasFocus()))return;
+  const title='New message from '+chatNotificationSender(t),options={body:t.lastMessageText||'New direct message',tag:'dqap-dm-'+t.id,renotify:true,data:{threadId:t.id}};
+  try{
+    if(navigator.serviceWorker?.ready){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,options);}
+    else{const n=new Notification(title,options);n.onclick=()=>{window.focus();openChatView();openChatThread(t.id);n.close();};}
+  }catch(e){console.warn('Chat notification failed:',e);}
 }
 function isChatViewOpen(){const v=el('v-chat');return !!(v&&v.style.display==='block')}
 function mergeChatThreads(){
@@ -5550,8 +5624,10 @@ function chatGroupMemberCheckboxesHtml(){
 }
 function renderChat(){
   const root=el('chat-root');if(!root)return;
+  updateChatNotificationButton();
   root.innerHTML=`<div class="chat-layout">
     <div class="chat-sidebar">
+      ${('Notification' in window)&&Notification.permission==='default'?`<button class="btn sm" style="width:100%;margin-bottom:8px;border-color:#81C784;color:#1B5E20" onclick="enableChatNotifications()"><i class="ti ti-bell"></i>Enable DM popup alerts</button>`:''}
       <div style="display:flex;gap:6px;margin-bottom:10px">
         <select id="chat-new-dm-user" style="flex:1"><option value="">Start a new chat...</option>${chatNewDmOptionsHtml()}</select>
         <button class="btn sm" onclick="const u=g('chat-new-dm-user');if(u)openDM(u)"><i class="ti ti-plus"></i></button>
