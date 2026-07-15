@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.32";
+const APP_VERSION="78.35";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260712-1";
+const APP_BUILD="20260715-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -64,6 +62,7 @@ function isSuperUser(){return !!(CU&&(CU.isAdmin||(CU.username||"").toLowerCase(
 // Named users granted edit rights across all modules regardless of their role.
 const EDIT_USERS=["updesh","pratim"];
 function isPrivilegedEditor(u){return EDIT_USERS.includes(String(u||"").toLowerCase());}
+function isUpdeshDataAdmin(){return String(CU?.username||'').trim().toLowerCase()==='updesh'||String(CU?.fullName||'').trim().toLowerCase()==='updesh';}
 const PROJECT_ACCESS_USERS=["updesh","pratim","keshav"];
 const PROJECT_APPROVER_USERS=["pratim","keshav"];
 function canManageProjectsUser(u){return PROJECT_ACCESS_USERS.includes(String(u||"").toLowerCase());}
@@ -500,6 +499,16 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div id="project-doc-template-body"></div>
   </div>
 </div>
+<div id="wiki-update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:min(420px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center;position:relative">
+    <button onclick="closeWikiUpdateModal()" title="Remind me later" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--t2);font-size:16px"><i class="ti ti-x"></i></button>
+    <div style="font-size:34px;margin-bottom:8px"><i class="ti ti-refresh-alert" style="color:var(--p)"></i></div>
+    <div style="font-weight:700;font-size:16px;margin-bottom:8px">A new version of DQAP Wiki is available</div>
+    <div class="muted" style="font-size:12.5px;margin-bottom:16px;line-height:1.6">Please refresh to load the latest version. Press <b>Shift + R</b> (or <b>Ctrl + Shift + R</b>) on your keyboard, or click the button below. If you're in the middle of something, finish first, then refresh.</div>
+    <button class="btn pri" style="width:100%;justify-content:center" onclick="forceWikiRefresh()"><i class="ti ti-refresh"></i>Refresh now</button>
+  </div>
+</div>
+
 <div id="flag-updesh-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;padding:22px;width:min(420px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.25)">
     <div style="font-weight:700;font-size:15px;margin-bottom:6px"><i class="ti ti-flag"></i> Write to Updesh</div>
@@ -738,6 +747,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="tr" id="pmo-add-btn-wrap">
       <button class="btn pri" id="pmo-dash-btn" onclick="setPMOView('chart')"><i class="ti ti-chart-bar-popular"></i>Dashboard</button>
       <button class="btn" id="pmo-det-btn" onclick="setPMOView('cards')"><i class="ti ti-layout-list"></i>PMO Details</button>
+      <span id="pmo-data-tools" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <button class="btn grn" onclick="exportPMODetailsExcel()"><i class="ti ti-file-spreadsheet"></i>Export Excel</button>
+        <button class="btn" onclick="downloadPMOCsvFormat()"><i class="ti ti-file-type-csv"></i>CSV Format</button>
+        <input type="file" id="pmo-csv-input" accept=".csv,text/csv" style="max-width:190px;font-size:10.5px">
+        <button class="btn pri" onclick="importPMODetailsCsv()"><i class="ti ti-upload"></i>Import CSV</button>
+      </span>
       <button class="btn pri" onclick="go('pmo-add')"><i class="ti ti-plus"></i>New PMO project</button>
     </div>
   </div>
@@ -1028,6 +1043,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div><div class="pg-t"><i class="ti ti-wallet" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Budget Tracker</div><div class="pg-s">Project cost tracking — PO value vs budget allocated vs actual spend</div></div>
     <div class="tr" id="budget-add-btn-wrap">
       <button class="btn grn" onclick="exportBudgetExcel()"><i class="ti ti-file-spreadsheet"></i>Export</button>
+      <span id="budget-data-tools" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <button class="btn grn" onclick="exportBudgetAllExcel()"><i class="ti ti-database-export"></i>Export All Data</button>
+        <button class="btn" onclick="downloadBudgetCsvFormat()"><i class="ti ti-file-type-csv"></i>CSV Format</button>
+        <input type="file" id="budget-csv-input" accept=".csv,text/csv" style="max-width:190px;font-size:10.5px">
+        <button class="btn pri" onclick="importBudgetCsv()"><i class="ti ti-upload"></i>Import CSV</button>
+      </span>
       <button class="btn pri" onclick="togBudgetForm(true)"><i class="ti ti-plus"></i>Add line item</button>
     </div>
   </div>
@@ -2344,6 +2365,7 @@ function renderPMODetailsTable(list){
   </table></div></div>`;
 }
 function renderPMO(){
+  const dataTools=el('pmo-data-tools');if(dataTools)dataTools.style.display=isUpdeshDataAdmin()&&pmoDashView==='cards'?'inline-flex':'none';
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
   let list=pmoData.filter(p=>{
@@ -2513,6 +2535,99 @@ async function savePMOInline(id){
     toast('Saved \u2713','ok');
     pmoEditId=null;
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ── UPDESH-ONLY PMO / BUDGET BULK CORRECTION ───────────────────────────────
+// Exported record IDs are the update keys. Imports never create/delete records
+// or move a record to another project; every row is validated before any write.
+function bulkCell(v){return String(v??'').trim();}
+function bulkHeader(v){return bulkCell(v).toLowerCase().replace(/\s+/g,'_');}
+function bulkNumber(v,label,rowNo){
+  const raw=bulkCell(v).replace(/[₹,\s]/g,'');
+  if(raw==='')return 0;
+  const n=Number(raw);if(!Number.isFinite(n)||n<0)throw new Error(`Row ${rowNo}: ${label} must be a non-negative number`);return n;
+}
+function bulkDate(v,label,rowNo){
+  let s=bulkCell(v),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)s=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  const iso=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!iso)throw new Error(`Row ${rowNo}: ${label} must be YYYY-MM-DD or DD/MM/YYYY`);
+  const d=new Date(`${s}T00:00:00Z`);if(d.getUTCFullYear()!==Number(iso[1])||d.getUTCMonth()+1!==Number(iso[2])||d.getUTCDate()!==Number(iso[3]))throw new Error(`Row ${rowNo}: ${label} is not a valid date`);return s;
+}
+function bulkCsvObjects(text){
+  const raw=String(text||'').replace(/^\uFEFF/,'');
+  if(!raw.trim())throw new Error('CSV file is empty');
+  const first=(raw.split(/\r?\n/,1)[0]||'');
+  const delim=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';
+  const rows=[];let row=[],cell='',quoted=false;
+  for(let i=0;i<raw.length;i++){
+    const ch=raw[i];
+    if(ch==='"'){
+      if(quoted&&raw[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;
+    }else if(ch===delim&&!quoted){row.push(cell);cell='';}
+    else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&raw[i+1]==='\n')i++;row.push(cell);if(row.some(v=>bulkCell(v)!==''))rows.push(row);row=[];cell='';}
+    else cell+=ch;
+  }
+  row.push(cell);if(row.some(v=>bulkCell(v)!==''))rows.push(row);
+  if(rows.length<2)throw new Error('CSV must contain a header and at least one data row');
+  const headers=rows[0].map(bulkHeader);if(new Set(headers).size!==headers.length)throw new Error('CSV contains duplicate column headers');
+  return rows.slice(1).map((vals,i)=>({rowNo:i+2,data:Object.fromEntries(headers.map((h,j)=>[h,vals[j]??'']))}));
+}
+function bulkRequireHeaders(rows,required){
+  const keys=Object.keys(rows[0]?.data||{}),missing=required.filter(h=>!keys.includes(h));
+  if(missing.length)throw new Error('Missing CSV column(s): '+missing.join(', '));
+}
+function bulkDownloadCsv(fileName,headers,rows){
+  const quote=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv='\uFEFF'+[headers,...rows.map(r=>headers.map(h=>r[h]??''))].map(r=>r.map(quote).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=fileName;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
+}
+async function bulkCommitUpdates(ops){
+  let committed=0;
+  try{for(let i=0;i<ops.length;i+=400){const chunk=ops.slice(i,i+400),batch=db.batch();chunk.forEach(op=>batch.update(op.ref,op.data));await batch.commit();committed+=chunk.length;}}
+  catch(e){throw new Error(committed?`${e.message}. ${committed} of ${ops.length} records were already updated before the failure`:`${e.message}. No records were updated`);}
+}
+function bulkSheet(rows,headers){
+  const ws=XLSX.utils.json_to_sheet(rows,{header:headers});ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(rows.length,1),c:headers.length-1}})};ws['!cols']=headers.map(h=>({wch:Math.min(Math.max(h.length+2,14),34)}));return ws;
+}
+function pmoBulkHeaders(){
+  const maxStages=Math.max(PMO_STAGES.length,...pmoData.map(p=>(p.stages||[]).length));
+  const headers=['record_id','project_id','project_number','project_name','client','status'];
+  for(let i=0;i<maxStages;i++){const n=String(i+1).padStart(2,'0');headers.push(`stage_${n}_name`,`stage_${n}_pct`,`stage_${n}_remarks`);}return headers;
+}
+function pmoBulkRows(){
+  const headers=pmoBulkHeaders();return pmoData.map(p=>{const r={record_id:p.id,project_id:p.projId||'',project_number:p.projNum||'',project_name:p.projName||'',client:p.client||'',status:p.status||''};
+    for(let i=0;i<(headers.length-6)/3;i++){const n=String(i+1).padStart(2,'0'),s=(p.stages||[])[i]||{};r[`stage_${n}_name`]=s.stage||'';r[`stage_${n}_pct`]=Number(s.pct||0);r[`stage_${n}_remarks`]=s.remarks||'';}return r;});
+}
+function exportPMODetailsExcel(){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can export PMO correction data','err');
+  const headers=pmoBulkHeaders(),rows=pmoBulkRows(),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,bulkSheet(rows,headers),'PMO Details');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['PMO CSV correction workflow'],['1','Edit only client, status, stage pct and stage remarks.'],['2','Do not change record_id or project identity columns.'],['3','Save the PMO Details sheet as CSV UTF-8, then import it in Wiki as Updesh.'],['4','Import updates existing records only; it never creates or deletes records.']]),'Instructions');
+  XLSX.writeFile(wb,`DQAP_PMO_Details_Correction_${new Date().toISOString().slice(0,10)}.xlsx`);toast('PMO Excel exported','ok');
+}
+function downloadPMOCsvFormat(){if(!isUpdeshDataAdmin())return toast('Only Updesh can download PMO correction data','err');bulkDownloadCsv(`DQAP_PMO_CSV_Import_${new Date().toISOString().slice(0,10)}.csv`,pmoBulkHeaders(),pmoBulkRows());toast('PMO CSV format downloaded','ok');}
+async function importPMODetailsCsv(){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can import PMO corrections','err');
+  const input=el('pmo-csv-input'),file=input?.files?.[0];if(!file)return toast('Choose a PMO CSV file first','err');
+  showLoad('Validating PMO CSV…');
+  try{
+    const rows=bulkCsvObjects(await file.text());bulkRequireHeaders(rows,['record_id','project_id','project_name','client','status','stage_01_name','stage_01_pct','stage_01_remarks']);
+    const seen=new Set(),allowed=new Set(['Not Started','In Progress','Completed','On Hold','Delayed']),ops=[];
+    rows.forEach(({rowNo,data})=>{
+      const id=bulkCell(data.record_id);if(!id)throw new Error(`Row ${rowNo}: record_id is required`);if(seen.has(id))throw new Error(`Row ${rowNo}: duplicate record_id ${id}`);seen.add(id);
+      const current=pmoData.find(p=>p.id===id);if(!current)throw new Error(`Row ${rowNo}: PMO record ${id} was not found`);
+      if(bulkCell(data.project_id)!==bulkCell(current.projId)||bulkCell(data.project_name)!==bulkCell(current.projName))throw new Error(`Row ${rowNo}: project identity does not match record ${id}`);
+      const status=bulkCell(data.status);if(!allowed.has(status))throw new Error(`Row ${rowNo}: invalid status "${status}"`);
+      const stages=(current.stages||[]).map((s,i)=>{const n=String(i+1).padStart(2,'0'),nameKey=`stage_${n}_name`,pctKey=`stage_${n}_pct`,remarksKey=`stage_${n}_remarks`;
+        if(!(nameKey in data)||!(pctKey in data)||!(remarksKey in data))throw new Error(`Row ${rowNo}: missing columns for stage ${n}`);
+        if(bulkCell(data[nameKey])!==bulkCell(s.stage))throw new Error(`Row ${rowNo}: stage ${n} name must remain "${s.stage}"`);
+        const pct=bulkNumber(data[pctKey],`stage ${n} percentage`,rowNo);if(!Number.isInteger(pct)||pct>100)throw new Error(`Row ${rowNo}: stage ${n} percentage must be an integer from 0 to 100`);
+        return{stage:s.stage,pct,remarks:bulkCell(data[remarksKey])};});
+      if(status==='Completed'&&!allStagesComplete(stages))throw new Error(`Row ${rowNo}: Completed requires every stage to be 100`);
+      const now=new Date().toISOString();ops.push({ref:db.collection(PMO_COL).doc(id),data:{client:bulkCell(data.client),status:allStagesComplete(stages)?'Completed':status,stages,overall:calcOverall(stages),updatedAt:now,bulkCorrectedAt:now,bulkCorrectedBy:CU.username,bulkCorrectionPrevious:{client:current.client||'',status:current.status||'',stages:current.stages||[],overall:Number(current.overall||0),capturedAt:now}}});
+    });
+    if(!confirm(`Update ${ops.length} PMO record(s)? This cannot be undone automatically.`))return;
+    showLoad('Updating PMO data…');await bulkCommitUpdates(ops);input.value='';toast(`${ops.length} PMO record(s) updated`,'ok');
+  }catch(e){toast('PMO import stopped: '+e.message,'err');}finally{hideLoad();}
 }
 
 // â”€â”€ PROJECT EXTENSION REQUEST (target completion date revision) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -3763,7 +3878,7 @@ function openPayMS(){
   }
   try {
     try{localStorage.setItem('dqap_payms_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
-    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260706.3' : 'https://dqapsys.github.io/PayMS/?v=20260706.3';
+    const base = location.protocol === 'file:' ? 'PayMS/index.html?v=20260715.1' : 'https://dqapsys.github.io/PayMS/?v=20260715.1';
     const url = `${base}#sess=${encodeURIComponent(sess)}`;
     const paymsWindow = window.open(url, '_blank');
     if(paymsWindow) paymsWindow.opener=null;
@@ -3983,6 +4098,7 @@ function toggleBudgetCard(projName){
 }
 
 function renderBudgetList(){
+  const dataTools=el('budget-data-tools');if(dataTools)dataTools.style.display=isUpdeshDataAdmin()?'inline-flex':'none';
   if(CU?.isUser)return;
   const wrap=el('budget-list');if(!wrap)return;
   wrap.className='compact-table-panel';
@@ -4204,6 +4320,51 @@ function exportBudgetExcel(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Budget');
   XLSX.writeFile(wb,`DQAP_Budget_${activeBudgetProject.replace(/[^a-z0-9]/gi,'_')}.xlsx`);
   toast('Exported âœ“','ok');
+}
+
+const BUDGET_BULK_HEADERS=['record_type','record_id','project','po_amount','budget_allocated','project_manager','budget_head','description','date','planned_days','actual_days','service_amount','material_qty','material_amount','equipment','freight','misc','owner','total'];
+function budgetBulkRows(){
+  const cfgRows=budgetCfgData.map(c=>({record_type:'CONFIG',record_id:c.id,project:c.projectName||'',po_amount:Number(c.poAmount||0),budget_allocated:Number(c.budgetAllocated||0),project_manager:c.projectManager||'',budget_head:'',description:'',date:'',planned_days:'',actual_days:'',service_amount:'',material_qty:'',material_amount:'',equipment:'',freight:'',misc:'',owner:'',total:''}));
+  const lineRows=budgetData.map(b=>({record_type:'LINE',record_id:b.id,project:b.project||'',po_amount:'',budget_allocated:'',project_manager:'',budget_head:b.budgetHead||'',description:b.description||'',date:b.date||'',planned_days:Number(b.plannedDays||0),actual_days:Number(b.actualDays||0),service_amount:Number(b.serviceAmt||0),material_qty:Number(b.materialQty||0),material_amount:Number(b.materialAmt||0),equipment:Number(b.equipment||0),freight:Number(b.freight||0),misc:Number(b.misc||0),owner:b.owner||'',total:Number(b.total||0)}));
+  return[...cfgRows,...lineRows];
+}
+function exportBudgetAllExcel(){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can export all Budget correction data','err');
+  const all=budgetBulkRows(),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,bulkSheet(all.filter(r=>r.record_type==='CONFIG'),BUDGET_BULK_HEADERS),'Budget Config');
+  XLSX.utils.book_append_sheet(wb,bulkSheet(all.filter(r=>r.record_type==='LINE'),BUDGET_BULK_HEADERS),'Budget Lines');
+  XLSX.utils.book_append_sheet(wb,bulkSheet(all,BUDGET_BULK_HEADERS),'CSV Import');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Budget CSV correction workflow'],['1','Use the CSV Import sheet or the CSV Format download.'],['2','CONFIG rows edit PO amount, budget allocated and project manager.'],['3','LINE rows edit budget head, description, date, quantities, amounts and owner.'],['4','Do not change record_type, record_id or project. Total is recalculated during import.'],['5','Save as CSV UTF-8 and import in Wiki as Updesh. Existing records are updated only.']]),'Instructions');
+  XLSX.writeFile(wb,`DQAP_Budget_All_Data_Correction_${new Date().toISOString().slice(0,10)}.xlsx`);toast('All Budget data exported','ok');
+}
+function downloadBudgetCsvFormat(){if(!isUpdeshDataAdmin())return toast('Only Updesh can download Budget correction data','err');bulkDownloadCsv(`DQAP_Budget_CSV_Import_${new Date().toISOString().slice(0,10)}.csv`,BUDGET_BULK_HEADERS,budgetBulkRows());toast('Budget CSV format downloaded','ok');}
+async function importBudgetCsv(){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can import Budget corrections','err');
+  const input=el('budget-csv-input'),file=input?.files?.[0];if(!file)return toast('Choose a Budget CSV file first','err');
+  showLoad('Validating Budget CSV…');
+  try{
+    const rows=bulkCsvObjects(await file.text());bulkRequireHeaders(rows,BUDGET_BULK_HEADERS);const seen=new Set(),ops=[];
+    rows.forEach(({rowNo,data})=>{
+      const type=bulkCell(data.record_type).toUpperCase(),id=bulkCell(data.record_id),project=bulkCell(data.project),key=type+':'+id;
+      if(!['CONFIG','LINE'].includes(type))throw new Error(`Row ${rowNo}: record_type must be CONFIG or LINE`);
+      if(!id)throw new Error(`Row ${rowNo}: record_id is required`);if(seen.has(key))throw new Error(`Row ${rowNo}: duplicate ${key}`);seen.add(key);
+      const now=new Date().toISOString();
+      if(type==='CONFIG'){
+        const current=budgetCfgData.find(c=>c.id===id);if(!current)throw new Error(`Row ${rowNo}: Budget CONFIG record ${id} was not found`);
+        if(project!==bulkCell(current.projectName))throw new Error(`Row ${rowNo}: project must remain "${current.projectName}"`);
+        ops.push({ref:db.collection(BUDGET_CFG_COL).doc(id),data:{poAmount:bulkNumber(data.po_amount,'po_amount',rowNo),budgetAllocated:bulkNumber(data.budget_allocated,'budget_allocated',rowNo),projectManager:bulkCell(data.project_manager),updatedAt:now,bulkCorrectedAt:now,bulkCorrectedBy:CU.username,bulkCorrectionPrevious:{poAmount:Number(current.poAmount||0),budgetAllocated:Number(current.budgetAllocated||0),projectManager:current.projectManager||'',capturedAt:now}}});
+      }else{
+        const current=budgetData.find(b=>b.id===id);if(!current)throw new Error(`Row ${rowNo}: Budget LINE record ${id} was not found`);
+        if(project!==bulkCell(current.project))throw new Error(`Row ${rowNo}: project must remain "${current.project}"`);
+        const budgetHead=bulkCell(data.budget_head),description=bulkCell(data.description),date=bulkDate(data.date,'date',rowNo);
+        if(!BUDGET_HEADS.includes(budgetHead))throw new Error(`Row ${rowNo}: invalid budget_head "${budgetHead}"`);if(!description)throw new Error(`Row ${rowNo}: description is required`);
+        const plannedDays=bulkNumber(data.planned_days,'planned_days',rowNo),actualDays=bulkNumber(data.actual_days,'actual_days',rowNo),serviceAmt=bulkNumber(data.service_amount,'service_amount',rowNo),materialQty=bulkNumber(data.material_qty,'material_qty',rowNo),materialAmt=bulkNumber(data.material_amount,'material_amount',rowNo),equipment=bulkNumber(data.equipment,'equipment',rowNo),freight=bulkNumber(data.freight,'freight',rowNo),misc=bulkNumber(data.misc,'misc',rowNo),total=serviceAmt+materialAmt+equipment+freight+misc;
+        ops.push({ref:db.collection(BUDGET_COL).doc(id),data:{budgetHead,description,date,plannedDays,actualDays,serviceAmt,materialQty,materialAmt,equipment,freight,misc,total,owner:bulkCell(data.owner),updatedAt:now,bulkCorrectedAt:now,bulkCorrectedBy:CU.username,bulkCorrectionPrevious:{budgetHead:current.budgetHead||'',description:current.description||'',date:current.date||'',plannedDays:Number(current.plannedDays||0),actualDays:Number(current.actualDays||0),serviceAmt:Number(current.serviceAmt||0),materialQty:Number(current.materialQty||0),materialAmt:Number(current.materialAmt||0),equipment:Number(current.equipment||0),freight:Number(current.freight||0),misc:Number(current.misc||0),total:Number(current.total||0),owner:current.owner||'',capturedAt:now}}});
+      }
+    });
+    if(!confirm(`Update ${ops.length} Budget record(s)? This cannot be undone automatically.`))return;
+    showLoad('Updating Budget data…');await bulkCommitUpdates(ops);input.value='';toast(`${ops.length} Budget record(s) updated`,'ok');
+  }catch(e){toast('Budget import stopped: '+e.message,'err');}finally{hideLoad();}
 }
 
 
@@ -5076,9 +5237,10 @@ function renderAMC(){
 
 if('serviceWorker' in navigator){
   let refreshing=false;
-  // When a new service worker takes control, reload once to get fresh assets
+  // When a new service worker takes control, show a dialog instead of
+  // silently reloading - avoids wiping out anything the user is mid-typing.
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(refreshing)return;refreshing=true;window.location.reload();
+    if(refreshing)return;refreshing=true;showWikiUpdateModal();
   });
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(reg=>{
@@ -5092,7 +5254,7 @@ if('serviceWorker' in navigator){
         if(!nw)return;
         nw.addEventListener('statechange',()=>{
           if(nw.state==='installed'&&navigator.serviceWorker.controller){
-            // New version ready — tell it to skip waiting; controllerchange will reload
+            // New version ready — tell it to skip waiting; controllerchange will show the dialog
             nw.postMessage({type:'SKIP_WAITING'});
           }
         });
@@ -5106,6 +5268,15 @@ if('serviceWorker' in navigator){
     });
   });
 }
+function showWikiUpdateModal(){
+  const modal=document.getElementById('wiki-update-modal');
+  if(modal)modal.style.display='flex';
+}
+function closeWikiUpdateModal(){
+  const modal=document.getElementById('wiki-update-modal');
+  if(modal)modal.style.display='none';
+}
+function forceWikiRefresh(){window.location.reload();}
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function setNavBadge(id,count){
