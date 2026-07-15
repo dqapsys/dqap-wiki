@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.37";
+const APP_VERSION="78.38";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260715-4";
+const APP_BUILD="20260715-5";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -515,8 +515,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   <div style="width:min(440px,95vw);background:#fff;border:2px solid #2E7D32;border-radius:14px;box-shadow:0 20px 65px rgba(0,0,0,.38);padding:22px;text-align:center">
     <div style="width:50px;height:50px;border-radius:50%;background:#E8F5E9;color:#2E7D32;display:flex;align-items:center;justify-content:center;margin:0 auto 11px"><i class="ti ti-bell-ringing" style="font-size:27px"></i></div>
     <div style="font-size:16px;font-weight:800;margin-bottom:8px">Enable minimized DM alerts</div>
-    <div class="muted" style="font-size:12.5px;line-height:1.6;margin-bottom:16px">Allow notifications so direct messages can appear as an operating-system popup while Wiki is minimized or behind another window.</div>
-    <div style="display:flex;gap:8px;justify-content:center"><button class="btn" onclick="closeChatNotificationSetup()">Not now</button><button class="btn" style="background:#2E7D32;color:#fff;border-color:#2E7D32" onclick="enableChatNotifications(true)"><i class="ti ti-bell-check"></i>Enable alerts</button></div>
+    <div id="chat-notification-setup-text" class="muted" style="font-size:12.5px;line-height:1.6;margin-bottom:12px">Allow notifications so direct messages can appear as an operating-system popup while Wiki is minimized or behind another window.</div>
+    <div id="chat-notification-diagnostics" style="display:none;text-align:left;background:#F5F7FA;border-radius:8px;padding:9px 11px;font-size:11px;line-height:1.55;margin-bottom:13px"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn" onclick="closeChatNotificationSetup()">Not now</button><button class="btn" onclick="runChatNotificationDiagnostics()"><i class="ti ti-stethoscope"></i>Check setup</button><button class="btn" style="background:#2E7D32;color:#fff;border-color:#2E7D32" onclick="enableChatNotifications(true)"><i class="ti ti-bell-check"></i>Enable / Test alerts</button></div>
   </div>
 </div>
 <div id="wiki-update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center">
@@ -5459,34 +5460,59 @@ function openArrivingChat(){const id=arrivingChatThreadId;dismissChatArrival();o
 function openChatView(){go('chat');updateChatNotificationButton();}
 function updateChatNotificationButton(){
   const b=el('chat-alert-permission-btn');if(!b)return;
-  if(!('Notification' in window)){b.style.display='none';return;}
+  if(!('Notification' in window)){b.style.display='inline-flex';b.innerHTML='<i class="ti ti-bell-off"></i>Check notification support';b.disabled=false;b.onclick=runChatNotificationDiagnostics;return;}
   b.style.display='inline-flex';
   if(Notification.permission==='granted'){b.innerHTML='<i class="ti ti-bell-ringing"></i>Test minimized alert';b.disabled=false;b.onclick=testMinimizedChatNotification;}
-  else if(Notification.permission==='denied'){b.innerHTML='<i class="ti ti-bell-off"></i>Alerts blocked in browser';b.disabled=true;}
+  else if(Notification.permission==='denied'){b.innerHTML='<i class="ti ti-bell-off"></i>Fix blocked alerts';b.disabled=false;b.onclick=runChatNotificationDiagnostics;}
   else{b.innerHTML='<i class="ti ti-bell"></i>Enable message alerts';b.disabled=false;b.onclick=()=>enableChatNotifications(false);}
 }
+function chatNotificationInlineButtonHtml(){
+  if(!('Notification' in window))return`<button class="btn sm" style="width:100%;margin-bottom:8px" onclick="runChatNotificationDiagnostics()"><i class="ti ti-bell-off"></i>Check notification support</button>`;
+  if(Notification.permission==='granted')return`<button class="btn sm" style="width:100%;margin-bottom:8px;border-color:#81C784;color:#1B5E20" onclick="testMinimizedChatNotification()"><i class="ti ti-bell-ringing"></i>Test minimized alert</button>`;
+  if(Notification.permission==='denied')return`<button class="btn sm" style="width:100%;margin-bottom:8px;border-color:#EF9A9A;color:#B71C1C" onclick="runChatNotificationDiagnostics()"><i class="ti ti-bell-off"></i>Fix blocked alerts</button>`;
+  return`<button class="btn sm" style="width:100%;margin-bottom:8px;border-color:#81C784;color:#1B5E20" onclick="enableChatNotifications(false)"><i class="ti ti-bell"></i>Enable DM popup alerts</button>`;
+}
 function maybePromptChatNotifications(){
-  if(!('Notification' in window)||Notification.permission!=='default')return;
+  if(!('Notification' in window)||Notification.permission==='granted')return;
   try{if(sessionStorage.getItem('dqap_chat_notify_prompted')==='1')return;}catch(e){}
-  const modal=el('chat-notification-setup-modal');if(modal)modal.style.display='flex';
+  const modal=el('chat-notification-setup-modal');if(modal)modal.style.display='flex';if(Notification.permission==='denied')runChatNotificationDiagnostics();
 }
 function closeChatNotificationSetup(){const modal=el('chat-notification-setup-modal');if(modal)modal.style.display='none';try{sessionStorage.setItem('dqap_chat_notify_prompted','1');}catch(e){}}
 async function enableChatNotifications(fromSetup=false){
-  if(!('Notification' in window))return toast('Browser notifications are not supported on this device','err');
-  try{const p=await Notification.requestPermission();if(fromSetup)closeChatNotificationSetup();updateChatNotificationButton();toast(p==='granted'?'Minimized DM notifications enabled':'Notification permission was not enabled',p==='granted'?'ok':'err');if(p==='granted')setTimeout(testMinimizedChatNotification,250);}
+  if(!('Notification' in window)){await runChatNotificationDiagnostics();return;}
+  if(Notification.permission==='denied'){await runChatNotificationDiagnostics();toast('Notifications are blocked. Use the browser site-permission instructions shown.','err');return;}
+  try{const p=Notification.permission==='granted'?'granted':await Notification.requestPermission();updateChatNotificationButton();if(p==='granted'){if(fromSetup)closeChatNotificationSetup();toast('Permission granted - sending a test notification','ok');setTimeout(testMinimizedChatNotification,250);}else{await runChatNotificationDiagnostics();toast('Notification permission was not enabled','err');}}
   catch(e){toast('Could not enable notifications: '+e.message,'err');}
 }
 async function testMinimizedChatNotification(){
   if(!('Notification' in window)||Notification.permission!=='granted')return enableChatNotifications(false);
-  await showBrowserDMNotification({id:'test',lastMessageBy:'DQAP Wiki',lastMessageText:'Test successful - minimized DM alerts are enabled.'},true);
+  try{const method=await showBrowserDMNotification({id:'test',lastMessageBy:'DQAP Wiki',lastMessageText:'Test successful - minimized DM alerts are enabled.'},true);toast('Test notification sent via '+method,'ok');}
+  catch(e){toast('Test failed: '+e.message,'err');await runChatNotificationDiagnostics(e.message);}
+}
+async function chatServiceWorkerRegistration(){
+  if(!('serviceWorker' in navigator))return null;
+  try{const existing=await navigator.serviceWorker.getRegistration('./')||await navigator.serviceWorker.getRegistration();if(existing?.active)return existing;}catch(e){}
+  try{return await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('service worker readiness timed out')),3000))]);}catch(e){return null;}
+}
+async function deliverSystemChatNotification(title,options){
+  const reg=await chatServiceWorkerRegistration();
+  if(reg&&typeof reg.showNotification==='function'){await reg.showNotification(title,options);return'service worker';}
+  if(typeof Notification==='function'){const n=new Notification(title,options);n.onclick=()=>{window.focus();const id=options.data?.threadId;if(id&&id!=='test'){openChatView();openChatThread(id);}n.close();};return'page notification fallback';}
+  throw new Error('No active service worker and no page-notification fallback are available');
 }
 async function showBrowserDMNotification(t,force=false){
   if(!('Notification' in window)||Notification.permission!=='granted'||(!force&&!document.hidden&&document.hasFocus()))return;
   const title='New message from '+chatNotificationSender(t),options={body:t.lastMessageText||'New direct message',tag:'dqap-dm-'+t.id,renotify:true,data:{threadId:t.id}};
-  try{
-    if(navigator.serviceWorker?.ready){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,options);}
-    else{const n=new Notification(title,options);n.onclick=()=>{window.focus();openChatView();openChatThread(t.id);n.close();};}
-  }catch(e){console.warn('Chat notification failed:',e);}
+  try{return await deliverSystemChatNotification(title,options);}
+  catch(e){console.warn('Chat notification failed:',e);if(force)throw e;return null;}
+}
+async function runChatNotificationDiagnostics(extraError=''){
+  const modal=el('chat-notification-setup-modal'),box=el('chat-notification-diagnostics'),desc=el('chat-notification-setup-text');if(modal)modal.style.display='flex';if(box)box.style.display='block';
+  const supported='Notification' in window,permission=supported?Notification.permission:'unsupported',secure=window.isSecureContext===true||location.protocol==='https:'||location.hostname==='localhost';
+  let registration=null;try{registration=await chatServiceWorkerRegistration();}catch(e){}
+  const rows=[['Secure web page',secure],['Notification API',supported],['Site permission',permission==='granted'],['Active service worker',!!registration?.active]];
+  if(box)box.innerHTML=rows.map(([label,ok])=>`<div><b style="color:${ok?'#1B5E20':'#B71C1C'}">${ok?'✓':'✕'}</b> ${label}${label==='Site permission'?`: <b>${esc(permission)}</b>`:''}</div>`).join('')+(extraError?`<div style="color:#B71C1C;margin-top:6px"><b>Error:</b> ${esc(extraError)}</div>`:'');
+  if(desc)desc.innerHTML=permission==='denied'?'<b>Notifications are blocked for this site.</b> Click the lock/site-settings icon beside the browser address, set Notifications to Allow, then reload Wiki. Also verify Windows Notifications and Focus Assist.':'Allow notifications, then use the test button. If every check is green, minimize Wiki and send a DM from another account.';
 }
 function isChatViewOpen(){const v=el('v-chat');return !!(v&&v.style.display==='block')}
 function mergeChatThreads(){
@@ -5646,7 +5672,7 @@ function renderChat(){
   updateChatNotificationButton();
   root.innerHTML=`<div class="chat-layout">
     <div class="chat-sidebar">
-      ${('Notification' in window)&&Notification.permission==='default'?`<button class="btn sm" style="width:100%;margin-bottom:8px;border-color:#81C784;color:#1B5E20" onclick="enableChatNotifications()"><i class="ti ti-bell"></i>Enable DM popup alerts</button>`:''}
+      ${chatNotificationInlineButtonHtml()}
       <div style="display:flex;gap:6px;margin-bottom:10px">
         <select id="chat-new-dm-user" style="flex:1"><option value="">Start a new chat...</option>${chatNewDmOptionsHtml()}</select>
         <button class="btn sm" onclick="const u=g('chat-new-dm-user');if(u)openDM(u)"><i class="ti ti-plus"></i></button>
