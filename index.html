@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,10 +23,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.38";
+const APP_VERSION="78.39";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260715-5";
+const APP_BUILD="20260716-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -80,7 +81,7 @@ const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",
 const CHAT_THREADS_COL="dqap_chat_threads",CHAT_MSG_COL="dqap_chat_messages";
 const ACK_LOG_COL="dqap_acknowledgements",FLAG_COL="dqap_flags_to_updesh";
 const HOLIDAYS_COL="dqap_holidays";
-const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections";
+const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections",DEBT_ALLOCATIONS_COL="dqap_debt_allocations",DEBT_ASSIGNMENTS_COL="dqap_debt_customer_assignments",DEBT_META_COL="dqap_debt_meta",DEBT_CYCLES_COL="dqap_debt_cycles";
 const CSS_TICKET_COL="css_tickets";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
@@ -1440,9 +1441,9 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
-let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],cssTicketsData=[];
+let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],debtAllocationsData=[],debtAssignmentsData=[],debtCustomersData=[],debtCycleId='',cssTicketsData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
-let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,cssTicketsUnsub=null;
+let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,debtAllocationUnsub=null,debtAssignmentUnsub=null,debtMetaUnsub=null,cssTicketsUnsub=null;
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
 let chatThreadNotificationBaseline=new Map(),chatNotificationBaselineReady=false,arrivingChatThreadId='',chatArrivalTimer=null;
@@ -5372,11 +5373,17 @@ function crmApprovalCount(){
 function debtApprovalCount(){
   if(!CU)return 0;
   const u=userKey(),name=userNameKey();
-  return debtCommitmentsData.filter(c=>{
-    const assigned=String(c.assignedUsername||'').toLowerCase()===u||String(c.assignedTo||'').toLowerCase()===name;
-    if(!assigned)return false;
-    const collected=debtCollectionsData.some(r=>r.commitmentId===c.id)||Number(c.collected||0)>0;
-    return !collected;
+  const assignedCustomers=new Set(debtAssignmentsData.filter(a=>{
+    const users=Array.isArray(a.assignedUsers)?a.assignedUsers:[];
+    return users.some(x=>String(x.username||'').trim().toLowerCase()===u||String(x.fullName||'').trim().toLowerCase()===name);
+  }).map(a=>String(a.customer||a.customerName||'').trim()).filter(Boolean));
+  return debtCustomersData.filter(customer=>{
+    const customerName=String(customer.customerName||customer.customer||'').trim();
+    if(!assignedCustomers.has(customerName))return false;
+    const allocations=debtAllocationsData.filter(a=>a.customer===customerName);
+    const pending=allocations.filter(a=>!debtCommitmentsData.some(c=>c.allocationId===a.id));
+    const hasCommitment=debtCommitmentsData.some(c=>c.customer===customerName);
+    return allocations.length?pending.length>0:!hasCommitment;
   }).length;
 }
 function paymsApprovalCount(){
@@ -5418,6 +5425,9 @@ function startExternalApprovalBadgeListeners(){
   if(paymsReqUnsub)paymsReqUnsub();
   if(debtCommitUnsub)debtCommitUnsub();
   if(debtCollectionUnsub)debtCollectionUnsub();
+  if(debtAllocationUnsub)debtAllocationUnsub();
+  if(debtAssignmentUnsub)debtAssignmentUnsub();
+  if(debtMetaUnsub)debtMetaUnsub();
   if(cssTicketsUnsub)cssTicketsUnsub();
   if(chatDMUnsub)chatDMUnsub();
   if(chatBroadcastUnsub)chatBroadcastUnsub();
@@ -5426,8 +5436,17 @@ function startExternalApprovalBadgeListeners(){
     crmApprovalUnsub=db.collection(CRM_ACTIVITIES_COL).where('extensionStatus','==','pending').onSnapshot(sn=>{crmApprovalsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   }
   paymsReqUnsub=db.collection(PAYMS_REQ_COL).where('status','in',['PENDING_MANAGER','PENDING_PRATIM','PENDING_UPDESH','READY_FOR_PAYMENT']).onSnapshot(sn=>{paymsRequestsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
-  debtCommitUnsub=db.collection(DEBT_COMMITMENTS_COL).onSnapshot(sn=>{debtCommitmentsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
-  debtCollectionUnsub=db.collection(DEBT_COLLECTIONS_COL).onSnapshot(sn=>{debtCollectionsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  const watchDebtCycle=cycleId=>{
+    if(debtCommitUnsub)debtCommitUnsub();if(debtCollectionUnsub)debtCollectionUnsub();if(debtAllocationUnsub)debtAllocationUnsub();
+    debtCycleId=cycleId||'';debtCommitmentsData=[];debtCollectionsData=[];debtAllocationsData=[];debtCustomersData=[];
+    if(!debtCycleId){refreshAppBadge();return;}
+    db.collection(DEBT_CYCLES_COL).doc(debtCycleId).get().then(doc=>{debtCustomersData=doc.exists&&Array.isArray(doc.data().customers)?doc.data().customers:[];refreshAppBadge();}).catch(()=>{});
+    debtCommitUnsub=db.collection(DEBT_COMMITMENTS_COL).where('cycleId','==',debtCycleId).onSnapshot(sn=>{debtCommitmentsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+    debtCollectionUnsub=db.collection(DEBT_COLLECTIONS_COL).where('cycleId','==',debtCycleId).onSnapshot(sn=>{debtCollectionsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+    debtAllocationUnsub=db.collection(DEBT_ALLOCATIONS_COL).where('cycleId','==',debtCycleId).onSnapshot(sn=>{debtAllocationsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  };
+  debtAssignmentUnsub=db.collection(DEBT_ASSIGNMENTS_COL).onSnapshot(sn=>{debtAssignmentsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  debtMetaUnsub=db.collection(DEBT_META_COL).doc('latest_csv').onSnapshot(doc=>{const next=doc.exists?String(doc.data().cycleId||''):'';if(next!==debtCycleId)watchDebtCycle(next);},()=>{});
   cssTicketsUnsub=db.collection(CSS_TICKET_COL).onSnapshot(sn=>{cssTicketsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   chatDMUnsub=db.collection(CHAT_THREADS_COL).where('members','array-contains',u).onSnapshot(handleChatMemberSnapshot,()=>{});
   chatBroadcastUnsub=db.collection(CHAT_THREADS_COL).where('type','==','broadcast').onSnapshot(sn=>{chatBroadcastThreadsRaw=sn.docs.map(d=>({id:d.id,...d.data()}));mergeChatThreads();refreshAppBadge();if(isChatViewOpen())renderChat();ensureBroadcastThreadExists(sn.empty);},()=>{});
