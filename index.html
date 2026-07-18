@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.39";
+const APP_VERSION="78.40";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260716-1";
+const APP_BUILD="20260718-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1441,6 +1440,10 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 <script>
 let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
+// Carries a deal → PMO kickoff task through "Manage Projects" then "New PMO
+// Project" so the originating Sales CRM task can be auto-completed once both
+// steps are done, and so the new project ties back to the deal that won it.
+let pmoKickoffLink=null; // {taskId, dealId, projId}
 let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],debtAllocationsData=[],debtAssignmentsData=[],debtCustomersData=[],debtCycleId='',cssTicketsData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
 let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,debtAllocationUnsub=null,debtAssignmentUnsub=null,debtMetaUnsub=null,cssTicketsUnsub=null;
@@ -1951,6 +1954,10 @@ async function savePMO(){
       if(ex){hideLoad();toast('PMO entry already exists for this project. Edit it instead.','err');return;}
       await db.collection(PMO_COL).add({projId,projName,projNum,client,status:finalStatus,stages,overall,createdAt:now,updatedAt:now});
       toast('PMO project added âœ“','ok');
+      if(pmoKickoffLink&&pmoKickoffLink.projId===projId){
+        completePmoKickoffTask(pmoKickoffLink.taskId);
+        pmoKickoffLink=null;
+      }
     }
     resetPMOForm();go('pmo');
   }catch(e){toast('Save failed: '+e.message,'err');}finally{hideLoad();}
@@ -3138,6 +3145,32 @@ function sendTaskNotification(action,t){
   return recipients;
 }
 
+// â”€â”€ PMO KICKOFF (deal → Order stage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Entry point for the "Create Project" button on the Critical task modal.
+// Walks the user straight into Manage Projects with the deal context carried
+// through; saveNewProject()/savePMO() below pick up pmoKickoffLink to tag the
+// new project with the deal and, once the PMO entry is also created, to
+// auto-complete the originating task.
+function startPmoKickoffFromTask(taskId,dealId){
+  pmoKickoffLink={taskId,dealId,projId:null};
+  modalHideWikiTask();
+  go('projects');
+  setTimeout(()=>{togNewProj();toast('Create the project, then you\'ll be taken to New PMO Project','ok');},150);
+}
+function applyPmoKickoffAutoSelect(){
+  if(!pmoKickoffLink||!pmoKickoffLink.projId)return;
+  const s=el('pmo-proj');if(!s)return;
+  const has=[...s.options].some(o=>o.value===pmoKickoffLink.projId);
+  if(has){s.value=pmoKickoffLink.projId;onPMOProjChange();}
+}
+async function completePmoKickoffTask(taskId){
+  if(!taskId)return;
+  try{
+    const now=new Date().toISOString();
+    await db.collection(TASK_COL).doc(taskId).update({status:'Completed',completedAt:now,completedByName:CU?.fullName||'',updatedAt:now,assigneeActionResolvedAt:now,description:(taskData.find(t=>t.id===taskId)?.description||'')+`\n\nProject and PMO entry created by ${CU?.fullName||''}.`});
+  }catch(e){/* non-fatal - Keshav can still Mark Complete manually */}
+}
+
 // â”€â”€ PROJECTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
@@ -3172,10 +3205,16 @@ async function saveNewProject(){
     // originalTargetCompletionDate never changes after this - it's the audit baseline.
     // targetCompletionDate is the working/scored baseline and moves only when an
     // Extension Request is approved (see requestProjectExtension/decideProjectExtension).
-    const projRef=await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,originalTargetCompletionDate:targetDate,targetCompletionDate:targetDate,extensionHistory:[],pendingExtension:null,createdAt:now});
+    const projExtra=pmoKickoffLink?{sourceDealId:pmoKickoffLink.dealId}:{};
+    const projRef=await db.collection(PROJ).add({number:num,name,scope,clients:npClients,sites:npSites,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||'',ldDate,originalTargetCompletionDate:targetDate,targetCompletionDate:targetDate,extensionHistory:[],pendingExtension:null,createdAt:now,...projExtra});
     await db.collection(BUDGET_CFG_COL).add({projectName:name,poAmount:poTotal,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
     toast('Project added âœ“','ok');togNewProj();
     createProjectDriveFolders(projRef.id,num,name); // fire-and-forget; project save already succeeded above
+    if(pmoKickoffLink){
+      pmoKickoffLink.projId=projRef.id;
+      toast('Now create the matching PMO entry','ok');
+      setTimeout(()=>go('pmo-add'),300);
+    }
   }
   catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
@@ -3966,7 +4005,7 @@ function go(n){
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
   if(n==='leaderboard')renderTeamPerformance();
-  if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();}
+  if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();applyPmoKickoffAutoSelect();}
   if(n==='attendance'){attRender();}
   if(n==='chat'){renderChat();}
   if(n==='debt'){loadDebtFrame();}
@@ -4406,6 +4445,7 @@ function startTaskListen(){
     if(onPage)renderTasks();
     updateTaskNavBadge();
     showWikiTaskNotificationModal();
+    checkPmoKickoffEscalations();
   },err=>{});
   taskDeadlineTimer=setInterval(()=>{
     if(!CU)return;
@@ -4413,8 +4453,57 @@ function startTaskListen(){
     if(onPage)renderTasks();
     updateTaskNavBadge();
     showWikiTaskNotificationModal();
+    checkPmoKickoffEscalations();
   },60000);
 }
+// â”€â”€ PMO KICKOFF SLA ESCALATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Runs from whichever session happens to have the Wiki app open (same
+// client-driven pattern as the attendance auto-mark checks) - checks every
+// snapshot update and every 60s for pmo_kickoff tasks that are still Open
+// past their 24-hour SLA and haven't been escalated yet, then raises two new
+// Critical tasks (Pratim + Updesh) referencing the original. Guards against
+// double-escalation by claiming the flag with a transaction before creating
+// the escalation tasks, so two people with the app open at once can't both fire it.
+let pmoEscalationInFlight=new Set();
+function checkPmoKickoffEscalations(){
+  if(!CU||!db)return;
+  const now=Date.now();
+  (taskData||[]).filter(t=>t.taskType==='pmo_kickoff'&&t.status!=='Completed'&&!t.escalated&&t.pmoSlaDeadline&&new Date(t.pmoSlaDeadline).getTime()<now&&!pmoEscalationInFlight.has(t.id))
+    .forEach(t=>escalatePmoKickoffTask(t));
+}
+async function escalatePmoKickoffTask(t){
+  pmoEscalationInFlight.add(t.id);
+  try{
+    const claimed=await db.runTransaction(async tx=>{
+      const ref=db.collection(TASK_COL).doc(t.id);
+      const snap=await tx.get(ref);
+      if(!snap.exists||snap.data().escalated)return false;
+      tx.update(ref,{escalated:true,escalatedAt:new Date().toISOString()});
+      return true;
+    });
+    if(!claimed)return;
+    const now=new Date().toISOString();
+    const pratim=(usersData||[]).find(u=>String(u.username||'').toLowerCase()==='pratim');
+    const updesh=(usersData||[]).find(u=>String(u.username||'').toLowerCase()==='updesh');
+    const recipients=[{name:pratim?.fullName||'Pratim Sinha',username:'pratim'},{name:updesh?.fullName||'Updesh Verma',username:'updesh'}];
+    for(const r of recipients){
+      const ref=db.collection(TASK_COL).doc();
+      await ref.set({
+        title:`PMO Kickoff Overdue â€” ${t.dealTitle||t.project||''}`,
+        description:`Keshav has not created the project + PMO entry for deal "${t.dealTitle||t.project||''}" (${t.dealCode||''}, ${t.customerCompanyName||''}) within ${PMO_KICKOFF_SLA_HOURS}h of it reaching Order stage.\n\nOriginal task: ${t.taskCode||t.id}`,
+        taskCode:genTaskCode(ref.id),
+        assignedBy:'System (SLA escalation)',assignedByRole:'system',
+        assignedTo:r.name,assignedToUsername:r.username,assignedToRole:'admin',
+        supervisor:'',priority:'Critical',project:t.project||'',frequency:'One Time',
+        status:'Open',createdAt:now,updatedAt:now,assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,
+        taskType:'pmo_kickoff_escalation',dealId:t.dealId||'',originalTaskId:t.id
+      });
+    }
+    toast('PMO kickoff overdue - escalated to Pratim & Updesh','err');
+  }catch(e){/* best-effort; next timer tick or another session will retry */}
+  finally{pmoEscalationInFlight.delete(t.id);}
+}
+const PMO_KICKOFF_SLA_HOURS=24;
 function startUsersListen(){
   if(usersUnsub)usersUnsub();
   usersUnsub=db.collection(USERS).orderBy('fullName','asc').onSnapshot(sn=>{
@@ -4515,15 +4604,21 @@ function showWikiTaskNotificationModal(){
     title.textContent='Critical task requires attention';
     actions.innerHTML='<button class="btn" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
     list.innerHTML=`<div style="font-size:11px;font-weight:800;color:#B71C1C;margin-bottom:9px">Critical tasks are displayed until completed or a deadline revision request is submitted.</div>`+
-      critical.slice(0,6).map(t=>`<div style="margin-bottom:10px;padding:12px;border-left:5px solid #B71C1C;background:#FFEBEE;border-radius:8px">
+      critical.slice(0,6).map(t=>{
+        const isPmoKickoff=t.taskType==='pmo_kickoff';
+        const dealInfo=isPmoKickoff?`<div style="font-size:10.5px;color:#B71C1C;font-weight:700;margin-top:6px">Customer: ${esc(t.customerCompanyName||'-')} - Deal value: ₹${Number(t.dealValue||0).toLocaleString('en-IN')}${t.escalated?' - <span style="color:#6A1B9A">Escalated to Pratim &amp; Updesh</span>':''}</div>`:'';
+        const kickoffBtns=isPmoKickoff?`<button class="btn sm pri" onclick="startPmoKickoffFromTask('${t.id}','${(t.dealId||'').replace(/'/g,"\\'")}')"><i class="ti ti-building-plus"></i>Create Project</button>`:'';
+        return `<div style="margin-bottom:10px;padding:12px;border-left:5px solid #B71C1C;background:#FFEBEE;border-radius:8px">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="color:#B71C1C">${esc(t.taskCode||genTaskCode(t.id))} - ${esc(t.title||'Task')}</b>${taskPriBadge(t.priority)}</div>
-        ${t.description?`<div style="font-size:11.5px;margin-top:6px">${esc(t.description)}</div>`:''}
+        ${t.description?`<div style="font-size:11.5px;margin-top:6px;white-space:pre-line">${esc(t.description)}</div>`:''}
+        ${dealInfo}
         <div style="font-size:10.5px;color:var(--t2);margin-top:8px">Assigned by: <b>${esc(t.assignedBy||'-')}</b> - Deadline: <b>${fmtDate(t.deadline)}</b>${t.project?' - Project: <b>'+esc(t.project)+'</b>':''}</div>
         <div style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:9px">
+          ${kickoffBtns}
           <button class="btn sm" onclick="showWikiCriticalDeadlineRequestForm('${t.id}')">Request Deadline Change</button>
           <button class="btn sm pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>
         </div>
-      </div>`).join('')+(critical.length>6?`<div style="font-size:11px;color:var(--t2)">+ ${critical.length-6} more critical task(s)</div>`:'');
+      </div>`;}).join('')+(critical.length>6?`<div style="font-size:11px;color:var(--t2)">+ ${critical.length-6} more critical task(s)</div>`:'');
     modal.style.display='flex';return;
   }
   const tasks=pendingWikiTaskNotifications();
