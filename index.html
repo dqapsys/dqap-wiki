@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.40";
+const APP_VERSION="78.39";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260718-1";
+const APP_BUILD="20260716-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4607,6 +4607,7 @@ function showWikiTaskNotificationModal(){
       critical.slice(0,6).map(t=>{
         const isPmoKickoff=t.taskType==='pmo_kickoff';
         const dealInfo=isPmoKickoff?`<div style="font-size:10.5px;color:#B71C1C;font-weight:700;margin-top:6px">Customer: ${esc(t.customerCompanyName||'-')} - Deal value: ₹${Number(t.dealValue||0).toLocaleString('en-IN')}${t.escalated?' - <span style="color:#6A1B9A">Escalated to Pratim &amp; Updesh</span>':''}</div>`:'';
+        const poBtn=(isPmoKickoff&&t.poWebViewLink)?`<a class="btn sm" href="${esc(t.poWebViewLink)}" target="_blank" rel="noopener"><i class="ti ti-download"></i>Download PO${t.poFileName?' ('+esc(t.poFileName)+')':''}</a>`:'';
         const kickoffBtns=isPmoKickoff?`<button class="btn sm pri" onclick="startPmoKickoffFromTask('${t.id}','${(t.dealId||'').replace(/'/g,"\\'")}')"><i class="ti ti-building-plus"></i>Create Project</button>`:'';
         return `<div style="margin-bottom:10px;padding:12px;border-left:5px solid #B71C1C;background:#FFEBEE;border-radius:8px">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="color:#B71C1C">${esc(t.taskCode||genTaskCode(t.id))} - ${esc(t.title||'Task')}</b>${taskPriBadge(t.priority)}</div>
@@ -4614,6 +4615,7 @@ function showWikiTaskNotificationModal(){
         ${dealInfo}
         <div style="font-size:10.5px;color:var(--t2);margin-top:8px">Assigned by: <b>${esc(t.assignedBy||'-')}</b> - Deadline: <b>${fmtDate(t.deadline)}</b>${t.project?' - Project: <b>'+esc(t.project)+'</b>':''}</div>
         <div style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:9px">
+          ${poBtn}
           ${kickoffBtns}
           <button class="btn sm" onclick="showWikiCriticalDeadlineRequestForm('${t.id}')">Request Deadline Change</button>
           <button class="btn sm pri" onclick="completeWikiMandatoryTask('${t.id}')">Mark Complete</button>
