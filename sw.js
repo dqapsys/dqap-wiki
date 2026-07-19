@@ -1,4 +1,9 @@
-﻿// DQAP Wiki Service Worker
+// DQAP Wiki Service Worker
+// Version 78.40 - Sales CRM -> PMO Kickoff automation: deal reaching "Order"
+// stage now fires a Critical task for Keshav (Manage Projects + New PMO
+// Project), with a 24h SLA auto-escalation to Pratim/Updesh, and carries the
+// sales PO (uploaded to Drive from the CRM's Edit Deal modal) through to that
+// task so it can be re-filed into the project's own "PMO" Drive folder.
 // Version 78.32 - CSS module launcher and authenticated handoff.
 // Version 78.27 - Restored the "Leaderboard" sidebar link/page (kept, per
 // request, only the old individual scoring was meant to be removed). Now
@@ -7,7 +12,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.39-20260716-1';
+const CACHE_VERSION = 'dqap-wiki-v78.40-20260718-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
@@ -80,5 +85,3 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
-
-
