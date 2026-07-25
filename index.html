@@ -467,6 +467,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
     <div class="ni" onclick="openDebtManagement()"  id="ni-debt"><i class="ti ti-coin"></i>Debt Management<span id="debt-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openSalesCRM()"        id="ni-crm"><i class="ti ti-target"></i>Sales CRM<span id="crm-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="openSalesReview()"     id="ni-review"><i class="ti ti-chart-line"></i>Sales Review<span id="review-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy"></i>Leaderboard</div>
     <div class="sb-sec">Wiki</div>
     <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
@@ -3970,7 +3971,30 @@ function openCSS(){
     console.error('Error opening CSS:', e);
     toast('Error opening CSS','err');
   }
-}function loadDebtFrame(){
+}
+// ═══════════════════════════════════════════════════════════════════════════
+// SALES REVIEW MODULE - Opens standalone Sales Performance Review application
+// ═══════════════════════════════════════════════════════════════════════════
+function openSalesReview(){
+  const sess = currentWikiSession();
+  if(!sess){
+    toast('Please login to DORBIT first','err');
+    return;
+  }
+  try {
+    try{localStorage.setItem('dqap_salesreview_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
+    // Sales Review is deployed at a separate GitHub Pages repository
+    // Opens in a new window and passes session via URL fragment for authentication
+    const url = 'https://dqapsys.github.io/SalesReview/?v=20260725.1#sess=' + encodeURIComponent(sess);
+    const reviewWindow = window.open(url, '_blank');
+    if(reviewWindow) reviewWindow.opener=null;
+    else toast('Please allow pop-ups for the DORBIT portal','err');
+  } catch(e) {
+    console.error('Error opening Sales Review:', e);
+    toast('Error opening Sales Review','err');
+  }
+}
+function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=currentWikiSession();
   if(!frame||!sess)return;
