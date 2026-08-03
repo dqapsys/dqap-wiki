@@ -1167,6 +1167,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
             <div class="fg"><label class="fl r">Frequency <span style="font-size:9px;color:var(--t2);font-weight:400">(recurs automatically)</span></label><select class="fs" id="task-frequency"><option>One Time</option><option>Monthly</option><option>Quarterly</option><option>Bi-Annual</option><option>Annually</option></select></div>
             <div class="fg"><label class="fl">Priority</label><select class="fs" id="task-priority"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div>
             <div class="fg"><label class="fl">Link to project</label><select class="fs" id="task-project"><option value="">- None -</option></select></div>
+            <div class="fg" id="task-status-fg" style="display:none"><label class="fl">Status</label><select class="fs" id="task-status"><option>Open</option><option>In Progress</option><option>Completed</option></select></div>
           </div>
           <input type="hidden" id="task-eid">
           <button class="btn pri" onclick="saveTask()" id="task-save-btn"><i class="ti ti-send"></i>Assign task</button>
@@ -4795,12 +4796,14 @@ function togTaskForm(show,data){
   if(!show){
     el('task-eid').value='';
     ['task-title','task-desc'].forEach(id=>{const e=el(id);if(e)e.value='';});
-    el('task-assignee').value='';el('task-supervisor').value='';el('task-deadline').value='';el('task-frequency').value='One Time';el('task-priority').value='Medium';el('task-project').value='';
+    el('task-assignee').value='';el('task-supervisor').value='';el('task-deadline').value='';el('task-frequency').value='One Time';el('task-priority').value='Medium';el('task-project').value='';el('task-status').value='Open';
+    const stFgClose=el('task-status-fg');if(stFgClose)stFgClose.style.display='none';
     el('task-form-t').innerHTML='<i class="ti ti-plus" style="font-size:14px"></i>Assign new task';
     el('task-save-btn').innerHTML='<i class="ti ti-send"></i>Assign task';
     return;
   }
   populateTaskAssignees();populateTaskProjects();
+  const stFg=el('task-status-fg');
   if(data){
     el('task-title').value=data.title||'';
     el('task-desc').value=data.description||'';
@@ -4810,9 +4813,13 @@ function togTaskForm(show,data){
     el('task-frequency').value=data.frequency||'One Time';
     el('task-priority').value=data.priority||'Medium';
     el('task-project').value=data.project||'';
+    el('task-status').value=data.status||'Open';
+    if(stFg)stFg.style.display='';
     el('task-eid').value=data.id;
     el('task-form-t').innerHTML='<i class="ti ti-edit" style="font-size:14px"></i>Edit task';
     el('task-save-btn').innerHTML='<i class="ti ti-device-floppy"></i>Update task';
+  }else{
+    if(stFg)stFg.style.display='none';
   }
 }
 
@@ -4838,11 +4845,16 @@ async function saveTask(){
     const now=new Date().toISOString();
     if(eid){
       const existing=taskData.find(x=>x.id===eid)||{};
+      const newStatus=g('task-status')||existing.status||'Open';
+      const statusChanged=newStatus!==existing.status;
       const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now,
         taskCode:existing.taskCode||genTaskCode(eid),assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
       await db.collection(TASK_COL).doc(eid).update(upd);
       const recips=sendTaskNotification('updated',{...existing,...upd});
       toast('Task updated'+(recips.length?' - in-app notification for '+recips.join(', '):''),'ok');
+      if(statusChanged){
+        await updateTaskStatus(eid,newStatus);
+      }
     }else{
       const ref=db.collection(TASK_COL).doc();
       const tObj={title,description,taskCode:genTaskCode(ref.id),
