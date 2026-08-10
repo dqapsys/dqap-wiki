@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.39";
+const APP_VERSION="78.40";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260716-1";
+const APP_BUILD="20260810-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -519,6 +519,15 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div id="chat-notification-setup-text" class="muted" style="font-size:12.5px;line-height:1.6;margin-bottom:12px">Allow notifications so direct messages can appear as an operating-system popup while Wiki is minimized or behind another window.</div>
     <div id="chat-notification-diagnostics" style="display:none;text-align:left;background:#F5F7FA;border-radius:8px;padding:9px 11px;font-size:11px;line-height:1.55;margin-bottom:13px"></div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn" onclick="closeChatNotificationSetup()">Not now</button><button class="btn" onclick="runChatNotificationDiagnostics()"><i class="ti ti-stethoscope"></i>Check setup</button><button class="btn" style="background:#2E7D32;color:#fff;border-color:#2E7D32" onclick="enableChatNotifications(true)"><i class="ti ti-bell-check"></i>Enable / Test alerts</button></div>
+  </div>
+</div>
+<div id="chat-group-members-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:20px;width:min(420px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-weight:700;font-size:15px"><i class="ti ti-users-group"></i> Manage Group Members</div>
+      <button class="btn sm" onclick="closeChatGroupMembersModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="chat-group-members-body"></div>
   </div>
 </div>
 <div id="wiki-update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center">
@@ -1449,7 +1458,7 @@ let pmoKickoffLink=null; // {taskId, dealId, projId}
 let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],debtAllocationsData=[],debtAssignmentsData=[],debtCustomersData=[],debtCycleId='',cssTicketsData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
 let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,debtAllocationUnsub=null,debtAssignmentUnsub=null,debtMetaUnsub=null,cssTicketsUnsub=null;
-let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null;
+let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null,chatGroupMembersModalThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
 let chatThreadNotificationBaseline=new Map(),chatNotificationBaselineReady=false,arrivingChatThreadId='',chatArrivalTimer=null;
 let amcExpandedId=null,amcVisitForId=null;
@@ -5672,6 +5681,7 @@ function mergeChatThreads(){
   chatBroadcastThreadsRaw.forEach(t=>map[t.id]=t);
   chatMemberThreadsRaw.forEach(t=>map[t.id]=t);
   chatThreadsData=Object.values(map).sort((a,b)=>String(b.lastMessageAt||b.createdAt||'').localeCompare(String(a.lastMessageAt||a.createdAt||'')));
+  if(chatGroupMembersModalThreadId&&el('chat-group-members-modal')&&el('chat-group-members-modal').style.display==='flex')renderChatGroupMembersModal();
 }
 async function ensureBroadcastThreadExists(broadcastQueryIsEmpty){
   if(!broadcastQueryIsEmpty||!CU||!CU.isAdmin)return;
@@ -5806,7 +5816,10 @@ function chatMessagePaneHtml(){
   });
   const msgHtml=chatMessagesData.length?rows.join(''):'<div class="empty">No messages yet.</div>';
   return`<div class="chat-pane" style="display:flex;flex-direction:column;height:calc(100vh - 230px);max-height:100%">
-    <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd)">${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</div>
+    <div style="font-weight:700;padding:10px 4px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span>${esc(chatThreadLabel(thread))}${thread.type==='broadcast'?' <span class="muted" style="font-weight:400;font-size:11px">(company-wide announcements)</span>':''}</span>
+      ${(thread.type==='group'&&isChatGroupAdmin())?`<button class="btn sm" onclick="openChatGroupMembersModal('${thread.id}')"><i class="ti ti-users-group"></i>Members</button>`:''}
+    </div>
     ${canPost?`<div class="chat-compose"><input id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMessage()"><button class="btn pri chat-send-btn" onclick="sendChatMessage()" title="Send"><i class="ti ti-send"></i></button></div>`:`<div class="muted" style="margin:8px 0;flex-shrink:0">Only admins/managers can post announcements here.</div>`}
     <div id="chat-msg-box" style="flex:1;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column-reverse">
       ${msgHtml}
@@ -5841,6 +5854,70 @@ function renderChat(){
   </div>`;
 }
 function toggleNewGroupForm(){const f=el('new-group-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
+
+// â”€â”€ GROUP MEMBER MANAGEMENT (Updesh only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function isChatGroupAdmin(){return userKey()==='updesh';}
+
+function openChatGroupMembersModal(threadId){
+  const t=chatThreadsData.find(x=>x.id===threadId);
+  if(!t||t.type!=='group')return;
+  if(!isChatGroupAdmin())return toast('Only Updesh can manage group members','err');
+  chatGroupMembersModalThreadId=threadId;
+  renderChatGroupMembersModal();
+  const m=el('chat-group-members-modal');if(m)m.style.display='flex';
+}
+function closeChatGroupMembersModal(){
+  const m=el('chat-group-members-modal');if(m)m.style.display='none';
+  chatGroupMembersModalThreadId=null;
+}
+function renderChatGroupMembersModal(){
+  const box=el('chat-group-members-body');
+  const t=chatThreadsData.find(x=>x.id===chatGroupMembersModalThreadId);
+  if(!box||!t)return;
+  const members=t.members||[];
+  const memberRows=members.map(uname=>{
+    const u=usersData.find(x=>String(x.username||'').toLowerCase()===String(uname).toLowerCase());
+    const name=u?(u.fullName||u.username):uname;
+    const isCreator=String(t.createdBy||'').toLowerCase()===String(uname).toLowerCase();
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 9px;background:#fafafa;border-radius:6px;border:.5px solid var(--bd);font-size:12px;margin-bottom:5px">
+      <span>${esc(name)}${isCreator?' <span class="muted" style="font-size:9.5px">(creator)</span>':''}</span>
+      <button class="btn sm danger" onclick="removeChatGroupMember('${t.id}','${uname}')" title="Remove"><i class="ti ti-x"></i></button>
+    </div>`;
+  }).join('')||'<div class="muted" style="font-size:12px">No members yet.</div>';
+  const nonMembers=(usersData||[]).filter(u=>u.username&&!members.includes(String(u.username).toLowerCase()));
+  const addOptions=nonMembers.map(u=>`<option value="${esc(u.username)}">${esc(u.fullName||u.username)}</option>`).join('');
+  box.innerHTML=`
+    <div style="font-weight:700;font-size:12px;margin-bottom:6px">Members (${members.length})</div>
+    <div style="max-height:220px;overflow-y:auto;margin-bottom:12px">${memberRows}</div>
+    <div style="border-top:.5px solid var(--bd);padding-top:10px">
+      <div style="font-weight:700;font-size:12px;margin-bottom:6px">Add member</div>
+      <div style="display:flex;gap:6px">
+        <select id="chat-group-add-select" class="fs" style="flex:1"><option value="">Select user...</option>${addOptions}</select>
+        <button class="btn sm pri" onclick="addChatGroupMember('${t.id}')"><i class="ti ti-plus"></i>Add</button>
+      </div>
+    </div>`;
+}
+async function addChatGroupMember(threadId){
+  if(!isChatGroupAdmin())return toast('Only Updesh can manage group members','err');
+  const sel=el('chat-group-add-select');const uname=(sel?.value||'').trim();
+  if(!uname)return toast('Select a user to add','err');
+  showLoad('Adding memberâ€¦');
+  try{
+    await db.collection(CHAT_THREADS_COL).doc(threadId).update({members:firebase.firestore.FieldValue.arrayUnion(uname)});
+    toast('Member added','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function removeChatGroupMember(threadId,uname){
+  if(!isChatGroupAdmin())return toast('Only Updesh can manage group members','err');
+  const t=chatThreadsData.find(x=>x.id===threadId);
+  if(t&&(t.members||[]).length<=1)return toast('A group must have at least one member','err');
+  if(!confirm('Remove this member from the group?'))return;
+  showLoad('Removing memberâ€¦');
+  try{
+    await db.collection(CHAT_THREADS_COL).doc(threadId).update({members:firebase.firestore.FieldValue.arrayRemove(uname)});
+    toast('Member removed','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
 
 function openFlagToUpdeshModal(){const m=el('flag-updesh-modal');if(m)m.style.display='flex';const t=el('flag-updesh-text');if(t)t.value='';}
 function closeFlagToUpdeshModal(){const m=el('flag-updesh-modal');if(m)m.style.display='none';}
