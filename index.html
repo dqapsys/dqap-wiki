@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.41";
+const APP_VERSION="78.42";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260823-1";
+const APP_BUILD="20260823-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2193,31 +2193,64 @@ function findChecklistItem(checklist,key){
 }
 function docRowHtml(p,item,docs,canManage,inputPrefix,indent){
   const files=docs[item.key]||[];
+  const activeCount=files.filter(f=>!f.deleted).length;
   const inputId=inputPrefix+item.key;
   const canDeleteDoc=isUpdeshDataAdmin();
   return `<div style="padding:8px 0;border-bottom:.5px solid var(--bd);margin-left:${indent}px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <div style="font-size:12px;font-weight:600">${indent?'<i class="ti ti-corner-down-right" style="font-size:11px;color:var(--t2)"></i> ':''}${esc(item.label)}${files.length?` <span class="muted" style="font-weight:400">(${files.length})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
+      <div style="font-size:12px;font-weight:600">${indent?'<i class="ti ti-corner-down-right" style="font-size:11px;color:var(--t2)"></i> ':''}${esc(item.label)}${activeCount?` <span class="muted" style="font-weight:400">(${activeCount})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="file" id="${inputId}" style="max-width:150px;font-size:10px">
         <button class="btn sm pri" onclick="uploadProjectDoc('${p.id}','${esc(item.key)}','${inputId}')"><i class="ti ti-upload"></i></button>
       </div>
     </div>
-    ${files.length?`<div style="margin-top:4px">${files.map((f,idx)=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a> <span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span>${canDeleteDoc?` <i class="ti ti-trash" style="cursor:pointer;color:#B71C1C;font-size:12px" onclick="removeProjectDocRecord('${p.id}','${esc(item.key)}',${idx})" title="Remove this record from DORBIT"></i>`:''}</div>`).join('')}</div>`:''}
+    ${files.length?`<div style="margin-top:4px">${files.map((f,idx)=>{
+      const isDel=!!f.deleted;
+      const nameHtml=isDel
+        ?`<span style="color:#B71C1C;text-decoration:line-through"><i class="ti ti-file"></i> ${esc(f.fileName)}</span>`
+        :`<a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a>`;
+      const metaHtml=isDel
+        ?`<span class="muted" style="color:#B71C1C">- deleted by ${esc(f.deletedByName||'')} ${esc((f.deletedAt||'').slice(0,10))}</span>`
+        :`<span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span>`;
+      const actionHtml=canDeleteDoc
+        ?(isDel
+          ?` <i class="ti ti-rotate-clockwise-2" style="cursor:pointer;color:#1B5E20;font-size:12px" onclick="restoreProjectDocRecord('${p.id}','${esc(item.key)}',${idx})" title="Restore"></i>`
+          :` <i class="ti ti-trash" style="cursor:pointer;color:#B71C1C;font-size:12px" onclick="deleteProjectDocRecord('${p.id}','${esc(item.key)}',${idx})" title="Delete (can be restored)"></i>`)
+        :'';
+      return `<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px">${nameHtml} ${metaHtml}${actionHtml}</div>`;
+    }).join('')}</div>`:''}
   </div>`;
 }
-async function removeProjectDocRecord(projId,key,idx){
-  if(!isUpdeshDataAdmin())return toast('Only Updesh can remove document records','err');
+async function deleteProjectDocRecord(projId,key,idx){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can delete document records','err');
   const p=projectsData.find(x=>x.id===projId);if(!p)return;
   const docs={...(p.projectDocuments||{})};
-  const list=docs[key]||[];
-  const f=list[idx];if(!f)return;
-  if(!confirm(`Remove "${f.fileName}" from DORBIT?\n\nThis only removes the record shown here. If the file still exists in Google Drive, delete it there separately.`))return;
-  showLoad('Removing…');
+  const list=(docs[key]||[]).slice();
+  const f=list[idx];if(!f||f.deleted)return;
+  if(!confirm(`Mark "${f.fileName}" as deleted?\n\nThis only affects the record shown here - if the file still exists in Google Drive, delete it there separately. You can restore this record in DORBIT any time.`))return;
+  showLoad('Deleting…');
   try{
-    docs[key]=list.filter((_,i)=>i!==idx);
+    list[idx]={...f,deleted:true,deletedAt:new Date().toISOString(),deletedBy:userKey(),deletedByName:(CU&&(CU.fullName||CU.username))||''};
+    docs[key]=list;
     await db.collection(PROJ).doc(projId).update({projectDocuments:docs});
-    toast('Document record removed','ok');
+    toast('Document marked as deleted','ok');
+    renderPMO();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+async function restoreProjectDocRecord(projId,key,idx){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can restore document records','err');
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  const docs={...(p.projectDocuments||{})};
+  const list=(docs[key]||[]).slice();
+  const f=list[idx];if(!f||!f.deleted)return;
+  showLoad('Restoring…');
+  try{
+    const restored={...f};
+    delete restored.deleted;delete restored.deletedAt;delete restored.deletedBy;delete restored.deletedByName;
+    list[idx]=restored;
+    docs[key]=list;
+    await db.collection(PROJ).doc(projId).update({projectDocuments:docs});
+    toast('Document restored','ok');
     renderPMO();
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
