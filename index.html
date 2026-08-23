@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.40";
+const APP_VERSION="78.41";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260810-1";
+const APP_BUILD="20260823-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2194,6 +2194,7 @@ function findChecklistItem(checklist,key){
 function docRowHtml(p,item,docs,canManage,inputPrefix,indent){
   const files=docs[item.key]||[];
   const inputId=inputPrefix+item.key;
+  const canDeleteDoc=isUpdeshDataAdmin();
   return `<div style="padding:8px 0;border-bottom:.5px solid var(--bd);margin-left:${indent}px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
       <div style="font-size:12px;font-weight:600">${indent?'<i class="ti ti-corner-down-right" style="font-size:11px;color:var(--t2)"></i> ':''}${esc(item.label)}${files.length?` <span class="muted" style="font-weight:400">(${files.length})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
@@ -2202,8 +2203,23 @@ function docRowHtml(p,item,docs,canManage,inputPrefix,indent){
         <button class="btn sm pri" onclick="uploadProjectDoc('${p.id}','${esc(item.key)}','${inputId}')"><i class="ti ti-upload"></i></button>
       </div>
     </div>
-    ${files.length?`<div style="margin-top:4px">${files.map(f=>`<div style="font-size:11px;margin-top:2px"><a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a> <span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span></div>`).join('')}</div>`:''}
+    ${files.length?`<div style="margin-top:4px">${files.map((f,idx)=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${esc(f.webViewLink)}" target="_blank" rel="noopener"><i class="ti ti-file"></i> ${esc(f.fileName)}</a> <span class="muted">- ${esc(f.uploadedByName||'')} ${esc((f.uploadedAt||'').slice(0,10))}</span>${canDeleteDoc?` <i class="ti ti-trash" style="cursor:pointer;color:#B71C1C;font-size:12px" onclick="removeProjectDocRecord('${p.id}','${esc(item.key)}',${idx})" title="Remove this record from DORBIT"></i>`:''}</div>`).join('')}</div>`:''}
   </div>`;
+}
+async function removeProjectDocRecord(projId,key,idx){
+  if(!isUpdeshDataAdmin())return toast('Only Updesh can remove document records','err');
+  const p=projectsData.find(x=>x.id===projId);if(!p)return;
+  const docs={...(p.projectDocuments||{})};
+  const list=docs[key]||[];
+  const f=list[idx];if(!f)return;
+  if(!confirm(`Remove "${f.fileName}" from DORBIT?\n\nThis only removes the record shown here. If the file still exists in Google Drive, delete it there separately.`))return;
+  showLoad('Removing…');
+  try{
+    docs[key]=list.filter((_,i)=>i!==idx);
+    await db.collection(PROJ).doc(projId).update({projectDocuments:docs});
+    toast('Document record removed','ok');
+    renderPMO();
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 function projectDocChecklistHtml(p){
   if(!p.driveFolderId){
