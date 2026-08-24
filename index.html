@@ -282,16 +282,42 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 .compact-card-grid .pmo-card{margin-bottom:0;min-width:0}
 .compact-card-grid .pmo-card.is-expanded{grid-column:1/-1;width:100%}
 .compact-table-panel{max-width:1480px;margin:0 auto}
-.pmo-detail-table{width:100%;border-collapse:collapse;min-width:1180px}
+.pmo-detail-table{width:100%;border-collapse:collapse;min-width:980px}
 .pmo-detail-table th{padding:8px 9px;text-align:left;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:var(--t2);background:#fafafa;border-bottom:.5px solid var(--bd);white-space:nowrap}
 .pmo-detail-table td{padding:7px 9px;font-size:11.5px;border-bottom:.5px solid var(--bd);vertical-align:middle;white-space:nowrap}
 .pmo-detail-table tr:hover td{background:#fafafa}
-.pmo-detail-name{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--t1)}
-.pmo-detail-sub{font-size:10px;color:var(--t2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
-.pmo-detail-progress{display:flex;align-items:center;gap:7px;min-width:130px}
+.pmo-detail-name{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--t1)}
+.pmo-detail-sub{font-size:10px;color:var(--t2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+.pmo-detail-progress{display:flex;align-items:center;gap:7px;min-width:110px}
 .pmo-detail-progress .bar{height:7px;background:#ECEFF1;border-radius:99px;overflow:hidden;flex:1}
 .pmo-detail-progress .fill{height:100%;border-radius:99px}
 .pmo-detail-expanded td{background:#fff!important;padding:0;border-bottom:.5px solid var(--bd)}
+/* On PC screens narrower than the table's natural width, drop the least-critical columns instead of forcing a horizontal scrollbar. */
+@media(max-width:1300px){
+  .pmo-detail-table{min-width:820px}
+  .pmo-detail-table .col-gm{display:none}
+}
+@media(max-width:1100px){
+  .pmo-detail-table{min-width:680px}
+  .pmo-detail-table .col-ld{display:none}
+}
+@media(max-width:640px){
+  .pmo-detail-table{min-width:480px}
+  .pmo-detail-table .col-target,.pmo-detail-table .col-budget{display:none}
+}
+.pmo-stage-grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:0 16px}
+.pmo-stage-row{display:grid;grid-template-columns:150px 76px 1fr;gap:7px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--bd)}
+.pmo-new-stage-row{display:grid;grid-template-columns:220px 100px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd)}
+@media(max-width:700px){
+  .pmo-stage-grid{grid-template-columns:1fr}
+  .pmo-stage-row{grid-template-columns:1fr 66px;grid-template-rows:auto auto;row-gap:4px}
+  .pmo-stage-row>div:first-child{grid-column:1/-1}
+}
+@media(max-width:640px){
+  .pmo-new-stage-row{grid-template-columns:1fr 90px;grid-template-rows:auto auto;row-gap:6px}
+  .pmo-new-stage-row>div:first-child{grid-column:1/-1}
+  .pmo-new-stage-row>input.fi:last-child{grid-column:1/-1}
+}
 .chat-msg-row{display:flex;margin:3px 0;align-items:flex-end}
 .chat-msg-row.mine{justify-content:flex-end}
 .chat-msg-row.theirs{justify-content:flex-start}
@@ -1904,7 +1930,7 @@ function onPMOProjChange(){
 function buildStagesForm(){
   const c=el('pmo-stages-form');if(!c)return;
   c.innerHTML=PMO_STAGES.map((stage,i)=>`
-    <div style="display:grid;grid-template-columns:220px 100px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd)">
+    <div class="pmo-new-stage-row">
       <div style="font-size:12px;font-weight:500;color:var(--t1)">${i+1}. ${stage}</div>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" class="fi" id="pmo-s-${i}" min="0" max="100" value="0" style="width:60px;text-align:center;padding:4px 6px" oninput="clampPct(this);syncPMONewStatus()">
@@ -2018,7 +2044,8 @@ function renderPMODashboard(list){
     c.innerHTML=`<div class="card"><div class="cb" style="text-align:center;padding:32px;color:var(--t2)"><i class="ti ti-chart-gantt" style="font-size:36px;display:block;margin-bottom:10px"></i>No projects match the current filter</div></div>`;
     return;
   }
-  const SEG=70,NAME_W=215,TOTAL_W=50;
+  const isNarrow=window.innerWidth<=768;
+  const SEG=isNarrow?46:70,NAME_W=isNarrow?130:215,TOTAL_W=isNarrow?38:50;
   const minW=NAME_W+PMO_STAGES.length*SEG+TOTAL_W;
   // Both tables share the same fixed layout — column widths MUST match.
   const tbl=`border-collapse:collapse;table-layout:fixed;width:${minW}px`;
@@ -2074,7 +2101,7 @@ function renderPMODashboard(list){
     </div>
 
     <!-- Scrollable body: syncs horizontal scroll back to header -->
-    <div id="pmo-bw" style="overflow-x:auto;overflow-y:auto;max-height:62vh"
+    <div id="pmo-bw" style="overflow-x:auto;overflow-y:auto;max-height:${isNarrow?'52vh':'62vh'}"
          onscroll="var h=el('pmo-hw');if(h)h.scrollLeft=this.scrollLeft">
       <table style="${tbl}"><tbody>${rows}</tbody></table>
     </div>
@@ -2383,9 +2410,9 @@ function pmoStageEditHtml(p){
         ${['Not Started','In Progress','On Hold','Delayed','Completed'].map(s=>{const dis=(s==='Completed'&&!allStagesComplete(p.stages))?' disabled':'';return `<option${p.status===s?' selected':''}${dis}>${s}</option>`;}).join('')}
       </select>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:0 16px">
+    <div class="pmo-stage-grid">
       ${(p.stages||[]).map((s,i)=>`
-        <div style="display:grid;grid-template-columns:150px 76px 1fr;gap:7px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--bd)">
+        <div class="pmo-stage-row">
           <div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.stage)}">${esc(s.stage)}</div>
           <div style="display:flex;align-items:center;gap:3px">
             <input type="number" class="fi" id="pmo-ie-${id}-${i}" min="0" max="100" value="${s.pct||0}" style="width:52px;text-align:center;padding:3px 5px;font-size:12px;font-weight:700" oninput="clampPct(this);syncPMOInlineStatus('${id}')">
@@ -2413,7 +2440,7 @@ function pmoStageViewHtml(p,projRef,canEdit,pendingExt){
         ${CU?.isAdmin?`<button class="btn sm danger" onclick="deletePMO('${p.id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(300px,1fr));gap:0 16px">
+    <div class="pmo-stage-grid">
       ${(p.stages||[]).map(s=>`<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid var(--bd)">
         <div style="font-size:11px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.stage)}">${esc(s.stage)}</div>
         <div style="font-size:10.5px;font-weight:800;color:${s.pct===100?'#1B5E20':s.pct>0?'var(--p)':'var(--t2)'};width:34px;text-align:right">${s.pct||0}%</div>
@@ -2444,16 +2471,16 @@ function renderPMODetailsTable(list){
       <td><div class="pmo-detail-name" title="${esc(p.projName)}">${esc(p.projName)}</div><div class="pmo-detail-sub">${p.client?esc(p.client)+' · ':''}Updated ${(p.updatedAt||'').split('T')[0]||'-'}</div></td>
       <td>${bpmoStatus(p.status)}</td>
       <td><div class="pmo-detail-progress"><div class="bar"><div class="fill" style="width:${overall}%;background:${barColor}"></div></div><b style="color:${barColor};width:38px;text-align:right">${overall}%</b></div></td>
-      <td>${ldChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
-      <td>${targetChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
-      <td>${allocated?`<span style="color:var(--t2)">₹${fmtAmt(consumed)} / ₹${fmtAmt(allocated)}</span> ${bbudgetStatus(bgStatus)}`:'<span style="color:var(--t2)">-</span>'}</td>
-      <td>${gmValue!==null?`<span class="badge" style="background:${gmValue>=0?'#E8F5E9':'#FFEBEE'};color:${gmValue>=0?'#1B5E20':'#B71C1C'}">GM ${gmPct.toFixed(1)}% · ₹${fmtAmt(Math.abs(gmValue))}</span>`:'-'}</td>
+      <td class="col-ld">${ldChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
+      <td class="col-target">${targetChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
+      <td class="col-budget">${allocated?`<span style="color:var(--t2)">₹${fmtAmt(consumed)} / ₹${fmtAmt(allocated)}</span> ${bbudgetStatus(bgStatus)}`:'<span style="color:var(--t2)">-</span>'}</td>
+      <td class="col-gm">${gmValue!==null?`<span class="badge" style="background:${gmValue>=0?'#E8F5E9':'#FFEBEE'};color:${gmValue>=0?'#1B5E20':'#B71C1C'}">GM ${gmPct.toFixed(1)}% · ₹${fmtAmt(Math.abs(gmValue))}</span>`:'-'}</td>
       <td><div class="pmo-detail-progress" style="min-width:95px"><div class="bar"><div class="fill" style="width:${Math.min(bgPct,100)}%;background:${bgCol}"></div></div><b style="color:${bgCol};width:32px;text-align:right">${bgPct}%</b></div></td>
       <td style="text-align:right"><i class="ti ${pmoExpandedId===id?'ti-chevron-up':'ti-chevron-down'}" style="font-size:15px;color:var(--t2)"></i></td>
     </tr>${pmoExpandedId===id?`<tr class="pmo-detail-expanded"><td colspan="10">${detail}</td></tr>`:''}`;
   }).join('');
   c.innerHTML=`<div class="card" style="overflow:hidden"><div class="table-wrap" style="overflow-x:auto"><table class="pmo-detail-table">
-    <thead><tr><th>Project ID</th><th>Project</th><th>Status</th><th>Overall</th><th>LD Date</th><th>Target</th><th>Budget</th><th>GM</th><th>Spent</th><th></th></tr></thead>
+    <thead><tr><th>Project ID</th><th>Project</th><th>Status</th><th>Overall</th><th class="col-ld">LD Date</th><th class="col-target">Target</th><th class="col-budget">Budget</th><th class="col-gm">GM</th><th>Spent</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div></div>`;
 }
@@ -3439,13 +3466,20 @@ async function saveProjectInline(projId){
   const poTotal=pos.reduce((s,po)=>s+(Number(po.value)||0),0);
   const budgetAllocated=parseFloat(el('pe-alloc-'+projId)?.value)||0;
   const projectManager=gv('pe-pm-'+projId);
+  const oldName=p.name||'';
+  // Project name is only editable by Updesh (see rendering of pe-name-* above); the field is disabled/locked for everyone else.
+  const newName=isUpdeshDataAdmin()?gv('pe-name-'+projId):oldName;
   if(!number){toast('Project number is required','err');return;}
   if(!scope){toast('Select a Project Scope','err');return;}
   if(!pos.some(po=>po.number)){toast('Add at least one PO (number)','err');return;}
   if(!poTotal){toast('Enter PO value(s)','err');return;}
+  if(isUpdeshDataAdmin()&&!newName){toast('Project name cannot be empty','err');return;}
+  const nameChanged=isUpdeshDataAdmin()&&newName&&newName!==oldName;
   const projectChanges={number,scope,ldDate,originalTargetCompletionDate,targetCompletionDate,pos,poNumber:pos[0]?.number||'',poDate:pos[0]?.date||''};
+  if(nameChanged)projectChanges.name=newName;
   const budgetChanges={poAmount:poTotal,budgetAllocated,projectManager};
   if(!isSuperUser()){await requestProjectChangeApproval(projId,projectChanges,budgetChanges,'Project master data update');return;}
+  if(nameChanged&&!confirm(`Rename project "${oldName}" to "${newName}"?\n\nThis also updates the linked budget configuration and any PMO entries for this project. Historical records (e.g. past payments) that reference the old name will keep the old name.`))return;
   showLoad('Saving…');
   try{
     const now=new Date().toISOString();
@@ -3453,11 +3487,20 @@ async function saveProjectInline(projId){
     // Budget config (keyed by project name): PO Amount = total of all POs.
     const cfg=budgetCfgData.find(c=>c.projectName===p.name);
     if(cfg&&cfg.id){
-      await db.collection(BUDGET_CFG_COL).doc(cfg.id).update({poAmount:poTotal,budgetAllocated,projectManager,updatedAt:now});
+      await db.collection(BUDGET_CFG_COL).doc(cfg.id).update({...(nameChanged?{projectName:newName}:{}),poAmount:poTotal,budgetAllocated,projectManager,updatedAt:now});
     }else{
-      await db.collection(BUDGET_CFG_COL).add({projectName:p.name,poAmount:poTotal,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
+      await db.collection(BUDGET_CFG_COL).add({projectName:nameChanged?newName:p.name,poAmount:poTotal,budgetAllocated,projectManager,createdAt:now,updatedAt:now});
     }
-    toast('Project updated âœ“','ok');
+    // PMO entries cache the project name for display — keep them in sync on rename.
+    if(nameChanged){
+      const linkedPMO=(pmoData||[]).filter(x=>x.projId===projId);
+      if(linkedPMO.length){
+        const batch=db.batch();
+        linkedPMO.forEach(x=>batch.update(db.collection(PMO_COL).doc(x.id),{projName:newName,updatedAt:now}));
+        await batch.commit();
+      }
+    }
+    toast(nameChanged?'Project updated & renamed âœ“':'Project updated âœ“','ok');
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 function renderProjectsPage(){
@@ -3492,7 +3535,7 @@ function renderProjectsPage(){
         <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
         <div class="g3" style="margin-bottom:14px">
           <div class="fg"><label class="fl r">Project number</label><input class="fi" id="pe-num-${p.id}" value="${esc(p.number||'')}" ${dis}></div>
-          <div class="fg"><label class="fl">Project name <span style="font-size:9px;color:var(--t2);font-weight:400">(key — locked)</span></label><input class="fi" value="${esc(p.name||'')}" disabled style="background:#f5f5f5"></div>
+          <div class="fg"><label class="fl${isUpdeshDataAdmin()?' r':''}">Project name ${isUpdeshDataAdmin()?'<span style="font-size:9px;color:#E65100;font-weight:600">(Updesh-only — renaming updates linked budget/PMO records)</span>':'<span style="font-size:9px;color:var(--t2);font-weight:400">(key — locked)</span>'}</label><input class="fi" id="pe-name-${p.id}" value="${esc(p.name||'')}" ${isUpdeshDataAdmin()?'':'disabled style="background:#f5f5f5"'}></div>
           <div class="fg"><label class="fl r">Project Scope</label><select class="fs" id="pe-scope-${p.id}" ${dis}>${scopeOpts(p.scope||'')}</select></div>
         </div>
 
