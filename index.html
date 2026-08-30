@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.43";
+const APP_VERSION="78.44";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-1";
+const APP_BUILD="20260830-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -906,17 +906,21 @@ tr.pb-row.sel{background:var(--pl)}
     <div style="background:#FFF3E0;border:1px solid #FFD9A0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11.5px;color:#6B3600">
       <b>Beta module.</b> This is separate from the existing PMO module and its data — nothing here affects PMO. "Import from PMO" pulls in any project + stage not already here (task names and %-complete only; Assigned to / Start / End are left blank since they don't exist in PMO today — set them here).
     </div>
-    <div class="stats" style="grid-template-columns:repeat(3,1fr)" id="pmob-stats"></div>
-    <div class="card" style="margin-bottom:14px">
-      <div class="ch"><div class="ct"><i class="ti ti-chart-gantt" style="font-size:14px"></i>Portfolio Gantt <span style="font-weight:400;font-size:11px;color:var(--t2)">— click a project to open its schedule</span></div></div>
-      <div style="overflow-x:auto"><table class="pb-gtbl" id="pmob-ptable"></table></div>
+    <div class="stats" style="grid-template-columns:repeat(4,1fr)" id="pmob-stats">
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-building" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmob-st-total">—</div><div class="sl">Total projects</div></div></div>
+      <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-player-play" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmob-st-active">—</div><div class="sl">Active</div></div></div>
+      <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv" id="pmob-st-done">—</div><div class="sl">Completed</div></div></div>
+      <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv" id="pmob-st-delay">—</div><div class="sl">Delayed</div></div></div>
     </div>
-    <div class="card" id="pmob-detailcard">
-      <div class="ch"><div class="ct" id="pmob-d-title">Select a project above</div><div id="pmob-d-actions"></div></div>
-      <div style="overflow-x:auto"><table class="pb-gtbl" id="pmob-gtable"></table></div>
+    <div class="fbar">
+      <select class="fsel" id="pmob-ff-status" onchange="renderPMOBeta()"><option value="">All statuses</option><option>Not Started</option><option>In Progress</option><option>Delayed</option><option>Completed</option></select>
+      <input class="fi" id="pmob-search" oninput="renderPMOBeta()" placeholder="Search projects…" style="max-width:240px;padding:5px 10px">
+      <span id="pmob-count" style="font-size:11px;color:var(--t2);margin-left:auto"></span>
     </div>
+    <div id="pmob-list"></div>
   </div>
 </div>
+
 
 <!-- â•â• LEAD MANAGEMENT â•â• -->
 
@@ -2589,95 +2593,94 @@ function pmobMonthDowHeader(rangeStart,nDays){
   return {monthHtml,dowHtml};
 }
 
-function renderPMOBeta(){
-  const total=pmoBetaData.length;
-  const completed=pmoBetaData.filter(p=>pmobPct(p)===100).length;
-  const overdue=pmoBetaData.filter(p=>pmobOverdueCount(p)>0).length;
-  const statsEl=el('pmob-stats');
-  if(statsEl)statsEl.innerHTML=`
-    <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-building" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv">${total}</div><div class="sl">Projects in Beta</div></div></div>
-    <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv">${completed}</div><div class="sl">Fully complete</div></div></div>
-    <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv">${overdue}</div><div class="sl">With overdue stage(s)</div></div></div>`;
-
-  const ptable=el('pmob-ptable'); if(!ptable) return;
-  if(!pmoBetaData.length){
-    ptable.innerHTML=`<tr><td style="padding:30px;text-align:center;color:var(--t2)">No projects in New PMO (Beta) yet. Use <b>Import from PMO</b> above to bring in your existing projects.</td></tr>`;
-    renderPMOBetaDetail();
-    return;
-  }
-  let allDays=[]; pmoBetaData.forEach(p=>(p.stages||[]).forEach(s=>{if(s.start){allDays.push(pmobToDays(s.start));allDays.push(pmobToDays(s.end));}}));
-  if(!allDays.length) allDays=[pmobToDays(pmobToday())-15,pmobToDays(pmobToday())+15];
-  const rangeStart=Math.min(...allDays)-5, rangeEnd=Math.max(...allDays)+5, nDays=rangeEnd-rangeStart+1;
-  const {monthHtml,dowHtml}=pmobMonthDowHeader(rangeStart,nDays);
-  const today=pmobToday();
-
-  const rows=pmoBetaData.map(p=>{
-    const pct=pmobPct(p), overdue=pmobOverdueCount(p);
-    const dayStatus=new Array(nDays).fill(null);
-    (p.stages||[]).forEach(s=>{
-      if(!s.start) return;
-      const st=pmobStageStatus(s);
-      const sIdx=pmobToDays(s.start)-rangeStart, eIdx=pmobToDays(s.end)-rangeStart;
-      for(let i=Math.max(0,sIdx);i<=Math.min(nDays-1,eIdx);i++) if(!dayStatus[i]) dayStatus[i]=st;
-    });
-    let cells='',i=0;
-    while(i<nDays){
-      const st=dayStatus[i];
-      if(st){let j=i;while(j<nDays&&dayStatus[j]===st)j++;cells+=`<td class="pb-bar-${st}" colspan="${j-i}"></td>`;i=j;continue;}
-      const iso=pmobFromDays(rangeStart+i); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6,isToday=iso===today;
-      const cls=['pb-daycell'];if(isWknd)cls.push('weekend');if(isToday)cls.push('pb-today');
-      cells+=`<td class="${cls.join(' ')}"></td>`; i++;
-    }
-    return `<tr class="pb-row${p.id===pmobExpandedId?' sel':''}" onclick="pmobSelect('${p.id}')">
-      <td class="pb-num pb-sticky">${p.projNum?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:700;border:none">${esc(p.projNum)}</span>`:''}</td>
-      <td class="pb-name pb-sticky"><div style="font-weight:700;font-size:12px">${esc(p.projName||'(untitled)')}</div><div style="font-size:10px;color:var(--t2)">${esc(p.client||'')}</div></td>
-      <td class="pb-pct pb-sticky"><span style="font-weight:800;color:${overdue?'#B71C1C':pct===100?'#1B5E20':'#0070C0'}">${pct}%</span>${overdue?`<div style="font-size:9.5px;color:#B71C1C;font-weight:800">${overdue} overdue</div>`:''}</td>
-      ${cells}
-    </tr>`;
-  }).join('');
-
-  ptable.innerHTML=`
-    <thead>
-      <tr>
-        <th class="pb-num pb-sticky">Project</th>
-        <th class="pb-name pb-sticky" style="text-align:left">&nbsp;</th>
-        <th class="pb-pct pb-sticky">Overall</th>
-        ${monthHtml}
-      </tr>
-      <tr>
-        <th class="pb-sticky" colspan="3" style="left:0;width:388px;min-width:388px"></th>
-        ${dowHtml}
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>`;
-  renderPMOBetaDetail();
-}
-
-function pmobSelect(id){pmobExpandedId=(pmobExpandedId===id?null:id);renderPMOBeta();}
-
-function renderPMOBetaDetail(){
-  const titleEl=el('pmob-d-title'), actionsEl=el('pmob-d-actions'), gtable=el('pmob-gtable');
-  if(!titleEl||!gtable) return;
-  const p=pmoBetaData.find(x=>x.id===pmobExpandedId);
-  if(!p){
-    titleEl.textContent='Select a project above';
-    if(actionsEl)actionsEl.innerHTML='';
-    gtable.innerHTML='';
-    return;
-  }
+function pmobDerivedStatus(p){
   const pct=pmobPct(p), overdue=pmobOverdueCount(p);
-  titleEl.innerHTML=`${esc(p.projNum||'')} · ${esc(p.projName||'')} <span style="font-weight:400;color:var(--t2);font-size:11.5px">(${esc(p.client||'')}) — ${pct}% complete${overdue?` · ${overdue} overdue`:''}</span>`;
-  const canEdit=CU?.canWrite||false;
-  if(actionsEl)actionsEl.innerHTML=`
-    ${canEdit&&p.projId?`<button class="btn sm" onclick="pmobResyncCompletion('${p.id}')"><i class="ti ti-refresh"></i>Re-check from PMO</button>`:''}
-    <button class="btn sm pri" onclick="exportPMOBetaXls('${p.id}')"><i class="ti ti-download"></i>Export</button>`;
+  if(pct===100) return 'Completed';
+  if(overdue>0) return 'Delayed';
+  if(pct>0||(p.stages||[]).some(s=>s.start)) return 'In Progress';
+  return 'Not Started';
+}
+function renderPMOBeta(){
+  const statusF=el('pmob-ff-status')?.value||'';
+  const q=(el('pmob-search')?.value||'').toLowerCase().trim();
+  let list=pmoBetaData.filter(p=>{
+    const st=pmobDerivedStatus(p);
+    if(statusF&&st!==statusF)return false;
+    if(q){const h=[p.projName,p.projNum,p.client,st].join(' ').toLowerCase();return h.includes(q);}
+    return true;
+  });
+  const total=pmoBetaData.length;
+  const active=pmoBetaData.filter(p=>pmobDerivedStatus(p)==='In Progress').length;
+  const done=pmoBetaData.filter(p=>pmobDerivedStatus(p)==='Completed').length;
+  const delay=pmoBetaData.filter(p=>pmobDerivedStatus(p)==='Delayed').length;
+  if(el('pmob-st-total'))el('pmob-st-total').textContent=total;
+  if(el('pmob-st-active'))el('pmob-st-active').textContent=active;
+  if(el('pmob-st-done'))el('pmob-st-done').textContent=done;
+  if(el('pmob-st-delay'))el('pmob-st-delay').textContent=delay;
+  if(el('pmob-count'))el('pmob-count').textContent=`${list.length} of ${pmoBetaData.length} projects`;
+  renderPMOBetaTable(list);
+}
+// Collapsed-row table — deliberately mirrors renderPMODetailsTable()'s markup/CSS
+// classes 1:1 (pmo-detail-table, badges, LD/Target chips, budget mini-bar) so New
+// PMO (Beta) reads identically to today's PMO Details page when not expanded.
+function renderPMOBetaTable(list){
+  const c=el('pmob-list'); if(!c) return;
+  c.className='compact-table-panel';
+  if(!list.length){
+    c.innerHTML=`<div class="empty"><i class="ti ti-chart-gantt eico"></i><div class="etit">${pmoBetaData.length?'No projects match':'No projects in New PMO (Beta) yet'}</div><div class="edesc">${pmoBetaData.length?'':'Use Import from PMO above to bring in your existing projects.'}</div></div>`;
+    return;
+  }
+  const rows=list.map(p=>{
+    const id=p.id, pct=pmobPct(p), overdue=pmobOverdueCount(p);
+    // Same lookup pattern the live PMO table uses (by project name, not id).
+    const projRef=projectsData.find(pr=>pr.name===p.projName)||{};
+    const pendingExt=projRef.pendingExtension&&projRef.pendingExtension.status==='pending'?projRef.pendingExtension:null;
+    const canEdit=CU?.canWrite||false;
+    const {allocated,consumed,pct:bgPct,status:bgStatus,gmValue,gmPct}=getProjBudget(p.projName);
+    const barColor=pct===100?'#1B5E20':pct>=60?'#0070C0':'#E65100';
+    const bgCol=bgPct>100?'#B71C1C':bgPct>=80?'#E65100':'#1B5E20';
+    const dispatchStage=(p.stages||[]).find(s=>/dispatch/i.test(s.task||''));
+    const ldChipHtml=projRef.ldDate?renderLdChip(projRef.ldDate,!!(dispatchStage&&dispatchStage.done)):'';
+    const targetChipHtml=renderTargetDateChip(projRef);
+    const status=pmobDerivedStatus(p);
+    const isExpanded=pmobExpandedId===id;
+    const detail=isExpanded?pmobGanttScheduleHtml(p,projRef,canEdit,pendingExt):'';
+    return `<tr onclick="if(!event.target.closest('button,input,select,textarea,a'))togglePMOBetaCard('${id}')">
+      <td>${p.projNum?`<span class="badge b-act">${esc(p.projNum)}</span>`:''}</td>
+      <td><div class="pmo-detail-name" title="${esc(p.projName)}">${esc(p.projName)}</div><div class="pmo-detail-sub">${p.client?esc(p.client)+' · ':''}Updated ${(p.updatedAt||'').split('T')[0]||'-'}</div></td>
+      <td>${bpmoStatus(status)}</td>
+      <td><div class="pmo-detail-progress"><div class="bar"><div class="fill" style="width:${pct}%;background:${barColor}"></div></div><b style="color:${barColor};width:38px;text-align:right">${pct}%</b></div></td>
+      <td class="col-ld">${ldChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
+      <td class="col-target">${targetChipHtml||'<span style="color:var(--t2)">-</span>'}</td>
+      <td class="col-budget">${allocated?`<span style="color:var(--t2)">₹${fmtAmt(consumed)} / ₹${fmtAmt(allocated)}</span> ${bbudgetStatus(bgStatus)}`:'<span style="color:var(--t2)">-</span>'}</td>
+      <td class="col-gm">${gmValue!==null?`<span class="badge" style="background:${gmValue>=0?'#E8F5E9':'#FFEBEE'};color:${gmValue>=0?'#1B5E20':'#B71C1C'}">GM ${gmPct.toFixed(1)}% · ₹${fmtAmt(Math.abs(gmValue))}</span>`:'-'}</td>
+      <td><div class="pmo-detail-progress" style="min-width:95px"><div class="bar"><div class="fill" style="width:${Math.min(bgPct,100)}%;background:${bgCol}"></div></div><b style="color:${bgCol};width:32px;text-align:right">${bgPct}%</b></div></td>
+      <td style="text-align:right"><i class="ti ${isExpanded?'ti-chevron-up':'ti-chevron-down'}" style="font-size:15px;color:var(--t2)"></i></td>
+    </tr>${isExpanded?`<tr class="pmo-detail-expanded"><td colspan="10">${detail}</td></tr>`:''}`;
+  }).join('');
+  c.innerHTML=`<div class="card" style="overflow:hidden"><div class="table-wrap" style="overflow-x:auto"><table class="pmo-detail-table">
+    <thead><tr><th>Project ID</th><th>Project</th><th>Status</th><th>Overall</th><th class="col-ld">LD Date</th><th class="col-target">Target</th><th class="col-budget">Budget</th><th class="col-gm">GM</th><th>Spent</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div></div>`;
+}
+function togglePMOBetaCard(id){
+  pmobExpandedId=(pmobExpandedId===id?null:id);
+  renderPMOBeta();
+}
+// Expanded-row content: Gantt + schedule table (replaces the %age Stage Details
+// block), then the SAME Project Documents section the live PMO page uses —
+// projectDocChecklistHtml() is the live PMO function, called unmodified here,
+// keyed off the shared underlying project record so documents are never
+// duplicated between PMO and New PMO (Beta).
+function pmobGanttScheduleHtml(p,projRef,canEdit,pendingExt){
+  const done=(p.stages||[]).filter(s=>pmobStageStatus(s)==='done').length;
+  const targetVal=projRef.targetCompletionDate||projRef.originalTargetCompletionDate;
+  const targetLine=targetVal?`Target completion: <b>${new Date(targetVal).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</b>`:'Target completion date not set';
 
   const days=[]; (p.stages||[]).forEach(s=>{if(s.start){days.push(pmobToDays(s.start));days.push(pmobToDays(s.end));}});
-  if(!days.length){
-    gtable.innerHTML=`<tr><td style="padding:24px;text-align:center;color:var(--t2)">No dates set yet for any stage — add a Start/End date below to see this project's Gantt.</td></tr>`;
-  }
-  const rangeStart=days.length?Math.min(...days)-3:pmobToDays(pmobToday())-3;
-  const rangeEnd=days.length?Math.max(...days)+3:pmobToDays(pmobToday())+3;
+  const hasDates=days.length>0;
+  const rangeStart=hasDates?Math.min(...days)-3:pmobToDays(pmobToday())-3;
+  const rangeEnd=hasDates?Math.max(...days)+3:pmobToDays(pmobToday())+3;
   const nDays=rangeEnd-rangeStart+1;
   const {monthHtml,dowHtml}=pmobMonthDowHeader(rangeStart,nDays);
   const today=pmobToday();
@@ -2698,34 +2701,55 @@ function renderPMOBetaDetail(){
       <td class="pb-idx pb-sticky">${idx+1}</td>
       <td class="pb-task pb-sticky">${esc(s.task)}</td>
       <td class="pb-assign pb-sticky">${canEdit?`<input value="${esc(s.assigned)}" placeholder="Unassigned" onchange="pmobUpdateStageField('${p.id}',${idx},'assigned',this.value)">`:(s.assigned?esc(s.assigned):'<span style="color:#bbb">— unassigned —</span>')}</td>
-      <td class="pb-prog pb-sticky" style="text-align:center"><input class="pb-chk" type="checkbox" ${s.done?'checked':''} ${canEdit?'':'disabled'} onchange="pmobUpdateStageField('${p.id}',${idx},'done',this.checked)"></td>
       <td class="pb-date-s pb-sticky">${canEdit?`<input type="date" value="${s.start||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'start',this.value)">`:(s.start||'—')}</td>
       <td class="pb-date-e pb-sticky">${canEdit?`<input type="date" value="${s.end||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'end',this.value)">`:(s.end||'—')}</td>
-      <td class="pb-dur pb-sticky">${s.start?pmobDuration(s)+'d':'—'}</td>
       <td class="pb-status pb-sticky"><span class="pb-pill pb-s-${status}">${status==='done'?'Completed':status==='progress'?'In progress':status==='overdue'?'Overdue':status==='notset'?'Not scheduled':'Upcoming'}</span></td>
+      <td class="pb-prog pb-sticky" style="text-align:center"><input class="pb-chk" type="checkbox" ${s.done?'checked':''} ${canEdit?'':'disabled'} onchange="pmobUpdateStageField('${p.id}',${idx},'done',this.checked)"></td>
       ${cells}
     </tr>`;
   }).join('');
 
-  gtable.innerHTML=`
+  const stickyW=22+160+110+92+92+96+52;
+  const gtableHtml=`${hasDates?'':`<div style="padding:9px 12px;text-align:center;color:var(--t2);font-size:11px;background:var(--bg);border-radius:8px;margin-bottom:8px">No dates set yet — add a Start/End date below to see this project's Gantt.</div>`}
+  <div style="overflow-x:auto"><table class="pb-gtbl">
     <thead>
       <tr>
         <th class="pb-idx pb-sticky">#</th>
         <th class="pb-task pb-sticky" style="text-align:left">Task</th>
         <th class="pb-assign pb-sticky" style="text-align:left">Assigned to</th>
-        <th class="pb-prog pb-sticky">Progress</th>
         <th class="pb-date-s pb-sticky">Start</th>
         <th class="pb-date-e pb-sticky">End</th>
-        <th class="pb-dur pb-sticky">Dur.</th>
         <th class="pb-status pb-sticky" style="text-align:left">Status</th>
+        <th class="pb-prog pb-sticky">Progress</th>
         ${monthHtml}
       </tr>
       <tr>
-        <th class="pb-sticky" colspan="8" style="left:0;width:664px;min-width:664px"></th>
+        <th class="pb-sticky" colspan="7" style="left:0;width:${stickyW}px;min-width:${stickyW}px"></th>
         ${dowHtml}
       </tr>
     </thead>
-    <tbody>${bodyRows}</tbody>`;
+    <tbody>${bodyRows}</tbody>
+  </table></div>`;
+
+  return `<div style="padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete · ${targetLine}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${canEdit&&p.projId?`<button class="btn sm" onclick="event.stopPropagation();pmobResyncCompletion('${p.id}')"><i class="ti ti-refresh"></i>Re-check from PMO</button>`:''}
+        <button class="btn sm pri" onclick="event.stopPropagation();exportPMOBetaXls('${p.id}')"><i class="ti ti-download"></i>Export</button>
+        ${canEdit&&projRef.id?(pendingExt?`<span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:700">Extension pending review</span>`:`<button class="btn sm" onclick="event.stopPropagation();openExtensionRequestModal('${projRef.id}')"><i class="ti ti-calendar-plus"></i>Extension Request</button>`):''}
+        ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deletePMOBeta('${p.id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
+      </div>
+    </div>
+    ${gtableHtml}
+    ${projRef.id?projectDocChecklistHtml(projRef):''}
+  </div>`;
+}
+async function deletePMOBeta(id,name){
+  if(!confirm('Delete New PMO (Beta) entry for "'+name+'"?\n\nThis only removes it from Beta — the live PMO record is untouched, and you can re-import it any time.'))return;
+  showLoad('Deleting…');
+  try{await db.collection(PMO_BETA_COL).doc(id).delete();toast('Deleted ✓','ok');}
+  catch(e){toast('Failed','err');}finally{hideLoad();}
 }
 
 async function pmobUpdateStageField(betaId,idx,field,value){
