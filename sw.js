@@ -1,4 +1,12 @@
 // DQAP Wiki Service Worker
+// Version 78.46 - New PMO (Beta): added bulk CSV/Excel import ("Sample
+// Format" download + "Import CSV/Excel" upload) so an entire portfolio's
+// Task/Assigned to/Start/End/Progress can be populated in one shot, not
+// just per-project via Import from PMO. One row per (project, stage);
+// matches/updates existing Beta projects by project_number or
+// project_name, creates new ones otherwise. Reuses the app's existing
+// generic bulk-import helpers (bulkCell/bulkHeader/bulkDate) and SheetJS
+// (already loaded app-wide), so both .csv and .xlsx uploads are accepted.
 // Version 78.45 - New PMO (Beta) expanded schedule/Gantt redesigned to fit
 // a single screen with no horizontal scrolling: the per-day calendar grid
 // is replaced with a compact percentage-scaled Gantt bar per stage (Task,
@@ -37,7 +45,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.45-20260830-3';
+const CACHE_VERSION = 'dqap-wiki-v78.46-20260830-4';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
