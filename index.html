@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.45";
+const APP_VERSION="78.46";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-3";
+const APP_BUILD="20260830-4";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -900,11 +900,16 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-pmobeta" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-timeline" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>New PMO <span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:800">BETA</span></div><div class="pg-s">Date-driven project schedule &amp; Gantt — runs alongside the existing PMO module, does not replace it</div></div>
-    <div class="tr"><button class="btn pri" onclick="importFromPMO()"><i class="ti ti-download"></i>Import from PMO</button></div>
+    <div class="tr" id="pmob-bulk-tools" style="align-items:center;gap:6px;flex-wrap:wrap">
+      <button class="btn" onclick="downloadPMOBetaSampleFormat()"><i class="ti ti-file-spreadsheet"></i>Sample Format</button>
+      <input type="file" id="pmob-bulk-input" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="max-width:190px;font-size:10.5px">
+      <button class="btn grn" onclick="importPMOBetaBulk()"><i class="ti ti-upload"></i>Import CSV/Excel</button>
+      <button class="btn pri" onclick="importFromPMO()"><i class="ti ti-download"></i>Import from PMO</button>
+    </div>
   </div>
   <div class="content">
     <div style="background:#FFF3E0;border:1px solid #FFD9A0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11.5px;color:#6B3600">
-      <b>Beta module.</b> This is separate from the existing PMO module and its data — nothing here affects PMO. "Import from PMO" pulls in any project + stage not already here (task names and %-complete only; Assigned to / Start / End are left blank since they don't exist in PMO today — set them here).
+      <b>Beta module.</b> This is separate from the existing PMO module and its data — nothing here affects PMO. "Import from PMO" pulls in any project + stage not already here (task names and %-complete only; Assigned to / Start / End are left blank since they don't exist in PMO today — set them here). To set everything in one shot — including Assigned to / Start / End — download the <b>Sample Format</b>, fill it in (or export it from your planning sheet), and use <b>Import CSV/Excel</b>. Re-uploading a project already in Beta overwrites its schedule with the file's data.
     </div>
     <div class="stats" style="grid-template-columns:repeat(4,1fr)" id="pmob-stats">
       <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-building" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv" id="pmob-st-total">—</div><div class="sl">Total projects</div></div></div>
@@ -2775,6 +2780,135 @@ async function importFromPMO(){
     await batch.commit();
     toast(`Imported ${toImport.length} project(s) into New PMO (Beta) ✓`,'ok');
   }catch(e){toast('Import failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ── New PMO (Beta) bulk CSV/Excel import — one row per (project, stage), all
+// projects in a single file. Reuses the app's existing generic bulk-import
+// primitives (bulkCell/bulkHeader/bulkDate) rather than duplicating parsing
+// logic. Accepts .csv or .xlsx via SheetJS (XLSX), already loaded app-wide.
+function pmobSampleRows(){
+  const proj1=[
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','PO Acceptance','Keshav Sharma','01/07/2026','01/07/2026','Y',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Kick Off','Keshav Sharma','29/07/2026','29/07/2026','Y',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Approvals / MFC','Keshav Sharma','29/07/2026','03/08/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','BOM','Keshav Sharma','30/07/2026','06/08/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Procurement','Keshav Sharma','06/08/2026','21/08/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Manufacturing','Keshav Sharma','21/08/2026','31/08/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Dispatch','Keshav Sharma','31/08/2026','26/10/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Cabling / Installation','Keshav Sharma','26/10/2026','29/10/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Commissioning','Keshav Sharma','29/10/2026','08/11/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','System Handover','Keshav Sharma','08/11/2026','28/12/2026','N',''],
+    ['P-2627-XX','FDA System for IOCL IBP House, Kolkata','IOCL','Payment','Keshav Sharma','28/12/2026','02/01/2027','N','']
+  ];
+  const proj2=PMO_STAGES.map(name=>['P-XXXX-XX','<Replace with next project name>','<Client>',name,'','','','N','']);
+  return [proj1,proj2];
+}
+function downloadPMOBetaSampleFormat(){
+  const headers=['project_number','project_name','client','stage','assigned_to','start_date','end_date','progress','remarks'];
+  const [proj1,proj2]=pmobSampleRows();
+  const ws=XLSX.utils.aoa_to_sheet([headers,...proj1,...proj2]);
+  ws['!cols']=headers.map(h=>({wch:Math.max(h.length+2,18)}));
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:proj1.length+proj2.length,c:headers.length-1}})};
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'New PMO Import');
+  const instr=[
+    ['New PMO (Beta) — bulk import format'],
+    [''],
+    ['One row per stage. Every project needs exactly these 11 stages, spelled exactly as below (not case-sensitive):'],
+    ...PMO_STAGES.map((s,i)=>[`${i+1}. ${s}`]),
+    [''],
+    ['Column','What it means'],
+    ['project_number','Used to find and update an existing Beta project. Leave blank to match by project_name instead.'],
+    ['project_name','Required. Also used for matching when project_number is blank.'],
+    ['client','Optional — shown in the project list.'],
+    ['stage','Required. Must exactly match one of the 11 stage names above.'],
+    ['assigned_to','Optional — free text.'],
+    ['start_date / end_date','DD/MM/YYYY or YYYY-MM-DD. Leave BOTH blank if this stage isn\'t scheduled yet — one filled and one blank will fail.'],
+    ['progress','Y = stage complete, N = not complete (also accepts Yes/No, 1/0, True/False).'],
+    ['remarks','Optional — free text.'],
+    [''],
+    ['Re-uploading a project_number/project_name already in Beta OVERWRITES that project\'s schedule with what\'s in this file — safe to re-upload a corrected version.'],
+    ['Projects not already in PMO can still be imported this way — they simply won\'t be linked to a live PMO record.'],
+    ['Save as .xlsx, or as .csv (UTF-8), and upload from the New PMO (Beta) screen.']
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(instr),'Instructions');
+  XLSX.writeFile(wb,`DQAP_New_PMO_Beta_Import_Format_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Sample import format downloaded','ok');
+}
+async function pmobReadUploadRows(file){
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+  if(aoa.length<2)throw new Error('File must contain a header row and at least one data row');
+  const headers=aoa[0].map(bulkHeader);
+  if(new Set(headers).size!==headers.length)throw new Error('File contains duplicate column headers');
+  const rows=aoa.slice(1).filter(r=>r.some(v=>bulkCell(v)!=='')).map((vals,i)=>({rowNo:i+2,data:Object.fromEntries(headers.map((h,j)=>[h,vals[j]??'']))}));
+  if(!rows.length)throw new Error('File has no data rows');
+  return rows;
+}
+async function pmobBulkCommit(ops){
+  let committed=0;
+  try{
+    for(let i=0;i<ops.length;i+=400){
+      const chunk=ops.slice(i,i+400),batch=db.batch();
+      chunk.forEach(op=>op.isNew?batch.set(op.ref,op.data):batch.update(op.ref,op.data));
+      await batch.commit();committed+=chunk.length;
+    }
+  }catch(e){throw new Error(committed?`${e.message}. ${committed} of ${ops.length} project(s) were already imported before the failure`:`${e.message}. No projects were imported`);}
+}
+async function importPMOBetaBulk(){
+  if(!CU?.canWrite){toast('Only authorized users can import','err');return;}
+  const input=el('pmob-bulk-input'),file=input?.files?.[0];
+  if(!file){toast('Choose a CSV or Excel file first','err');return;}
+  showLoad('Reading file…');
+  try{
+    const rows=await pmobReadUploadRows(file);
+    bulkRequireHeaders(rows,['project_name','stage','start_date','end_date','progress']);
+    const stageNamesLower=PMO_STAGES.map(s=>s.toLowerCase());
+    const projects={};
+    rows.forEach(({rowNo,data})=>{
+      const projNum=bulkCell(data.project_number);
+      const projName=bulkCell(data.project_name);
+      if(!projName)throw new Error(`Row ${rowNo}: project_name is required`);
+      const stageRaw=bulkCell(data.stage);
+      const stageIdx=stageNamesLower.indexOf(stageRaw.toLowerCase());
+      if(stageIdx===-1)throw new Error(`Row ${rowNo}: stage "${stageRaw}" does not match any of the 11 PMO stages`);
+      const startRaw=bulkCell(data.start_date),endRaw=bulkCell(data.end_date);
+      if(!!startRaw!==!!endRaw)throw new Error(`Row ${rowNo}: start_date and end_date must both be filled in, or both left blank`);
+      const start=startRaw?bulkDate(startRaw,'start_date',rowNo):'';
+      const end=endRaw?bulkDate(endRaw,'end_date',rowNo):'';
+      if(start&&end&&start>end)throw new Error(`Row ${rowNo}: end_date is before start_date`);
+      const progressRaw=bulkCell(data.progress).toLowerCase();
+      const doneVals=['y','yes','1','true','done','completed'],notDoneVals=['n','no','0','false','','not done','pending'];
+      if(!doneVals.includes(progressRaw)&&!notDoneVals.includes(progressRaw))throw new Error(`Row ${rowNo}: progress must be Y or N`);
+      const done=doneVals.includes(progressRaw);
+      const key=(projNum||projName).toLowerCase();
+      if(!projects[key])projects[key]={projNum,projName,client:bulkCell(data.client),stages:{}};
+      if(projects[key].stages[stageIdx])throw new Error(`Row ${rowNo}: duplicate stage "${PMO_STAGES[stageIdx]}" for project "${projName}"`);
+      projects[key].stages[stageIdx]={task:PMO_STAGES[stageIdx],assigned:bulkCell(data.assigned_to),start,end,done,remarks:bulkCell(data.remarks)};
+    });
+    const projList=Object.values(projects);
+    if(!projList.length)throw new Error('No valid rows found');
+    projList.forEach(p=>{p.stagesArr=PMO_STAGES.map((name,i)=>p.stages[i]||{task:name,assigned:'',start:'',end:'',done:false,remarks:''});});
+
+    const newCount=projList.filter(p=>!pmoBetaData.some(b=>(p.projNum&&b.projNum===p.projNum)||(!p.projNum&&b.projName===p.projName))).length;
+    const updateCount=projList.length-newCount;
+    if(!confirm(`Import ${projList.length} project(s) from this file?\n\n${newCount} new · ${updateCount} existing Beta project(s) will be OVERWRITTEN with the file's schedule.\n\nThis cannot be undone automatically.`))return;
+
+    showLoad('Importing…');
+    const now=new Date().toISOString();
+    const ops=projList.map(p=>{
+      const existing=pmoBetaData.find(b=>(p.projNum&&b.projNum===p.projNum)||(!p.projNum&&b.projName===p.projName));
+      const liveMatch=pmoData.find(x=>(p.projNum&&x.projNum===p.projNum)||x.projName===p.projName);
+      const payload={projId:existing?.projId||liveMatch?.id||'',projName:p.projName,projNum:p.projNum||liveMatch?.projNum||'',client:p.client||liveMatch?.client||'',stages:p.stagesArr,updatedAt:now,bulkImportedAt:now,bulkImportedBy:CU.username};
+      if(existing)return{ref:db.collection(PMO_BETA_COL).doc(existing.id),data:payload,isNew:false};
+      return{ref:db.collection(PMO_BETA_COL).doc(),data:{...payload,createdAt:now},isNew:true};
+    });
+    await pmobBulkCommit(ops);
+    input.value='';
+    toast(`${projList.length} project(s) imported/updated in New PMO (Beta) ✓`,'ok');
+  }catch(e){toast('Import stopped: '+e.message,'err');}finally{hideLoad();}
 }
 
 async function pmobResyncCompletion(betaId){
