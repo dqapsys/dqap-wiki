@@ -1,4 +1,14 @@
 // DQAP Wiki Service Worker
+// Version 78.43 - Added "New PMO (Beta)" module: a date-driven project
+// schedule with a compact Gantt view (Task / Assigned to / Start / End /
+// Progress / Status), running alongside the existing PMO module untouched
+// (separate sidebar item, separate view, separate Firestore collection
+// dqap_pmo_beta — PMO itself and dqap_pmo are not read from or written to
+// except by the one-way "Import from PMO" / "Re-check from PMO" actions).
+// Also: PMO layout made responsive for narrower PC/mobile screens, and
+// Manage Projects now lets Updesh edit a project's name (previously
+// locked), propagating the rename to linked Budget Configuration and PMO
+// records.
 // Version 78.40 - Sales CRM -> PMO Kickoff automation: deal reaching "Order"
 // stage now fires a Critical task for Keshav (Manage Projects + New PMO
 // Project), with a 24h SLA auto-escalation to Pratim/Updesh, and carries the
@@ -12,7 +22,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.40-20260718-1';
+const CACHE_VERSION = 'dqap-wiki-v78.43-20260830-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
