@@ -1,4 +1,19 @@
 // DQAP Wiki Service Worker
+// Version 78.45 - New PMO (Beta) expanded schedule/Gantt redesigned to fit
+// a single screen with no horizontal scrolling: the per-day calendar grid
+// is replaced with a compact percentage-scaled Gantt bar per stage (Task,
+// Assigned to, Start, End, Status, Progress checkbox stay, all narrower/
+// tighter font); month ticks and the "today" marker are now positioned by
+// percentage instead of per-day columns. The Excel export keeps the full
+// day-grid format unchanged.
+// Version 78.44 - New PMO (Beta) reworked to match the existing PMO Details
+// page exactly: collapsed project rows now use the same table/columns
+// (Project ID, Project, Status, Overall, LD Date, Target, Budget, GM,
+// Spent) and the same expand/collapse click behavior. Expanding a project
+// now shows the Gantt + schedule table (Task/Assigned to/Start/End/Status/
+// Progress checkbox) in place of the removed %age Stage Details block,
+// followed by the same Project Documents section PMO already uses (shared
+// off the underlying project record, not duplicated).
 // Version 78.43 - Added "New PMO (Beta)" module: a date-driven project
 // schedule with a compact Gantt view (Task / Assigned to / Start / End /
 // Progress / Status), running alongside the existing PMO module untouched
@@ -22,7 +37,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.43-20260830-1';
+const CACHE_VERSION = 'dqap-wiki-v78.45-20260830-3';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
