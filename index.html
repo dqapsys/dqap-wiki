@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.44";
+const APP_VERSION="78.45";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-2";
+const APP_BUILD="20260830-3";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -319,43 +319,43 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   .pmo-new-stage-row>div:first-child{grid-column:1/-1}
   .pmo-new-stage-row>input.fi:last-child{grid-column:1/-1}
 }
-/* â”€â”€ New PMO (Beta) â€” Gantt table, namespaced "pb-" so it never touches existing PMO styles â”€â”€ */
-table.pb-gtbl{border-collapse:separate;border-spacing:0;font-size:11.5px;width:100%}
-table.pb-gtbl th,table.pb-gtbl td{border-right:.5px solid #eee;border-bottom:.5px solid #eee}
-table.pb-gtbl thead{position:sticky;top:0;z-index:5}
-table.pb-gtbl thead th{background:#fafafa;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#666;padding:4px}
-.pb-sticky{position:sticky;background:#fff;z-index:2}
-table.pb-gtbl thead th.pb-sticky{background:#fafafa;z-index:6}
-tr.pb-row{cursor:pointer}
-tr.pb-row:hover td.pb-sticky{background:#fbfdff}
-tr.pb-row.sel td.pb-sticky{background:var(--pl)}
-tr.pb-row.sel{background:var(--pl)}
-.pb-num{width:78px;min-width:78px;left:0}
-.pb-name{width:220px;min-width:220px;padding:5px 8px;left:78px;text-align:left}
-.pb-pct{width:90px;min-width:90px;left:298px;text-align:center}
-.pb-idx{width:22px;min-width:22px;text-align:center;color:#999;left:0}
-.pb-task{width:160px;min-width:160px;padding:4px 6px;font-weight:600;text-align:left;left:22px}
-.pb-assign{width:110px;min-width:110px;padding:4px 6px;font-size:10.5px;color:#555;text-align:left;left:182px}
-.pb-prog{width:52px;min-width:52px;text-align:center;left:292px}
-.pb-date-s{width:92px;min-width:92px;padding:3px 4px;left:344px}
-.pb-date-e{width:92px;min-width:92px;padding:3px 4px;left:436px}
-.pb-dur{width:40px;min-width:40px;text-align:center;color:#666;left:528px}
-.pb-status{width:96px;min-width:96px;padding:4px 6px;text-align:left;left:568px;border-right:1.5px solid #ccc}
-.pb-date-s input,.pb-date-e input,.pb-task input{width:100%;border:.5px solid var(--bds);border-radius:5px;padding:3px 4px;font-size:10.5px;font-family:inherit}
-.pb-daycell{width:11px;min-width:11px;max-width:11px;height:24px;padding:0}
-.pb-daycell.weekend{background:#F7F8FA}
-.pb-monthlbl{background:#F0F2F5;font-weight:800;font-size:8px;color:#555;text-align:left;padding-left:3px;height:15px}
-.pb-dowcell{font-size:7.5px;font-weight:700;color:#999;text-align:center;height:14px}
-.pb-today{box-shadow:inset 0 0 0 1.5px #D32F2F}
-.pb-bar-done{background:#2E7D32}
-.pb-bar-progress{background:#0070C0}
-.pb-bar-overdue{background:#B71C1C}
-.pb-pill{display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:20px;font-size:9px;font-weight:800}
+/* â”€â”€ New PMO (Beta) â€” compact, single-screen schedule+Gantt (percentage-scaled bars, no per-day columns, no horizontal scroll) â”€â”€ */
+.pbg-wrap{font-size:11px}
+.pbg-hd,.pbg-row{display:flex;align-items:center;gap:5px}
+.pbg-hd{padding:3px 2px 5px;border-bottom:1px solid var(--bd);font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#888}
+.pbg-row{padding:3px 2px;border-bottom:.5px solid #f0f0f0;min-height:24px}
+.pbg-row:last-child{border-bottom:none}
+.pbg-row:hover{background:#fafcfe}
+.pbg-idx{width:14px;min-width:14px;text-align:center;color:#bbb;font-size:9.5px}
+.pbg-task{width:105px;min-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:10.5px}
+.pbg-task input{width:100%;border:.5px solid var(--bds);border-radius:5px;padding:2px 4px;font-size:10px;font-family:inherit}
+.pbg-assign{width:76px;min-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;color:#666}
+.pbg-assign input{width:100%;border:.5px solid var(--bds);border-radius:5px;padding:2px 3px;font-size:9.5px;font-family:inherit}
+.pbg-date{width:74px;min-width:74px}
+.pbg-date input{width:100%;border:.5px solid var(--bds);border-radius:5px;padding:2px 3px;font-size:9px;font-family:inherit}
+.pbg-status{width:56px;min-width:56px}
+.pbg-prog{width:18px;min-width:18px;text-align:center}
+.pbg-track{flex:1;min-width:120px;position:relative;height:16px}
+.pbg-hdtrack{flex:1;min-width:120px;position:relative;height:14px}
+.pbg-tick{position:absolute;top:0;bottom:-4px;border-left:1px solid #eee}
+.pbg-tick span{position:absolute;top:0;left:3px;white-space:nowrap;font-size:8px;color:#999;font-weight:700}
+.pbg-today{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px dashed #D32F2F;z-index:2}
+.pbg-bar{position:absolute;top:2px;height:12px;border-radius:3px;min-width:6px}
+.pbg-bar.pb-bar-progress{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 4px,transparent 4px 8px)}
+.pb-pill{display:inline-flex;align-items:center;justify-content:center;padding:1px 5px;border-radius:10px;font-size:8px;font-weight:800;white-space:nowrap}
 .pb-s-done{background:#E8F5E9;color:#1B5E20}
 .pb-s-progress{background:#E3F2FD;color:#0070C0}
 .pb-s-overdue{background:#FFEBEE;color:#B71C1C}
 .pb-s-upcoming{background:#F1F1F1;color:#888}
-.pb-chk{width:14px;height:14px;cursor:pointer}
+.pb-bar-done{background:#2E7D32}
+.pb-bar-progress{background:#0070C0}
+.pb-bar-overdue{background:#B71C1C}
+.pb-chk{width:13px;height:13px;cursor:pointer}
+@media(max-width:760px){
+  .pbg-hd{display:none}
+  .pbg-row{flex-wrap:wrap;padding:6px 2px}
+  .pbg-track{flex-basis:100%;height:14px;margin-top:3px}
+}
 .chat-msg-row{display:flex;margin:3px 0;align-items:flex-end}
 .chat-msg-row.mine{justify-content:flex-end}
 .chat-msg-row.theirs{justify-content:flex-start}
@@ -2579,18 +2579,22 @@ function pmobStageStatus(s){
 function pmobDuration(s){return s.start?pmobToDays(s.end)-pmobToDays(s.start)+1:0;}
 function pmobPct(p){const done=(p.stages||[]).filter(s=>pmobStageStatus(s)==='done').length;return Math.round(done/PMO_STAGES.length*100);}
 function pmobOverdueCount(p){return (p.stages||[]).filter(s=>pmobStageStatus(s)==='overdue').length;}
-function pmobMonthDowHeader(rangeStart,nDays){
-  let prevMonth=null,span=0,spans=[];
-  for(let i=0;i<nDays;i++){const m=pmobFromDays(rangeStart+i).slice(0,7);if(m!==prevMonth){if(prevMonth!==null)spans.push({m:prevMonth,n:span});prevMonth=m;span=1;}else span++;}
-  spans.push({m:prevMonth,n:span});
-  const monthHtml=spans.map(sp=>{const label=new Date(sp.m+'-01').toLocaleDateString('en-IN',{month:'short',year:'2-digit'});return `<th class="pb-monthlbl" colspan="${sp.n}" style="width:${sp.n*11}px">${label}</th>`;}).join('');
-  let dowHtml='';
-  const today=pmobToday();
-  for(let i=0;i<nDays;i++){
-    const iso=pmobFromDays(rangeStart+i); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6,isToday=iso===today;
-    dowHtml+=`<th class="pb-dowcell${isWknd?' weekend':''}${isToday?' pb-today':''}" title="${iso}">${PMOB_DOW[dow]}</th>`;
+function pmobMonthTicksHtml(rangeStart,totalDays){
+  // Percentage-positioned month tick marks for the compact (non-scrolling) Gantt header.
+  let html='',cursor=new Date(pmobFromDays(rangeStart)+'T00:00:00');
+  cursor.setDate(1); cursor.setMonth(cursor.getMonth()+1); // first month boundary at/after rangeStart
+  let guard=0;
+  while(guard++<36){
+    const dayIdx=pmobToDays(cursor.toISOString().slice(0,10))-rangeStart;
+    if(dayIdx>=totalDays) break;
+    if(dayIdx>0){
+      const pct=(dayIdx/totalDays*100).toFixed(2);
+      const label=cursor.toLocaleDateString('en-IN',{month:'short'});
+      html+=`<div class="pbg-tick" style="left:${pct}%"><span>${label}</span></div>`;
+    }
+    cursor.setMonth(cursor.getMonth()+1);
   }
-  return {monthHtml,dowHtml};
+  return html;
 }
 
 function pmobDerivedStatus(p){
@@ -2679,60 +2683,50 @@ function pmobGanttScheduleHtml(p,projRef,canEdit,pendingExt){
 
   const days=[]; (p.stages||[]).forEach(s=>{if(s.start){days.push(pmobToDays(s.start));days.push(pmobToDays(s.end));}});
   const hasDates=days.length>0;
-  const rangeStart=hasDates?Math.min(...days)-3:pmobToDays(pmobToday())-3;
-  const rangeEnd=hasDates?Math.max(...days)+3:pmobToDays(pmobToday())+3;
-  const nDays=rangeEnd-rangeStart+1;
-  const {monthHtml,dowHtml}=pmobMonthDowHeader(rangeStart,nDays);
-  const today=pmobToday();
+  const rangeStart=hasDates?Math.min(...days)-2:pmobToDays(pmobToday())-2;
+  const rangeEnd=hasDates?Math.max(...days)+2:pmobToDays(pmobToday())+2;
+  const totalDays=Math.max(1,rangeEnd-rangeStart);
+  const todayPct=Math.min(100,Math.max(0,(pmobToDays(pmobToday())-rangeStart)/totalDays*100));
+  const monthTicksHtml=pmobMonthTicksHtml(rangeStart,totalDays);
 
   const bodyRows=(p.stages||[]).map((s,idx)=>{
     const status=pmobStageStatus(s);
-    let cells='';
-    for(let i=0;i<nDays;i++){
-      if(s.start){
-        const sIdx=pmobToDays(s.start)-rangeStart, eIdx=pmobToDays(s.end)-rangeStart;
-        if(i>=sIdx&&i<=eIdx){const span=eIdx-sIdx+1;cells+=`<td class="pb-bar-${status}" colspan="${span}"></td>`;i=eIdx;continue;}
-      }
-      const iso=pmobFromDays(rangeStart+i); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6,isToday=iso===today;
-      const cls=['pb-daycell'];if(isWknd)cls.push('weekend');if(isToday)cls.push('pb-today');
-      cells+=`<td class="${cls.join(' ')}"></td>`;
+    let barHtml='';
+    if(s.start){
+      const leftPct=Math.max(0,(pmobToDays(s.start)-rangeStart)/totalDays*100);
+      const rawWidthPct=(pmobToDays(s.end)-pmobToDays(s.start)+1)/totalDays*100;
+      const widthPct=Math.max(1.2,Math.min(100-leftPct,rawWidthPct));
+      barHtml=`<div class="pbg-bar pb-bar-${status}" style="left:${leftPct.toFixed(2)}%;width:${widthPct.toFixed(2)}%" title="${esc(s.task)}: ${s.start} → ${s.end}"></div>`;
     }
-    return `<tr>
-      <td class="pb-idx pb-sticky">${idx+1}</td>
-      <td class="pb-task pb-sticky">${esc(s.task)}</td>
-      <td class="pb-assign pb-sticky">${canEdit?`<input value="${esc(s.assigned)}" placeholder="Unassigned" onchange="pmobUpdateStageField('${p.id}',${idx},'assigned',this.value)">`:(s.assigned?esc(s.assigned):'<span style="color:#bbb">— unassigned —</span>')}</td>
-      <td class="pb-date-s pb-sticky">${canEdit?`<input type="date" value="${s.start||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'start',this.value)">`:(s.start||'—')}</td>
-      <td class="pb-date-e pb-sticky">${canEdit?`<input type="date" value="${s.end||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'end',this.value)">`:(s.end||'—')}</td>
-      <td class="pb-status pb-sticky"><span class="pb-pill pb-s-${status}">${status==='done'?'Completed':status==='progress'?'In progress':status==='overdue'?'Overdue':status==='notset'?'Not scheduled':'Upcoming'}</span></td>
-      <td class="pb-prog pb-sticky" style="text-align:center"><input class="pb-chk" type="checkbox" ${s.done?'checked':''} ${canEdit?'':'disabled'} onchange="pmobUpdateStageField('${p.id}',${idx},'done',this.checked)"></td>
-      ${cells}
-    </tr>`;
+    return `<div class="pbg-row">
+      <div class="pbg-idx">${idx+1}</div>
+      <div class="pbg-task" title="${esc(s.task)}">${esc(s.task)}</div>
+      <div class="pbg-assign">${canEdit?`<input value="${esc(s.assigned)}" placeholder="Unassigned" onchange="pmobUpdateStageField('${p.id}',${idx},'assigned',this.value)">`:(s.assigned?`<span title="${esc(s.assigned)}">${esc(s.assigned)}</span>`:'<span style="color:#bbb">—</span>')}</div>
+      <div class="pbg-date">${canEdit?`<input type="date" value="${s.start||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'start',this.value)">`:(s.start||'—')}</div>
+      <div class="pbg-date">${canEdit?`<input type="date" value="${s.end||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'end',this.value)">`:(s.end||'—')}</div>
+      <div class="pbg-status"><span class="pb-pill pb-s-${status}">${status==='done'?'Done':status==='progress'?'Active':status==='overdue'?'O.due':status==='notset'?'—':'Soon'}</span></div>
+      <div class="pbg-prog"><input class="pb-chk" type="checkbox" ${s.done?'checked':''} ${canEdit?'':'disabled'} onchange="pmobUpdateStageField('${p.id}',${idx},'done',this.checked)"></div>
+      <div class="pbg-track">${barHtml}</div>
+    </div>`;
   }).join('');
 
-  const stickyW=22+160+110+92+92+96+52;
-  const gtableHtml=`${hasDates?'':`<div style="padding:9px 12px;text-align:center;color:var(--t2);font-size:11px;background:var(--bg);border-radius:8px;margin-bottom:8px">No dates set yet — add a Start/End date below to see this project's Gantt.</div>`}
-  <div style="overflow-x:auto"><table class="pb-gtbl">
-    <thead>
-      <tr>
-        <th class="pb-idx pb-sticky">#</th>
-        <th class="pb-task pb-sticky" style="text-align:left">Task</th>
-        <th class="pb-assign pb-sticky" style="text-align:left">Assigned to</th>
-        <th class="pb-date-s pb-sticky">Start</th>
-        <th class="pb-date-e pb-sticky">End</th>
-        <th class="pb-status pb-sticky" style="text-align:left">Status</th>
-        <th class="pb-prog pb-sticky">Progress</th>
-        ${monthHtml}
-      </tr>
-      <tr>
-        <th class="pb-sticky" colspan="7" style="left:0;width:${stickyW}px;min-width:${stickyW}px"></th>
-        ${dowHtml}
-      </tr>
-    </thead>
-    <tbody>${bodyRows}</tbody>
-  </table></div>`;
+  const ganttBlock=`${hasDates?'':`<div style="padding:7px 10px;text-align:center;color:var(--t2);font-size:10.5px;background:var(--bg);border-radius:7px;margin-bottom:6px">No dates set yet — add a Start/End date below to see this project's Gantt.</div>`}
+  <div class="pbg-wrap">
+    <div class="pbg-hd">
+      <div class="pbg-idx">#</div>
+      <div class="pbg-task">Task</div>
+      <div class="pbg-assign">Assigned</div>
+      <div class="pbg-date">Start</div>
+      <div class="pbg-date">End</div>
+      <div class="pbg-status">Status</div>
+      <div class="pbg-prog">✓</div>
+      <div class="pbg-hdtrack">${monthTicksHtml}<div class="pbg-today" style="left:${todayPct.toFixed(2)}%"></div></div>
+    </div>
+    ${bodyRows}
+  </div>`;
 
   return `<div style="padding:12px 14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">
       <div style="font-size:10.5px;color:var(--t2)">${done} of ${(p.stages||[]).length} stages complete · ${targetLine}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${canEdit&&p.projId?`<button class="btn sm" onclick="event.stopPropagation();pmobResyncCompletion('${p.id}')"><i class="ti ti-refresh"></i>Re-check from PMO</button>`:''}
@@ -2741,7 +2735,7 @@ function pmobGanttScheduleHtml(p,projRef,canEdit,pendingExt){
         ${CU?.isAdmin?`<button class="btn sm danger" onclick="event.stopPropagation();deletePMOBeta('${p.id}','${esc(p.projName)}')"><i class="ti ti-trash"></i></button>`:''}
       </div>
     </div>
-    ${gtableHtml}
+    ${ganttBlock}
     ${projRef.id?projectDocChecklistHtml(projRef):''}
   </div>`;
 }
