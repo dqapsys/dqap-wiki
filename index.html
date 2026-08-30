@@ -86,6 +86,7 @@ const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
 const AMC_SCOPES=["CAMC","N-CAMC"];
 const PMO_COL="dqap_pmo",PAY_COL="dqap_payments",RMA_COL="dqap_rma",BUDGET_COL="dqap_budget",BUDGET_CFG_COL="dqap_budget_config";
+const PMO_BETA_COL="dqap_pmo_beta"; // New PMO (Beta) — fully separate collection; never read from or written to by the existing PMO module
 const BUDGET_HEADS=["OEM Material Purchase","Cable Purchase","3rd Party","I&C","Warranty Cost","Other Expenses"];
 const ATTENDANCE_COL="dqap_attendance";
 const CFG={NOTIFY_ON:true,EJS_KEY:"5HDT4B76AYxVxx0hw",EJS_SERVICE:"service_hbeq0no",EJS_TEMPLATE:"template_ew30odk",NOTIFY_TO:"uv@dqap.in"};
@@ -318,6 +319,43 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   .pmo-new-stage-row>div:first-child{grid-column:1/-1}
   .pmo-new-stage-row>input.fi:last-child{grid-column:1/-1}
 }
+/* â”€â”€ New PMO (Beta) â€” Gantt table, namespaced "pb-" so it never touches existing PMO styles â”€â”€ */
+table.pb-gtbl{border-collapse:separate;border-spacing:0;font-size:11.5px;width:100%}
+table.pb-gtbl th,table.pb-gtbl td{border-right:.5px solid #eee;border-bottom:.5px solid #eee}
+table.pb-gtbl thead{position:sticky;top:0;z-index:5}
+table.pb-gtbl thead th{background:#fafafa;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#666;padding:4px}
+.pb-sticky{position:sticky;background:#fff;z-index:2}
+table.pb-gtbl thead th.pb-sticky{background:#fafafa;z-index:6}
+tr.pb-row{cursor:pointer}
+tr.pb-row:hover td.pb-sticky{background:#fbfdff}
+tr.pb-row.sel td.pb-sticky{background:var(--pl)}
+tr.pb-row.sel{background:var(--pl)}
+.pb-num{width:78px;min-width:78px;left:0}
+.pb-name{width:220px;min-width:220px;padding:5px 8px;left:78px;text-align:left}
+.pb-pct{width:90px;min-width:90px;left:298px;text-align:center}
+.pb-idx{width:22px;min-width:22px;text-align:center;color:#999;left:0}
+.pb-task{width:160px;min-width:160px;padding:4px 6px;font-weight:600;text-align:left;left:22px}
+.pb-assign{width:110px;min-width:110px;padding:4px 6px;font-size:10.5px;color:#555;text-align:left;left:182px}
+.pb-prog{width:52px;min-width:52px;text-align:center;left:292px}
+.pb-date-s{width:92px;min-width:92px;padding:3px 4px;left:344px}
+.pb-date-e{width:92px;min-width:92px;padding:3px 4px;left:436px}
+.pb-dur{width:40px;min-width:40px;text-align:center;color:#666;left:528px}
+.pb-status{width:96px;min-width:96px;padding:4px 6px;text-align:left;left:568px;border-right:1.5px solid #ccc}
+.pb-date-s input,.pb-date-e input,.pb-task input{width:100%;border:.5px solid var(--bds);border-radius:5px;padding:3px 4px;font-size:10.5px;font-family:inherit}
+.pb-daycell{width:11px;min-width:11px;max-width:11px;height:24px;padding:0}
+.pb-daycell.weekend{background:#F7F8FA}
+.pb-monthlbl{background:#F0F2F5;font-weight:800;font-size:8px;color:#555;text-align:left;padding-left:3px;height:15px}
+.pb-dowcell{font-size:7.5px;font-weight:700;color:#999;text-align:center;height:14px}
+.pb-today{box-shadow:inset 0 0 0 1.5px #D32F2F}
+.pb-bar-done{background:#2E7D32}
+.pb-bar-progress{background:#0070C0}
+.pb-bar-overdue{background:#B71C1C}
+.pb-pill{display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:20px;font-size:9px;font-weight:800}
+.pb-s-done{background:#E8F5E9;color:#1B5E20}
+.pb-s-progress{background:#E3F2FD;color:#0070C0}
+.pb-s-overdue{background:#FFEBEE;color:#B71C1C}
+.pb-s-upcoming{background:#F1F1F1;color:#888}
+.pb-chk{width:14px;height:14px;cursor:pointer}
 .chat-msg-row{display:flex;margin:3px 0;align-items:flex-end}
 .chat-msg-row.mine{justify-content:flex-end}
 .chat-msg-row.theirs{justify-content:flex-start}
@@ -486,6 +524,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('amc')"             id="ni-amc"><i class="ti ti-calendar-repeat"></i>AMC Management<span id="amc-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('pmo')"             id="ni-pmo"><i class="ti ti-layout-kanban"></i>PMO</div>
+    <div class="ni" onclick="go('pmobeta')"         id="ni-pmobeta"><i class="ti ti-timeline"></i>New PMO <span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:800;margin-left:4px;padding:0 6px">BETA</span></div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS<span id="payms-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openCSS()"             id="ni-css"><i class="ti ti-headset"></i>CSS<span id="css-nav-badge" class="nav-badge" style="display:none"></span></div>
@@ -855,6 +894,28 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div id="pmo-stages-form"></div>
     <input type="hidden" id="pmo-eid">
   </div></div></div>
+</div>
+
+<!-- NEW PMO (BETA) -->
+<div id="v-pmobeta" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-timeline" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>New PMO <span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:800">BETA</span></div><div class="pg-s">Date-driven project schedule &amp; Gantt — runs alongside the existing PMO module, does not replace it</div></div>
+    <div class="tr"><button class="btn pri" onclick="importFromPMO()"><i class="ti ti-download"></i>Import from PMO</button></div>
+  </div>
+  <div class="content">
+    <div style="background:#FFF3E0;border:1px solid #FFD9A0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11.5px;color:#6B3600">
+      <b>Beta module.</b> This is separate from the existing PMO module and its data — nothing here affects PMO. "Import from PMO" pulls in any project + stage not already here (task names and %-complete only; Assigned to / Start / End are left blank since they don't exist in PMO today — set them here).
+    </div>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr)" id="pmob-stats"></div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch"><div class="ct"><i class="ti ti-chart-gantt" style="font-size:14px"></i>Portfolio Gantt <span style="font-weight:400;font-size:11px;color:var(--t2)">— click a project to open its schedule</span></div></div>
+      <div style="overflow-x:auto"><table class="pb-gtbl" id="pmob-ptable"></table></div>
+    </div>
+    <div class="card" id="pmob-detailcard">
+      <div class="ch"><div class="ct" id="pmob-d-title">Select a project above</div><div id="pmob-d-actions"></div></div>
+      <div style="overflow-x:auto"><table class="pb-gtbl" id="pmob-gtable"></table></div>
+    </div>
+  </div>
 </div>
 
 <!-- â•â• LEAD MANAGEMENT â•â• -->
@@ -1476,13 +1537,13 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 </div>
 
 <script>
-let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[];
+let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rmaData=[],budgetData=[],budgetCfgData=[],taskData=[],usersData=[],amcData=[],pmoBetaData=[];
 // Carries a deal → PMO kickoff task through "Manage Projects" then "New PMO
 // Project" so the originating Sales CRM task can be auto-completed once both
 // steps are done, and so the new project ties back to the deal that won it.
 let pmoKickoffLink=null; // {taskId, dealId, projId}
 let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],debtAllocationsData=[],debtAssignmentsData=[],debtCustomersData=[],debtCycleId='',cssTicketsData=[];
-let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null;
+let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null,pmoBetaUnsub=null,pmobExpandedId=null;
 let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,debtAllocationUnsub=null,debtAssignmentUnsub=null,debtMetaUnsub=null,cssTicketsUnsub=null;
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null,chatGroupMembersModalThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
@@ -1562,9 +1623,9 @@ function logout(){
   if(!confirm('Sign out of DORBIT?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,pmoBetaUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=pmoBetaUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
   chatThreadsData=[];chatMessagesData=[];chatMemberThreadsRaw=[];chatBroadcastThreadsRaw=[];chatThreadNotificationBaseline=new Map();chatNotificationBaselineReady=false;arrivingChatThreadId='';dismissChatArrival();
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
@@ -1593,7 +1654,7 @@ function startApp(){
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
   startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();startAMCListen();populateEngineers();startHolidaysListen();startProjectDocTemplateListen();
-  setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
+  setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPMOBetaListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
   setTimeout(maybePromptChatNotifications,1200);
 }
@@ -1625,6 +1686,14 @@ function startPMOListen(){
   pmoUnsub=db.collection(PMO_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
     pmoData=sn.docs.map(d=>({id:d.id,...d.data()}));
     renderPMO();updateDashStats();
+  },err=>{});
+}
+// ── NEW PMO (BETA) — separate collection, separate listener; never touches PMO_COL / pmoData ──
+function startPMOBetaListen(){
+  if(pmoBetaUnsub)pmoBetaUnsub();
+  pmoBetaUnsub=db.collection(PMO_BETA_COL).orderBy('createdAt','desc').onSnapshot(sn=>{
+    pmoBetaData=sn.docs.map(d=>({id:d.id,...d.data()}));
+    if(el('v-pmobeta')&&el('v-pmobeta').style.display!=='none')renderPMOBeta();
   },err=>{});
 }
 function startPayListen(){
@@ -2484,6 +2553,306 @@ function renderPMODetailsTable(list){
     <tbody>${rows}</tbody>
   </table></div></div>`;
 }
+// ════════════════════════════════════════════════════════════════
+// NEW PMO (BETA) — fully separate module. Reads pmoData (PMO_COL) only
+// to import; all Beta reads/writes go through PMO_BETA_COL / pmoBetaData.
+// Never mutates pmoData, PMO_COL, or any existing PMO function/UI.
+// ════════════════════════════════════════════════════════════════
+const PMOB_DOW=['S','M','T','W','T','F','S'];
+function pmobToday(){return new Date().toISOString().slice(0,10);}
+function pmobToDays(iso){return Math.floor(new Date(iso+'T00:00:00').getTime()/86400000);}
+function pmobFromDays(n){return new Date(n*86400000).toISOString().slice(0,10);}
+function pmobFmtDMY(iso){const dt=new Date(iso+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+dt.getFullYear();}
+function pmobFmtShort(iso){const dt=new Date(iso+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleDateString('en-IN',{month:'short'});}
+function pmobStageStatus(s){
+  if(s.done) return 'done';
+  if(!s.start&&!s.end) return 'notset';
+  const today=pmobToday();
+  if(s.end&&s.end<today) return 'overdue';
+  if(s.start&&s.start<=today) return 'progress';
+  return 'upcoming';
+}
+function pmobDuration(s){return s.start?pmobToDays(s.end)-pmobToDays(s.start)+1:0;}
+function pmobPct(p){const done=(p.stages||[]).filter(s=>pmobStageStatus(s)==='done').length;return Math.round(done/PMO_STAGES.length*100);}
+function pmobOverdueCount(p){return (p.stages||[]).filter(s=>pmobStageStatus(s)==='overdue').length;}
+function pmobMonthDowHeader(rangeStart,nDays){
+  let prevMonth=null,span=0,spans=[];
+  for(let i=0;i<nDays;i++){const m=pmobFromDays(rangeStart+i).slice(0,7);if(m!==prevMonth){if(prevMonth!==null)spans.push({m:prevMonth,n:span});prevMonth=m;span=1;}else span++;}
+  spans.push({m:prevMonth,n:span});
+  const monthHtml=spans.map(sp=>{const label=new Date(sp.m+'-01').toLocaleDateString('en-IN',{month:'short',year:'2-digit'});return `<th class="pb-monthlbl" colspan="${sp.n}" style="width:${sp.n*11}px">${label}</th>`;}).join('');
+  let dowHtml='';
+  const today=pmobToday();
+  for(let i=0;i<nDays;i++){
+    const iso=pmobFromDays(rangeStart+i); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6,isToday=iso===today;
+    dowHtml+=`<th class="pb-dowcell${isWknd?' weekend':''}${isToday?' pb-today':''}" title="${iso}">${PMOB_DOW[dow]}</th>`;
+  }
+  return {monthHtml,dowHtml};
+}
+
+function renderPMOBeta(){
+  const total=pmoBetaData.length;
+  const completed=pmoBetaData.filter(p=>pmobPct(p)===100).length;
+  const overdue=pmoBetaData.filter(p=>pmobOverdueCount(p)>0).length;
+  const statsEl=el('pmob-stats');
+  if(statsEl)statsEl.innerHTML=`
+    <div class="sc"><div class="si" style="background:#E3F2FD"><i class="ti ti-building" style="color:#0070C0;font-size:18px"></i></div><div><div class="sv">${total}</div><div class="sl">Projects in Beta</div></div></div>
+    <div class="sc"><div class="si" style="background:#E8F5E9"><i class="ti ti-circle-check" style="color:#2E7D32;font-size:18px"></i></div><div><div class="sv">${completed}</div><div class="sl">Fully complete</div></div></div>
+    <div class="sc"><div class="si" style="background:#FFEBEE"><i class="ti ti-alert-triangle" style="color:#B71C1C;font-size:18px"></i></div><div><div class="sv">${overdue}</div><div class="sl">With overdue stage(s)</div></div></div>`;
+
+  const ptable=el('pmob-ptable'); if(!ptable) return;
+  if(!pmoBetaData.length){
+    ptable.innerHTML=`<tr><td style="padding:30px;text-align:center;color:var(--t2)">No projects in New PMO (Beta) yet. Use <b>Import from PMO</b> above to bring in your existing projects.</td></tr>`;
+    renderPMOBetaDetail();
+    return;
+  }
+  let allDays=[]; pmoBetaData.forEach(p=>(p.stages||[]).forEach(s=>{if(s.start){allDays.push(pmobToDays(s.start));allDays.push(pmobToDays(s.end));}}));
+  if(!allDays.length) allDays=[pmobToDays(pmobToday())-15,pmobToDays(pmobToday())+15];
+  const rangeStart=Math.min(...allDays)-5, rangeEnd=Math.max(...allDays)+5, nDays=rangeEnd-rangeStart+1;
+  const {monthHtml,dowHtml}=pmobMonthDowHeader(rangeStart,nDays);
+  const today=pmobToday();
+
+  const rows=pmoBetaData.map(p=>{
+    const pct=pmobPct(p), overdue=pmobOverdueCount(p);
+    const dayStatus=new Array(nDays).fill(null);
+    (p.stages||[]).forEach(s=>{
+      if(!s.start) return;
+      const st=pmobStageStatus(s);
+      const sIdx=pmobToDays(s.start)-rangeStart, eIdx=pmobToDays(s.end)-rangeStart;
+      for(let i=Math.max(0,sIdx);i<=Math.min(nDays-1,eIdx);i++) if(!dayStatus[i]) dayStatus[i]=st;
+    });
+    let cells='',i=0;
+    while(i<nDays){
+      const st=dayStatus[i];
+      if(st){let j=i;while(j<nDays&&dayStatus[j]===st)j++;cells+=`<td class="pb-bar-${st}" colspan="${j-i}"></td>`;i=j;continue;}
+      const iso=pmobFromDays(rangeStart+i); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6,isToday=iso===today;
+      const cls=['pb-daycell'];if(isWknd)cls.push('weekend');if(isToday)cls.push('pb-today');
+      cells+=`<td class="${cls.join(' ')}"></td>`; i++;
+    }
+    return `<tr class="pb-row${p.id===pmobExpandedId?' sel':''}" onclick="pmobSelect('${p.id}')">
+      <td class="pb-num pb-sticky">${p.projNum?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:700;border:none">${esc(p.projNum)}</span>`:''}</td>
+      <td class="pb-name pb-sticky"><div style="font-weight:700;font-size:12px">${esc(p.projName||'(untitled)')}</div><div style="font-size:10px;color:var(--t2)">${esc(p.client||'')}</div></td>
+      <td class="pb-pct pb-sticky"><span style="font-weight:800;color:${overdue?'#B71C1C':pct===100?'#1B5E20':'#0070C0'}">${pct}%</span>${overdue?`<div style="font-size:9.5px;color:#B71C1C;font-weight:800">${overdue} overdue</div>`:''}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  ptable.innerHTML=`
+    <thead>
+      <tr>
+        <th class="pb-num pb-sticky">Project</th>
+        <th class="pb-name pb-sticky" style="text-align:left">&nbsp;</th>
+        <th class="pb-pct pb-sticky">Overall</th>
+        ${monthHtml}
+      </tr>
+      <tr>
+        <th class="pb-sticky" colspan="3" style="left:0;width:388px;min-width:388px"></th>
+        ${dowHtml}
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>`;
+  renderPMOBetaDetail();
+}
+
+function pmobSelect(id){pmobExpandedId=(pmobExpandedId===id?null:id);renderPMOBeta();}
+
+function renderPMOBetaDetail(){
+  const titleEl=el('pmob-d-title'), actionsEl=el('pmob-d-actions'), gtable=el('pmob-gtable');
+  if(!titleEl||!gtable) return;
+  const p=pmoBetaData.find(x=>x.id===pmobExpandedId);
+  if(!p){
+    titleEl.textContent='Select a project above';
+    if(actionsEl)actionsEl.innerHTML='';
+    gtable.innerHTML='';
+    return;
+  }
+  const pct=pmobPct(p), overdue=pmobOverdueCount(p);
+  titleEl.innerHTML=`${esc(p.projNum||'')} · ${esc(p.projName||'')} <span style="font-weight:400;color:var(--t2);font-size:11.5px">(${esc(p.client||'')}) — ${pct}% complete${overdue?` · ${overdue} overdue`:''}</span>`;
+  const canEdit=CU?.canWrite||false;
+  if(actionsEl)actionsEl.innerHTML=`
+    ${canEdit&&p.projId?`<button class="btn sm" onclick="pmobResyncCompletion('${p.id}')"><i class="ti ti-refresh"></i>Re-check from PMO</button>`:''}
+    <button class="btn sm pri" onclick="exportPMOBetaXls('${p.id}')"><i class="ti ti-download"></i>Export</button>`;
+
+  const days=[]; (p.stages||[]).forEach(s=>{if(s.start){days.push(pmobToDays(s.start));days.push(pmobToDays(s.end));}});
+  if(!days.length){
+    gtable.innerHTML=`<tr><td style="padding:24px;text-align:center;color:var(--t2)">No dates set yet for any stage — add a Start/End date below to see this project's Gantt.</td></tr>`;
+  }
+  const rangeStart=days.length?Math.min(...days)-3:pmobToDays(pmobToday())-3;
+  const rangeEnd=days.length?Math.max(...days)+3:pmobToDays(pmobToday())+3;
+  const nDays=rangeEnd-rangeStart+1;
+  const {monthHtml,dowHtml}=pmobMonthDowHeader(rangeStart,nDays);
+  const today=pmobToday();
+
+  const bodyRows=(p.stages||[]).map((s,idx)=>{
+    const status=pmobStageStatus(s);
+    let cells='';
+    for(let i=0;i<nDays;i++){
+      if(s.start){
+        const sIdx=pmobToDays(s.start)-rangeStart, eIdx=pmobToDays(s.end)-rangeStart;
+        if(i>=sIdx&&i<=eIdx){const span=eIdx-sIdx+1;cells+=`<td class="pb-bar-${status}" colspan="${span}"></td>`;i=eIdx;continue;}
+      }
+      const iso=pmobFromDays(rangeStart+i); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6,isToday=iso===today;
+      const cls=['pb-daycell'];if(isWknd)cls.push('weekend');if(isToday)cls.push('pb-today');
+      cells+=`<td class="${cls.join(' ')}"></td>`;
+    }
+    return `<tr>
+      <td class="pb-idx pb-sticky">${idx+1}</td>
+      <td class="pb-task pb-sticky">${esc(s.task)}</td>
+      <td class="pb-assign pb-sticky">${canEdit?`<input value="${esc(s.assigned)}" placeholder="Unassigned" onchange="pmobUpdateStageField('${p.id}',${idx},'assigned',this.value)">`:(s.assigned?esc(s.assigned):'<span style="color:#bbb">— unassigned —</span>')}</td>
+      <td class="pb-prog pb-sticky" style="text-align:center"><input class="pb-chk" type="checkbox" ${s.done?'checked':''} ${canEdit?'':'disabled'} onchange="pmobUpdateStageField('${p.id}',${idx},'done',this.checked)"></td>
+      <td class="pb-date-s pb-sticky">${canEdit?`<input type="date" value="${s.start||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'start',this.value)">`:(s.start||'—')}</td>
+      <td class="pb-date-e pb-sticky">${canEdit?`<input type="date" value="${s.end||''}" onchange="pmobUpdateStageField('${p.id}',${idx},'end',this.value)">`:(s.end||'—')}</td>
+      <td class="pb-dur pb-sticky">${s.start?pmobDuration(s)+'d':'—'}</td>
+      <td class="pb-status pb-sticky"><span class="pb-pill pb-s-${status}">${status==='done'?'Completed':status==='progress'?'In progress':status==='overdue'?'Overdue':status==='notset'?'Not scheduled':'Upcoming'}</span></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  gtable.innerHTML=`
+    <thead>
+      <tr>
+        <th class="pb-idx pb-sticky">#</th>
+        <th class="pb-task pb-sticky" style="text-align:left">Task</th>
+        <th class="pb-assign pb-sticky" style="text-align:left">Assigned to</th>
+        <th class="pb-prog pb-sticky">Progress</th>
+        <th class="pb-date-s pb-sticky">Start</th>
+        <th class="pb-date-e pb-sticky">End</th>
+        <th class="pb-dur pb-sticky">Dur.</th>
+        <th class="pb-status pb-sticky" style="text-align:left">Status</th>
+        ${monthHtml}
+      </tr>
+      <tr>
+        <th class="pb-sticky" colspan="8" style="left:0;width:664px;min-width:664px"></th>
+        ${dowHtml}
+      </tr>
+    </thead>
+    <tbody>${bodyRows}</tbody>`;
+}
+
+async function pmobUpdateStageField(betaId,idx,field,value){
+  const p=pmoBetaData.find(x=>x.id===betaId); if(!p) return;
+  if(!CU?.canWrite){toast('Only authorized users can edit','err');return;}
+  const stages=(p.stages||[]).map((s,i)=>i===idx?{...s,[field]:value}:s);
+  try{
+    await db.collection(PMO_BETA_COL).doc(betaId).update({stages,updatedAt:new Date().toISOString()});
+  }catch(e){toast('Failed: '+e.message,'err');}
+}
+
+async function importFromPMO(){
+  if(!CU?.canWrite){toast('Only authorized users can import','err');return;}
+  if(!pmoData.length){toast('No PMO projects to import yet','err');return;}
+  const existingProjIds=new Set(pmoBetaData.map(p=>p.projId).filter(Boolean));
+  const toImport=pmoData.filter(p=>!existingProjIds.has(p.id));
+  if(!toImport.length){toast('Everything from PMO is already imported into Beta','ok');return;}
+  if(!confirm(`Import ${toImport.length} project(s) from PMO into New PMO (Beta)?\n\nOnly task names and %-complete (as a Completed/Not-completed flag) come across. Assigned to / Start / End are left blank — set those in Beta. Existing Beta projects are not touched.`))return;
+  showLoad('Importing from PMO…');
+  try{
+    const now=new Date().toISOString();
+    const batch=db.batch();
+    toImport.forEach(p=>{
+      const srcStages=(p.stages&&p.stages.length)?p.stages:PMO_STAGES.map(stage=>({stage,pct:0,remarks:''}));
+      const stages=srcStages.map(s=>({task:s.stage||'',assigned:'',start:'',end:'',done:(Number(s.pct)||0)>=100,remarks:s.remarks||''}));
+      const ref=db.collection(PMO_BETA_COL).doc();
+      batch.set(ref,{projId:p.id,projName:p.projName||'',projNum:p.projNum||'',client:p.client||'',stages,createdAt:now,updatedAt:now,importedFromPmoAt:now});
+    });
+    await batch.commit();
+    toast(`Imported ${toImport.length} project(s) into New PMO (Beta) ✓`,'ok');
+  }catch(e){toast('Import failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+async function pmobResyncCompletion(betaId){
+  const beta=pmoBetaData.find(x=>x.id===betaId); if(!beta) return;
+  if(!CU?.canWrite){toast('Only authorized users can do this','err');return;}
+  const live=pmoData.find(x=>x.id===beta.projId);
+  if(!live){toast('No matching PMO project found to re-check','err');return;}
+  if(!confirm('Refresh Completed/Not-completed status from current PMO %ages?\n\nDates and assignments already entered here will not be changed.'))return;
+  const liveStages=live.stages||[];
+  const stages=(beta.stages||[]).map((s,i)=>{
+    const match=liveStages[i];
+    const pct=match?(Number(match.pct)||0):0;
+    return {...s,done:pct>=100};
+  });
+  showLoad('Refreshing…');
+  try{
+    await db.collection(PMO_BETA_COL).doc(betaId).update({stages,updatedAt:new Date().toISOString()});
+    toast('Completion status refreshed ✓','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
+}
+
+function exportPMOBetaXls(betaId){
+  const p=pmoBetaData.find(x=>x.id===betaId); if(!p){toast('Select a project first','err');return;}
+  const title=`${p.projNum?p.projNum+' — ':''}${p.projName||'Project'}`;
+  const stages=p.stages||[];
+  const commencement=(stages.find(s=>/kick.?off/i.test(s.task))||stages.find(s=>s.start)||{}).start||'';
+  const days=[]; stages.forEach(s=>{if(s.start){days.push(pmobToDays(s.start));days.push(pmobToDays(s.end));}});
+  if(!days.length){toast('No dates scheduled yet — nothing to export.','err');return;}
+  const rangeStart=Math.min(...days), rangeEnd=Math.max(...days), nDays=rangeEnd-rangeStart+1;
+
+  const bands=[]; let bi=0;
+  while(bi<nDays){
+    const iso=pmobFromDays(rangeStart+bi);
+    const jsDow=new Date(iso+'T00:00:00').getDay(); const isoDow=jsDow===0?7:jsDow;
+    const span=Math.min(8-isoDow,nDays-bi);
+    bands.push({n:span,label:iso}); bi+=span;
+  }
+  const bandHtml=bands.map(b=>`<td colspan="${b.n}" style="background:#F0F2F5;font-weight:700;font-size:10px;text-align:left;padding:2px 4px;border:1px solid #ccc">${pmobFmtShort(b.label)}</td>`).join('');
+  let dateRowHtml='',dowRowHtml='';
+  for(let k=0;k<nDays;k++){
+    const iso=pmobFromDays(rangeStart+k); const dow=new Date(iso+'T00:00:00').getDay(); const isWknd=dow===0||dow===6;
+    dateRowHtml+=`<td style="font-size:9px;text-align:center;background:${isWknd?'#F7F8FA':'#fff'};border:1px solid #eee">${new Date(iso+'T00:00:00').getDate()}</td>`;
+    dowRowHtml+=`<td style="font-size:8px;text-align:center;color:#999;background:${isWknd?'#F7F8FA':'#fff'};border:1px solid #eee">${PMOB_DOW[dow]}</td>`;
+  }
+  const bodyRows=stages.map(s=>{
+    const status=pmobStageStatus(s);
+    const color=status==='done'?'#2E7D32':status==='progress'?'#0070C0':status==='overdue'?'#B71C1C':null;
+    let dayCells='';
+    for(let k=0;k<nDays;k++){
+      const day=rangeStart+k;
+      const inRange=s.start&&day>=pmobToDays(s.start)&&day<=pmobToDays(s.end);
+      dayCells+=`<td style="border:1px solid #eee;${inRange?`background:${color}`:''}"></td>`;
+    }
+    return `<tr>
+      <td style="padding:4px 6px;border:1px solid #ddd;font-weight:600">${esc(s.task)}</td>
+      <td style="padding:4px 6px;border:1px solid #ddd">${esc(s.assigned)}</td>
+      <td style="padding:4px 6px;border:1px solid #ddd;text-align:center">${s.done?1:0}</td>
+      <td style="padding:4px 6px;border:1px solid #ddd">${s.start?pmobFmtDMY(s.start):''}</td>
+      <td style="padding:4px 6px;border:1px solid #ddd">${s.end?pmobFmtDMY(s.end):''}</td>
+      <td style="border:1px solid #ddd"></td>
+      <td style="padding:4px 6px;border:1px solid #ddd;text-align:center">${s.start?pmobDuration(s):''}</td>
+      ${dayCells}
+    </tr>`;
+  }).join('');
+  const totalCols=7+nDays;
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Project schedule</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+<style>td{font-family:Calibri,Arial,sans-serif;font-size:11px}</style>
+</head><body>
+<table>
+<tr><td colspan="7" style="font-size:16px;font-weight:800">${esc(title)}</td><td colspan="2" style="font-weight:700">Project Commencement:</td><td colspan="2">${commencement?pmobFmtDMY(commencement):''}</td></tr>
+<tr><td colspan="${totalCols}"></td></tr>
+<tr>
+<td style="font-weight:800;background:#fafafa;border:1px solid #ccc">TASK</td>
+<td style="font-weight:800;background:#fafafa;border:1px solid #ccc">ASSIGNED TO</td>
+<td style="font-weight:800;background:#fafafa;border:1px solid #ccc">PROGRESS</td>
+<td style="font-weight:800;background:#fafafa;border:1px solid #ccc">START</td>
+<td style="font-weight:800;background:#fafafa;border:1px solid #ccc">END</td>
+<td style="background:#fafafa;border:1px solid #ccc"></td>
+<td style="font-weight:800;background:#fafafa;border:1px solid #ccc">DUR.</td>
+${bandHtml}
+</tr>
+<tr><td colspan="7"></td>${dateRowHtml}</tr>
+<tr><td colspan="7"></td>${dowRowHtml}</tr>
+${bodyRows}
+</table>
+</body></html>`;
+  const blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=title.replace(/[^a-z0-9]+/gi,'_').slice(0,50)+'_Schedule.xls';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function renderPMO(){
   const dataTools=el('pmo-data-tools');if(dataTools)dataTools.style.display=isUpdeshDataAdmin()&&pmoDashView==='cards'?'inline-flex':'none';
   const statusF=el('pmo-ff-status')?.value||'';
@@ -4130,6 +4499,7 @@ function go(n){
   if(n==='tasks'){togTaskForm(false);renderTasks();markTasksSeen();}
   if(n==='amc'){togAMCForm(false);amcVisitForId=null;renderAMC();}
   if(n==='pmo')renderPMO();
+  if(n==='pmobeta')renderPMOBeta();
   if(n==='leaderboard')renderTeamPerformance();
   if(n==='pmo-add'){if(!g('pmo-eid'))resetPMOForm();populatePMOProjects();applyPmoKickoffAutoSelect();}
   if(n==='attendance'){attRender();}
