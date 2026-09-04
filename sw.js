@@ -1,4 +1,20 @@
 // DQAP Wiki Service Worker
+// Version 78.48 - Attendance: added prev/next month navigation (plus a
+// "Today" shortcut once you've navigated away) to both calendars — the
+// full Calendar tab and the personal "this month" calendar on Check-In.
+// Closes the gap from 78.47: holidays and OOO entries in a future or past
+// month are now reachable, not just the current calendar month. "Today"
+// highlighting is now month-aware so it doesn't fire on the matching day
+// number in a different month. Per-user nav state resets on logout.
+// Version 78.47 - Attendance fix: the personal "this month" calendar
+// (holidays + your own OOO entries), meant to appear on the default
+// Check-In tab, was fully coded but its container div (#att-emp-calendar)
+// didn't exist in the page, so attRenderEmpCalendar() never actually ran
+// for anyone — every user was one click away (the separate Calendar tab)
+// from seeing holidays, but nobody saw them by default. Re-added the
+// container and wired the render call back in. Note: neither calendar
+// (this one or the full Calendar tab) has month navigation yet — both
+// only ever show the current calendar month.
 // Version 78.46 - New PMO (Beta): added bulk CSV/Excel import ("Sample
 // Format" download + "Import CSV/Excel" upload) so an entire portfolio's
 // Task/Assigned to/Start/End/Progress can be populated in one shot, not
@@ -45,7 +61,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.46-20260830-4';
+const CACHE_VERSION = 'dqap-wiki-v78.48-20260830-6';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
