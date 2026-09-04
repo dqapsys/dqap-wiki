@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DORBIT | Operations Base</title>
+<title>DORBIT | DQAP Work Horse</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23006994'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white'%3EDQ%3C/text%3E%3C/svg%3E">
 <meta name="theme-color" content="#006994">
@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.46";
+const APP_VERSION="78.48";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-4";
+const APP_BUILD="20260830-6";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -952,6 +952,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">-</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()"><i class="ti ti-check"></i>I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)"><i class="ti ti-map-pin"></i>OOO / Client Visit / WFH</button></div>
       <div id="att-late-alert" style="display:none;margin-bottom:12px"></div>
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">This Month — Holidays &amp; Your OOO</div>
+      <div id="att-emp-calendar" style="margin-bottom:14px"></div>
       <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Attendance History</div>
       <div id="att-timeline" style="display:grid;gap:4px"></div>
     </div>
@@ -1634,7 +1636,7 @@ function logout(){
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,pmoBetaUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=pmoBetaUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;attCalYear=null;attCalMonth=null;attEmpCalYear=null;attEmpCalMonth=null;
   chatThreadsData=[];chatMessagesData=[];chatMemberThreadsRaw=[];chatBroadcastThreadsRaw=[];chatThreadNotificationBaseline=new Map();chatNotificationBaselineReady=false;arrivingChatThreadId='';dismissChatArrival();
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
@@ -6577,6 +6579,7 @@ function attColorForUser(uid){
 function attDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 // ── HOLIDAYS ──────────────────────────
 let holidaysData=[],holidaysUnsub=null;
+let attCalYear=null,attCalMonth=null,attEmpCalYear=null,attEmpCalMonth=null; // null = default to current month on first render
 function startHolidaysListen(){
   if(holidaysUnsub)holidaysUnsub();
   holidaysUnsub=db.collection(HOLIDAYS_COL).onSnapshot(sn=>{
@@ -6934,6 +6937,7 @@ async function attRenderEmp(){
     }
   }
   const tl=el('att-timeline'); if(tl)tl.innerHTML=h;
+  attRenderEmpCalendar(); // now that #att-emp-calendar exists on the Check-In tab, this actually renders (previously orphaned — see version notes)
 }
 async function attRenderAdm(){
   const controls=el('att-report-controls');
@@ -7072,12 +7076,14 @@ async function attRenderEmpCalendar(){
  try{
   const uid=attUserKey();
   const now=new Date();
-  const year=now.getFullYear();
-  const month=now.getMonth();
+  if(attEmpCalYear===null){attEmpCalYear=now.getFullYear();attEmpCalMonth=now.getMonth();}
+  const year=attEmpCalYear;
+  const month=attEmpCalMonth;
   const firstDay=new Date(year,month,1);
   const lastDay=new Date(year,month+1,0);
   const daysInMonth=lastDay.getDate();
   const startingDayOfWeek=firstDay.getDay();
+  const isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
   
   const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthYear=`${monthNames[month]} ${year}`;
@@ -7105,7 +7111,12 @@ async function attRenderEmpCalendar(){
   await Promise.all(promises);
   
   // Build calendar
-  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
+  let calendarHtml=`<div class="card"><div class="ch" style="padding:10px 16px;gap:8px">
+    <button class="btn sm" onclick="attEmpCalNav(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+    <div class="ct" style="flex:1;justify-content:center;text-align:center"><div style="font-weight:600;font-size:14px">${monthYear}</div></div>
+    <button class="btn sm" onclick="attEmpCalNav(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
+    ${isCurrentMonth?'':'<button class="btn sm" onclick="attEmpCalNav(0)" title="Back to current month">Today</button>'}
+  </div>`;
   
   // Weekday headers
   calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
@@ -7127,7 +7138,7 @@ async function attRenderEmpCalendar(){
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const ooo=oooData[ds];
-    const isToday=d===now.getDate();
+    const isToday=isCurrentMonth&&d===now.getDate();
     const dayType=attDayType(ds);
     const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
     
@@ -7168,6 +7179,17 @@ async function attRenderEmpCalendar(){
   console.error('attRenderEmpCalendar failed:',e);
   const empCal=el('att-emp-calendar');if(empCal)empCal.innerHTML=`<div class="empty" style="color:#c0392b">Calendar failed to load: ${esc(e.message)}. Check browser console for details.</div>`;
  }
+}
+function attEmpCalNav(delta){
+  const now=new Date();
+  if(delta===0){attEmpCalYear=now.getFullYear();attEmpCalMonth=now.getMonth();}
+  else{
+    if(attEmpCalYear===null){attEmpCalYear=now.getFullYear();attEmpCalMonth=now.getMonth();}
+    let m=attEmpCalMonth+delta,y=attEmpCalYear;
+    if(m<0){m=11;y--;}else if(m>11){m=0;y++;}
+    attEmpCalYear=y;attEmpCalMonth=m;
+  }
+  attRenderEmpCalendar();
 }
 
 
@@ -7322,12 +7344,14 @@ async function attRenderCalendar(){
   const holAdmin=el('att-holiday-admin');if(holAdmin)holAdmin.style.display=isSuperUser()?'block':'none';
   renderHolidayAdminList();
   const now=new Date();
-  const year=now.getFullYear();
-  const month=now.getMonth();
+  if(attCalYear===null){attCalYear=now.getFullYear();attCalMonth=now.getMonth();}
+  const year=attCalYear;
+  const month=attCalMonth;
   const firstDay=new Date(year,month,1);
   const lastDay=new Date(year,month+1,0);
   const daysInMonth=lastDay.getDate();
   const startingDayOfWeek=firstDay.getDay();
+  const isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
   
   const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthYear=`${monthNames[month]} ${year}`;
@@ -7361,7 +7385,12 @@ async function attRenderCalendar(){
   await Promise.all(promises);
   
   // Build calendar HTML
-  let calendarHtml=`<div class="card"><div class="ch" style="padding:16px"><div class="ct" style="flex:1"><div style="font-weight:600;font-size:14px">${monthYear}</div></div></div>`;
+  let calendarHtml=`<div class="card"><div class="ch" style="padding:10px 16px;gap:8px">
+    <button class="btn sm" onclick="attCalNav(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+    <div class="ct" style="flex:1;justify-content:center;text-align:center"><div style="font-weight:600;font-size:14px">${monthYear}</div></div>
+    <button class="btn sm" onclick="attCalNav(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
+    ${isCurrentMonth?'':'<button class="btn sm" onclick="attCalNav(0)" title="Back to current month">Today</button>'}
+  </div>`;
   
   // Weekday headers
   calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
@@ -7383,7 +7412,7 @@ async function attRenderCalendar(){
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dayOOOs=oooData[ds]||[];
-    const isToday=d===now.getDate();
+    const isToday=isCurrentMonth&&d===now.getDate();
     const dayType=attDayType(ds);
     const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
     
@@ -7445,6 +7474,17 @@ async function attRenderCalendar(){
   console.error('attRenderCalendar failed:',e);
   const calMain=el('att-cal-main');if(calMain)calMain.innerHTML=`<div class="empty" style="color:#c0392b">Calendar failed to load: ${esc(e.message)}. Check browser console for details.</div>`;
  }
+}
+function attCalNav(delta){
+  const now=new Date();
+  if(delta===0){attCalYear=now.getFullYear();attCalMonth=now.getMonth();}
+  else{
+    if(attCalYear===null){attCalYear=now.getFullYear();attCalMonth=now.getMonth();}
+    let m=attCalMonth+delta,y=attCalYear;
+    if(m<0){m=11;y--;}else if(m>11){m=0;y++;}
+    attCalYear=y;attCalMonth=m;
+  }
+  attRenderCalendar();
 }
 
 
