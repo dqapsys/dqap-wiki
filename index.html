@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DORBIT | DQAP Work Horse</title>
+<title>DORBIT | Operations Base</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23006994'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white'%3EDQ%3C/text%3E%3C/svg%3E">
 <meta name="theme-color" content="#006994">
@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.49";
+const APP_VERSION="78.50";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-7";
+const APP_BUILD="20260830-8";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -470,7 +470,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <img src="dqap-logo.png" alt="DQAP" style="height:56px;object-fit:contain;display:inline-block;margin-bottom:12px" onerror="this.style.display='none';document.getElementById('logo-fb').style.display='block'">
       <div id="logo-fb" style="display:none;font-size:24px;font-weight:700;color:var(--p);margin-bottom:12px">dqap</div>
       <div style="font-size:16px;font-weight:600">DORBIT</div>
-      <div style="font-size:12px;color:var(--t2);margin-top:3px">Work Horse</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:3px">Operations Base</div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl r">Username</label><input class="fi" id="l-user" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')el('l-pass').focus()"></div>
     <div class="fg" style="margin-bottom:5px"><label class="fl r">Password</label><input type="password" class="fi" id="l-pass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
@@ -623,7 +623,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• DASHBOARD â•â• -->
 <div id="v-dash" class="view">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DORBIT — DQAP Work Horse</div></div>
+    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DORBIT — Operations Base</div></div>
     <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
   </div>
   <div class="content">
@@ -952,7 +952,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">-</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()"><i class="ti ti-check"></i>I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)"><i class="ti ti-map-pin"></i>OOO / Client Visit / WFH</button></div>
       <div id="att-late-alert" style="display:none;margin-bottom:12px"></div>
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Holidays</div>
+      <div id="att-holidays-hd" style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Holidays</div>
       <div id="att-holidays-list" style="margin-bottom:14px"></div>
       <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Attendance History</div>
       <div id="att-timeline" style="display:grid;gap:4px"></div>
@@ -6119,7 +6119,7 @@ function refreshAppBadge(){
       else navigator.clearAppBadge().catch(()=>{});
     }
   }catch(e){}
-  document.title=c.chat>0?`(${c.chat}) New chat - DORBIT | DQAP Work Horse`:'DORBIT | DQAP Work Horse';
+  document.title=c.chat>0?`(${c.chat}) New chat - DORBIT | Operations Base`:'DORBIT | Operations Base';
 }
 function crmApprovalCount(){
   if(!CU)return 0;
@@ -7074,9 +7074,13 @@ async function attExportMonthlyReport(){
 
 function attRenderHolidaysList(){
   const box=el('att-holidays-list'); if(!box) return;
+  const now=new Date();
+  const monthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const hd=el('att-holidays-hd'); if(hd)hd.textContent=`Holidays — ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
   const today=attDateKey();
-  const sorted=[...holidaysData].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  if(!sorted.length){box.innerHTML='<div class="muted" style="font-size:11px">No holidays added yet.</div>';return;}
+  const sorted=holidaysData.filter(h=>String(h.date||'').slice(0,7)===monthKey).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!sorted.length){box.innerHTML='<div class="muted" style="font-size:11px">No holidays this month.</div>';return;}
   const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const rows=sorted.map(h=>{
     const d=new Date(h.date+'T00:00:00');
