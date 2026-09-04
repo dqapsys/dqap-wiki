@@ -1,4 +1,8 @@
 // DQAP Wiki Service Worker
+// Version 78.50 - Attendance: the Check-In tab holiday list is now scoped
+// to the current calendar month only (was showing every holiday on file
+// regardless of month). Heading updates to show which month is in view,
+// e.g. "Holidays — September 2026".
 // Version 78.49 - Attendance: Check-In tab no longer shows the personal
 // month-grid calendar — replaced with a plain bulleted list of every
 // holiday (date, day of week, name), sorted chronologically, past ones
@@ -68,7 +72,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.49-20260830-7';
+const CACHE_VERSION = 'dqap-wiki-v78.50-20260830-8';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
