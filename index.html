@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.48";
+const APP_VERSION="78.49";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-6";
+const APP_BUILD="20260830-7";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -470,7 +470,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <img src="dqap-logo.png" alt="DQAP" style="height:56px;object-fit:contain;display:inline-block;margin-bottom:12px" onerror="this.style.display='none';document.getElementById('logo-fb').style.display='block'">
       <div id="logo-fb" style="display:none;font-size:24px;font-weight:700;color:var(--p);margin-bottom:12px">dqap</div>
       <div style="font-size:16px;font-weight:600">DORBIT</div>
-      <div style="font-size:12px;color:var(--t2);margin-top:3px">Operations Base</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:3px">Work Horse</div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label class="fl r">Username</label><input class="fi" id="l-user" placeholder="Enter your username" autocomplete="username" onkeydown="if(event.key==='Enter')el('l-pass').focus()"></div>
     <div class="fg" style="margin-bottom:5px"><label class="fl r">Password</label><input type="password" class="fi" id="l-pass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
@@ -623,7 +623,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <!-- â•â• DASHBOARD â•â• -->
 <div id="v-dash" class="view">
   <div class="topbar">
-    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DORBIT — Operations Base</div></div>
+    <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DORBIT — DQAP Work Horse</div></div>
     <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
   </div>
   <div class="content">
@@ -952,8 +952,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">-</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()"><i class="ti ti-check"></i>I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)"><i class="ti ti-map-pin"></i>OOO / Client Visit / WFH</button></div>
       <div id="att-late-alert" style="display:none;margin-bottom:12px"></div>
-      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">This Month — Holidays &amp; Your OOO</div>
-      <div id="att-emp-calendar" style="margin-bottom:14px"></div>
+      <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Holidays</div>
+      <div id="att-holidays-list" style="margin-bottom:14px"></div>
       <div style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Attendance History</div>
       <div id="att-timeline" style="display:grid;gap:4px"></div>
     </div>
@@ -1636,7 +1636,7 @@ function logout(){
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,pmoBetaUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=pmoBetaUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;attCalYear=null;attCalMonth=null;attEmpCalYear=null;attEmpCalMonth=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;attCalYear=null;attCalMonth=null;
   chatThreadsData=[];chatMessagesData=[];chatMemberThreadsRaw=[];chatBroadcastThreadsRaw=[];chatThreadNotificationBaseline=new Map();chatNotificationBaselineReady=false;arrivingChatThreadId='';dismissChatArrival();
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
@@ -6119,7 +6119,7 @@ function refreshAppBadge(){
       else navigator.clearAppBadge().catch(()=>{});
     }
   }catch(e){}
-  document.title=c.chat>0?`(${c.chat}) New chat - DORBIT | Operations Base`:'DORBIT | Operations Base';
+  document.title=c.chat>0?`(${c.chat}) New chat - DORBIT | DQAP Work Horse`:'DORBIT | DQAP Work Horse';
 }
 function crmApprovalCount(){
   if(!CU)return 0;
@@ -6579,13 +6579,13 @@ function attColorForUser(uid){
 function attDateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 // ── HOLIDAYS ──────────────────────────
 let holidaysData=[],holidaysUnsub=null;
-let attCalYear=null,attCalMonth=null,attEmpCalYear=null,attEmpCalMonth=null; // null = default to current month on first render
+let attCalYear=null,attCalMonth=null; // null = default to current month on first render (Calendar tab only)
 function startHolidaysListen(){
   if(holidaysUnsub)holidaysUnsub();
   holidaysUnsub=db.collection(HOLIDAYS_COL).onSnapshot(sn=>{
     holidaysData=sn.docs.map(d=>({id:d.id,...d.data()}));
     if(el('att-cal-main'))attRenderCalendar();
-    if(el('att-emp-calendar'))attRenderEmpCalendar();
+    if(el('att-holidays-list'))attRenderHolidaysList();
     if(el('holiday-list-admin'))renderHolidayAdminList();
   },()=>{});
 }
@@ -6937,7 +6937,7 @@ async function attRenderEmp(){
     }
   }
   const tl=el('att-timeline'); if(tl)tl.innerHTML=h;
-  attRenderEmpCalendar(); // now that #att-emp-calendar exists on the Check-In tab, this actually renders (previously orphaned — see version notes)
+  attRenderHolidaysList();
 }
 async function attRenderAdm(){
   const controls=el('att-report-controls');
@@ -7072,124 +7072,25 @@ async function attExportMonthlyReport(){
   }
 }
 
-async function attRenderEmpCalendar(){
- try{
-  const uid=attUserKey();
-  const now=new Date();
-  if(attEmpCalYear===null){attEmpCalYear=now.getFullYear();attEmpCalMonth=now.getMonth();}
-  const year=attEmpCalYear;
-  const month=attEmpCalMonth;
-  const firstDay=new Date(year,month,1);
-  const lastDay=new Date(year,month+1,0);
-  const daysInMonth=lastDay.getDate();
-  const startingDayOfWeek=firstDay.getDay();
-  const isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
-  
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthYear=`${monthNames[month]} ${year}`;
-  
-  // Fetch OOO data for this employee for the month
-  const oooData={};
-  const promises=[];
-  
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    promises.push(
-      attGet(uid,ds).then(rec=>{
-          if(rec&&rec.status==='ooo'){
-            oooData[ds]={
-            uid,
-            color:attColorForUser(uid),
-            type:rec.oof_reason,
-            remarks:rec.remarks||''
-          };
-        }
-      }).catch(()=>{})
-    );
-  }
-  
-  await Promise.all(promises);
-  
-  // Build calendar
-  let calendarHtml=`<div class="card"><div class="ch" style="padding:10px 16px;gap:8px">
-    <button class="btn sm" onclick="attEmpCalNav(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
-    <div class="ct" style="flex:1;justify-content:center;text-align:center"><div style="font-weight:600;font-size:14px">${monthYear}</div></div>
-    <button class="btn sm" onclick="attEmpCalNav(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
-    ${isCurrentMonth?'':'<button class="btn sm" onclick="attEmpCalNav(0)" title="Back to current month">Today</button>'}
-  </div>`;
-  
-  // Weekday headers
-  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--pl);border-top:.5px solid var(--bd);border-bottom:.5px solid var(--bd)">`;
-  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  dayNames.forEach(d=>{
-    calendarHtml+=`<div style="padding:8px;text-align:center;font-weight:600;font-size:11px;color:var(--p)">${d}</div>`;
-  });
-  calendarHtml+=`</div>`;
-  
-  // Calendar grid
-  calendarHtml+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.5px;background:var(--bd);padding:.5px">`;
-  
-  // Empty cells before month
-  for(let i=0;i<startingDayOfWeek;i++){
-    calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px"></div>`;
-  }
-  
-  // Days with OOO
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const ooo=oooData[ds];
-    const isToday=isCurrentMonth&&d===now.getDate();
-    const dayType=attDayType(ds);
-    const cellBg=dayType.type==='holiday'?'#FFEBEE':(dayType.type==='sunday'?'#F5F5F5':(dayType.type==='saturday'?'#E3F2FD':(isToday?'var(--pl)':'var(--card)')));
-    
-    let dayHtml=`<div style="background:${cellBg};padding:6px;min-height:85px;display:flex;flex-direction:column;border:.5px solid var(--bd);box-sizing:border-box;overflow:hidden">`;
-    dayHtml+=`<div style="font-weight:600;margin-bottom:4px;color:${isToday?'var(--p)':'var(--t1)'};font-size:12px">${d}</div>`;
-    
-    dayHtml+=`<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow-y:auto;width:100%;box-sizing:border-box">`;
-    if(dayType.label){
-      const chipColor=dayType.type==='holiday'?'#C62828':(dayType.type==='sunday'?'#616161':'#1565C0');
-      dayHtml+=`<div style="background:${chipColor};color:#fff;padding:3px 6px;border-radius:4px;font-size:9.5px;font-weight:800;flex-shrink:0;width:100%;box-sizing:border-box;overflow-wrap:break-word">${esc(dayType.label)}</div>`;
-    }
-    if(ooo){
-      const color=ooo.color||attColorForUser(uid);
-      dayHtml+=`<div style="background:${color};color:#fff;padding:4px 6px;border-radius:4px;font-size:10px;font-weight:800;overflow-wrap:break-word;line-height:1.25;flex-shrink:0;width:100%;box-sizing:border-box;border-left:3px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">`;
-      dayHtml+=`<div>${esc(ooo.type)}${ooo.remarks?': '+esc(ooo.remarks.substring(0,22))+(ooo.remarks.length>22?'...':''):''}</div>`;
-      dayHtml+=`</div>`;
-    }
-    dayHtml+=`</div></div>`;
-    
-    calendarHtml+=dayHtml;
-  }
-  
-  // Empty cells after month
-  const totalCells=startingDayOfWeek+daysInMonth;
-  const remainingCells=7-((totalCells)%7);
-  if(remainingCells<7){
-    for(let i=0;i<remainingCells;i++){
-      calendarHtml+=`<div style="background:var(--card);padding:6px;min-height:85px;border:.5px solid var(--bd)"></div>`;
-    }
-  }
-  
-  calendarHtml+=`</div></div>`;
-  
-  // Render to DOM
-  const empCal=el('att-emp-calendar');
-  if(empCal)empCal.innerHTML=calendarHtml;
- }catch(e){
-  console.error('attRenderEmpCalendar failed:',e);
-  const empCal=el('att-emp-calendar');if(empCal)empCal.innerHTML=`<div class="empty" style="color:#c0392b">Calendar failed to load: ${esc(e.message)}. Check browser console for details.</div>`;
- }
-}
-function attEmpCalNav(delta){
-  const now=new Date();
-  if(delta===0){attEmpCalYear=now.getFullYear();attEmpCalMonth=now.getMonth();}
-  else{
-    if(attEmpCalYear===null){attEmpCalYear=now.getFullYear();attEmpCalMonth=now.getMonth();}
-    let m=attEmpCalMonth+delta,y=attEmpCalYear;
-    if(m<0){m=11;y--;}else if(m>11){m=0;y++;}
-    attEmpCalYear=y;attEmpCalMonth=m;
-  }
-  attRenderEmpCalendar();
+function attRenderHolidaysList(){
+  const box=el('att-holidays-list'); if(!box) return;
+  const today=attDateKey();
+  const sorted=[...holidaysData].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!sorted.length){box.innerHTML='<div class="muted" style="font-size:11px">No holidays added yet.</div>';return;}
+  const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const rows=sorted.map(h=>{
+    const d=new Date(h.date+'T00:00:00');
+    const dow=dayNames[d.getDay()];
+    const isPast=h.date<today;
+    const disp=d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:.5px solid var(--bd);opacity:${isPast?'.5':'1'}">
+      <span style="width:6px;height:6px;border-radius:50%;background:${isPast?'#999':'#C62828'};flex-shrink:0"></span>
+      <span style="font-size:11.5px;font-weight:700;min-width:100px">${disp}</span>
+      <span style="font-size:10.5px;color:var(--t2);min-width:82px">${dow}</span>
+      <span style="font-size:12px;font-weight:600">${esc(h.name)}</span>
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div class="card" style="padding:4px 0">${rows}</div>`;
 }
 
 
