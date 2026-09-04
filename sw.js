@@ -1,4 +1,11 @@
 // DQAP Wiki Service Worker
+// Version 78.49 - Attendance: Check-In tab no longer shows the personal
+// month-grid calendar — replaced with a plain bulleted list of every
+// holiday (date, day of week, name), sorted chronologically, past ones
+// greyed out. attRenderEmpCalendar()/attEmpCalNav() and their state were
+// removed (superseded by 78.47/78.48, now replaced again one day later).
+// The Calendar tab itself (attRenderCalendar/attCalNav, incl. the 78.48
+// month navigation) is unchanged.
 // Version 78.48 - Attendance: added prev/next month navigation (plus a
 // "Today" shortcut once you've navigated away) to both calendars — the
 // full Calendar tab and the personal "this month" calendar on Check-In.
@@ -61,7 +68,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.48-20260830-6';
+const CACHE_VERSION = 'dqap-wiki-v78.49-20260830-7';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
