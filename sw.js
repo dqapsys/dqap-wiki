@@ -1,4 +1,23 @@
 // DQAP Wiki Service Worker
+// Version 78.53 - Task Management: "Assign task" button was invisible on
+// mobile in portrait orientation (worked fine in landscape). Root cause:
+// .topbar{display:none} under the max-width:768px breakpoint hides the
+// whole topbar - and every module's primary action button lives inside
+// .topbar .tr - so anything narrower than 768px (portrait) loses it while
+// landscape (usually >768px) keeps it. Fixed for Task Management specifically
+// by re-enabling #v-tasks .topbar on mobile as a stacked, full-width bar.
+// Note: the same underlying rule likely hides the equivalent add-button on
+// every other module (Add Entry, New RMA, Add line item, New PMO project,
+// Add AMC Contract, Upload document, etc.) in mobile portrait too - not
+// addressed here since only Task Management was reported.
+// Version 78.52 - Task Management: narrowed 78.51's fix from "any admin
+// can assign to any admin" to "Updesh specifically can assign to anyone."
+// Pratim carries the admin role/title for standing and pay, not company
+// structure — he technically reports to Updesh — so the assign-to-anyone
+// bypass now checks isUpdeshDataAdmin() (the same helper already used for
+// the Manage Projects name-edit privilege) instead of CU.isAdmin. Pratim,
+// and any other admin, keep the standard self-or-strictly-below rule, so
+// Pratim can no longer assign upward to Updesh either.
 // Version 78.50 - Attendance: the Check-In tab holiday list is now scoped
 // to the current calendar month only (was showing every holiday on file
 // regardless of month). Heading updates to show which month is in view,
@@ -72,7 +91,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.50-20260830-8';
+const CACHE_VERSION = 'dqap-wiki-v78.53-20260917-3';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
