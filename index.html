@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.50";
+const APP_VERSION="78.53";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260830-8";
+const APP_BUILD="20260917-3";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -407,6 +407,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   .sidebar{transform:translateX(-100%);transition:transform .25s ease;position:fixed;top:0;left:0;z-index:400;height:100vh;width:var(--sw)}
   .main{margin-left:0!important;flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
   .topbar{display:none}
+  /* Every module's primary "Add/Assign" button lives in .topbar .tr, so hiding
+     the whole topbar on narrow widths also hides it there — this is why the
+     button reappears in landscape (wider than 768px) but not portrait. Fixed
+     here for Task Management specifically; same underlying issue likely
+     affects other modules' add-buttons on mobile portrait too. */
+  #v-tasks .topbar{display:flex!important;position:static;flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px}
+  #v-tasks .topbar .tr{width:100%}
+  #v-tasks .topbar .tr#task-add-btn-wrap button{width:100%;justify-content:center}
   .stats{grid-template-columns:1fr 1fr;gap:8px}
   .sc{padding:10px 11px;gap:8px}
   .sv{font-size:18px}.sl{font-size:9.5px}
@@ -5397,8 +5405,13 @@ function populateTaskAssignees(){
   const sel=el('task-assignee');if(!sel)return;
   const myRank=roleRank(CU.role);
   const cur=sel.value;
-  // self + anyone strictly lower in rank than me
-  const eligible=usersData.filter(u=>roleRank(u.role||'user')<myRank&&u.fullName!==CU.fullName);
+  // self + anyone strictly lower in rank than me — except Updesh, who can assign to
+  // anyone including other admins (e.g. Pratim). Pratim technically reports to Updesh
+  // despite the "co-founder" title, so this deliberately stays one-directional: Pratim
+  // (and any other admin) still can't assign upward/sideways to Updesh or to each other.
+  const eligible=isUpdeshDataAdmin()
+    ?usersData.filter(u=>u.fullName!==CU.fullName)
+    :usersData.filter(u=>roleRank(u.role||'user')<myRank&&u.fullName!==CU.fullName);
   let html='<option value="">Select assignee</option>';
   html+=`<option value="${esc(CU.fullName)}" data-role="${CU.role}"${CU.fullName===cur?' selected':''}>${esc(CU.fullName)}</option>`;
   html+=eligible.map(u=>`<option value="${esc(u.fullName)}" data-role="${u.role||'user'}"${u.fullName===cur?' selected':''}>${esc(u.fullName)}</option>`).join('');
@@ -5456,12 +5469,14 @@ async function saveTask(){
   if(!title){toast('Enter a task title','err');return;}
   if(!assignedTo){toast('Select an assignee','err');return;}
   if(!deadline){toast('Set a deadline','err');return;}
-  // Determine assignee role + enforce hierarchy
+  // Determine assignee role + enforce hierarchy (mirrors populateTaskAssignees: Updesh
+  // specifically can assign to anyone; everyone else — including other admins — stays
+  // self-or-below, so this can't be bypassed by picking an option outside the dropdown).
   const sel=el('task-assignee');
   const opt=sel.options[sel.selectedIndex];
   const assignedToRole=opt?opt.getAttribute('data-role')||'user':'user';
   const isSelf=assignedTo===CU.fullName;
-  if(!isSelf&&roleRank(assignedToRole)>=roleRank(CU.role)){
+  if(!isSelf&&!isUpdeshDataAdmin()&&roleRank(assignedToRole)>=roleRank(CU.role)){
     toast('You can only assign tasks to yourself or to people below your level','err');return;
   }
   showLoad('Saving...');
