@@ -1,4 +1,12 @@
 // DQAP Wiki Service Worker
+// Version 78.55 - Attendance Rank card was silently omitting absences:
+// attRenderRank() only ever tallied present/OOO/late, so a half- or
+// full-day-absent record correctly zeroed that day's score in the total
+// but never appeared anywhere on the card - there was no way to see from
+// Rank alone that someone had an absence, even though it was already being
+// scored. Now shows "N full-day absent" / "N half-day absent" (in red)
+// alongside present/OOO/late when present. Score math is unchanged; this
+// is a display-only fix.
 // Version 78.54 - Attendance leaderboard scoring fix: a late mark only cost
 // points when status was Present (full credit halved); a late OOO mark
 // (Meeting/Travel/Training/WFH) kept full credit regardless of isLate. This
@@ -101,7 +109,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.54-20260917-4';
+const CACHE_VERSION = 'dqap-wiki-v78.55-20260917-5';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
