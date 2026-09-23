@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.54";
+const APP_VERSION="78.55";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20260917-4";
+const APP_BUILD="20260917-5";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -6983,9 +6983,23 @@ async function attRenderAdm(){
 async function attRenderRank(){
   const start=attMonthKey()+'-01';const end=attDateKey(new Date(new Date().getFullYear(),new Date().getMonth()+1,0));
   const rows=await attFetchRange(start,end);
-  const team=attTeamUsers().map(u=>{const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);const present=mine.filter(r=>r.status==='present').length;const scoreOOO=mine.filter(r=>r.status==='ooo'&&attScoreCredit(r)>0).length;const late=mine.filter(r=>r.isLate).length;return {...u,present,scoreOOO,late,score:Math.round(mine.reduce((s,r)=>s+attScoreCredit(r)*10,0))};}).sort((a,b)=>b.score-a.score);
+  const team=attTeamUsers().map(u=>{
+    const mine=rows.filter(r=>String(r.username||r.userId||'').toLowerCase()===u.key);
+    const present=mine.filter(r=>r.status==='present').length;
+    const scoreOOO=mine.filter(r=>r.status==='ooo'&&attScoreCredit(r)>0).length;
+    const late=mine.filter(r=>r.isLate).length;
+    const fullAbsent=mine.filter(r=>r.status==='full-day-absent').length;
+    const halfAbsent=mine.filter(r=>r.status==='half-day-absent').length;
+    return {...u,present,scoreOOO,late,fullAbsent,halfAbsent,score:Math.round(mine.reduce((s,r)=>s+attScoreCredit(r)*10,0))};
+  }).sort((a,b)=>b.score-a.score);
   const medals=['#1','#2','#3'];
-  const h=team.map((it,idx)=>`<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center;font-weight:800;color:var(--p)">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present${it.scoreOOO?' + '+it.scoreOOO+' work OOO':''} - ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`).join('');
+  const h=team.map((it,idx)=>{
+    const absentParts=[];
+    if(it.fullAbsent)absentParts.push(it.fullAbsent+' full-day absent');
+    if(it.halfAbsent)absentParts.push(it.halfAbsent+' half-day absent');
+    const absentText=absentParts.length?` + <span style="color:#B71C1C;font-weight:700">${absentParts.join(' + ')}</span>`:'';
+    return `<div class="card" style="display:grid;grid-template-columns:34px 1fr 80px;gap:10px;align-items:center;padding:10px"><div style="text-align:center;font-weight:800;color:var(--p)">${medals[idx]||''}</div><div><div style="font-weight:700">${esc(it.name)}</div><div style="font-size:10.5px;color:var(--t2)">${it.present} present${it.scoreOOO?' + '+it.scoreOOO+' work OOO':''}${absentText} - ${it.late} late</div></div><div style="text-align:right;font-weight:800;color:var(--p)">${it.score}</div></div>`;
+  }).join('');
   const r=el('att-rank-list'); if(r)r.innerHTML=h;
 }
 
