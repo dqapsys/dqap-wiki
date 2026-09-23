@@ -1,4 +1,14 @@
 // DQAP Wiki Service Worker
+// Version 78.54 - Attendance leaderboard scoring fix: a late mark only cost
+// points when status was Present (full credit halved); a late OOO mark
+// (Meeting/Travel/Training/WFH) kept full credit regardless of isLate. This
+// let someone dodge every late penalty simply by marking OOO instead of
+// Present, while the existing monthly-warning/LOP trigger logic already
+// counted late OOO the same as late Present - so this brings the leaderboard
+// in line with a rule the app already enforces elsewhere. attScoreCredit()
+// now halves credit for a late OOO entry exactly like a late Present one;
+// Leave-category OOO and pending/rejected OOO are unaffected (already 0).
+// Recomputes this month's leaderboard scores for anyone with a late OOO mark.
 // Version 78.53 - Task Management: "Assign task" button was invisible on
 // mobile in portrait orientation (worked fine in landscape). Root cause:
 // .topbar{display:none} under the max-width:768px breakpoint hides the
@@ -91,7 +101,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.53-20260917-3';
+const CACHE_VERSION = 'dqap-wiki-v78.54-20260917-4';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
