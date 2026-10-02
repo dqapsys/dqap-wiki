@@ -80,7 +80,7 @@ const COL="dqap_entries",META="dqap_meta",USERS="dqap_users",LIB="dqap_library",
 const CHAT_THREADS_COL="dqap_chat_threads",CHAT_MSG_COL="dqap_chat_messages";
 const ACK_LOG_COL="dqap_acknowledgements",FLAG_COL="dqap_flags_to_updesh";
 const HOLIDAYS_COL="dqap_holidays";
-const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections",DEBT_ALLOCATIONS_COL="dqap_debt_allocations",DEBT_ASSIGNMENTS_COL="dqap_debt_customer_assignments",DEBT_META_COL="dqap_debt_meta",DEBT_CYCLES_COL="dqap_debt_cycles";
+const CRM_NOTIFICATIONS_COL="dqap_crm_notifications",CRM_ACTIVITIES_COL="dqap_crm_activities",PAYMS_REQ_COL="dqap_payms_requests",PROMS_PO_COL="dqap_proms_pos",DEBT_COMMITMENTS_COL="dqap_debt_commitments",DEBT_COLLECTIONS_COL="dqap_debt_collections",DEBT_ALLOCATIONS_COL="dqap_debt_allocations",DEBT_ASSIGNMENTS_COL="dqap_debt_customer_assignments",DEBT_META_COL="dqap_debt_meta",DEBT_CYCLES_COL="dqap_debt_cycles";
 const CSS_TICKET_COL="css_tickets";
 const AMC_FREQ=["Monthly","Quarterly","Bi-Annual","Annual"];
 const PROJECT_SCOPES=["SITC","S&C","Services","ITC","CAMC","N-CAMC"];
@@ -100,7 +100,7 @@ const THEMES={
 const LIB_CATS=["Manuals & Datasheets","Standards & Norms","Drawings & Schematics","Vendor Documents","Internal Procedures","Safety Documents","General Reference","Other"];
 const PMO_STAGES=["PO Acceptance","Kick Off","Approvals / MFC","BOM","Procurement","Manufacturing","Dispatch","Cabling / Installation","Commissioning","System Handover","Payment"];
 const PROJECT_DOCS_API_URL='https://upload-receipt-932523956178.asia-south2.run.app';
-const PROJECT_DOC_CHECKLIST=["RFP","Offer, Queries & Costing","PO","Approvals, Queries & Response","Procurement","Inspection & Dispatch","PMO","Payments","As Built Submission","Handover"];
+const PROJECT_DOC_CHECKLIST=["RFP","Offer, Queries & Costing","PO","Approvals, Queries & Response","Procurement","ProMS","Inspection & Dispatch","PMO","Payments","As Built Submission","Handover"];
 const MAX_PROJECT_DOC_BYTES=15*1024*1024;
 const PROJECT_DOC_TEMPLATE_COL='dqap_project_doc_template';
 let projectDocTemplate=null,projectDocTemplateUnsub=null;
@@ -535,6 +535,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="go('pmobeta')"         id="ni-pmobeta"><i class="ti ti-timeline"></i>New PMO <span class="badge" style="background:#FFF3E0;color:#E65100;font-weight:800;margin-left:4px;padding:0 6px">BETA</span></div>
     <div class="ni" onclick="go('attendance')"      id="ni-attendance"><i class="ti ti-user-check"></i>Attendance<span id="attendance-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openPayMS()"           id="ni-payms"><i class="ti ti-receipt-rupee"></i>PayMS<span id="payms-nav-badge" class="nav-badge" style="display:none"></span></div>
+    <div class="ni" onclick="openProMS()"           id="ni-proms" style="display:none"><i class="ti ti-shopping-cart"></i>ProMS<span id="proms-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="openCSS()"             id="ni-css"><i class="ti ti-headset"></i>CSS<span id="css-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('rma')"             id="ni-rma"><i class="ti ti-replace"></i>RMA Tracker</div>
     <div class="ni" onclick="go('budget')"          id="ni-budget"><i class="ti ti-wallet"></i>Budget Tracker</div>
@@ -1563,6 +1564,7 @@ let CU=null,DB={entries:[]},libData=[],projectsData=[],pmoData=[],payData=[],rma
 let pmoKickoffLink=null; // {taskId, dealId, projId}
 let crmNotificationsData=[],crmApprovalsData=[],paymsRequestsData=[],debtCommitmentsData=[],debtCollectionsData=[],debtAllocationsData=[],debtAssignmentsData=[],debtCustomersData=[],debtCycleId='',cssTicketsData=[];
 let vmode='card',filtered=[],unsub=null,libUnsub=null,projUnsub=null,pmoUnsub=null,payUnsub=null,rmaUnsub=null,budgetUnsub=null,budgetCfgUnsub=null,taskUnsub=null,taskDeadlineTimer=null,usersUnsub=null,amcUnsub=null,pmoBetaUnsub=null,pmobExpandedId=null;
+let promsPosData=[],promsPoUnsub=null;
 let crmNotifyUnsub=null,crmApprovalUnsub=null,paymsReqUnsub=null,debtCommitUnsub=null,debtCollectionUnsub=null,debtAllocationUnsub=null,debtAssignmentUnsub=null,debtMetaUnsub=null,cssTicketsUnsub=null;
 let chatDMUnsub=null,chatBroadcastUnsub=null,chatMsgUnsub=null,chatThreadsData=[],chatMessagesData=[],activeChatThreadId=null,chatGroupMembersModalThreadId=null;
 let chatMemberThreadsRaw=[],chatBroadcastThreadsRaw=[];
@@ -1642,9 +1644,9 @@ function logout(){
   if(!confirm('Sign out of DORBIT?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
   if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;
-  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,pmoBetaUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
-  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=pmoBetaUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
-  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;attCalYear=null;attCalMonth=null;
+  [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,pmoBetaUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,promsPoUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
+  unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=pmoBetaUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=promsPoUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
+  DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];promsPosData=[];debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;attCalYear=null;attCalMonth=null;
   chatThreadsData=[];chatMessagesData=[];chatMemberThreadsRaw=[];chatBroadcastThreadsRaw=[];chatThreadNotificationBaseline=new Map();chatNotificationBaselineReady=false;arrivingChatThreadId='';dismissChatArrival();
   const app=el('app');app.style.display='none';
   el('l-user').value='';el('l-pass').value='';el('l-err').textContent='';
@@ -4588,6 +4590,26 @@ function openPayMS(){
     toast('Error opening PayMS','err');
   }
 }
+// ProMS pilot: menu visible only to these users until roll-out (remove the list check to open to everyone)
+const PROMS_PILOT_USERS=['updesh','pratim','keshav'];
+function openProMS(){
+  const sess = currentWikiSession();
+  if(!sess){
+    toast('Please login to Wiki first','err');
+    return;
+  }
+  try {
+    try{localStorage.setItem('dqap_proms_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
+    const base = location.protocol === 'file:' ? 'ProMS/index.html?v=20261001.1' : 'https://dqapsys.github.io/ProMS/?v=20261001.1';
+    const url = `${base}#sess=${encodeURIComponent(sess)}`;
+    const promsWindow = window.open(url, '_blank');
+    if(promsWindow) promsWindow.opener=null;
+    else toast('Please allow pop-ups for the Wiki portal','err');
+  } catch(e) {
+    console.error('Error opening ProMS:', e);
+    toast('Error opening ProMS','err');
+  }
+}
 function openCSS(){
   const sess = currentWikiSession();
   if(!sess){
@@ -6109,6 +6131,7 @@ function approvalAppCounts(){
     crm:crmApprovalCount(),
     debt:debtApprovalCount(),
     payms:paymsApprovalCount(),
+    proms:promsApprovalCount(),
     css:cssTicketNotificationCount(),
     chat:chatUnreadCount()
   };
@@ -6126,6 +6149,8 @@ function refreshAppBadge(){
   setNavBadge('crm-nav-badge',c.crm);
   setNavBadge('debt-nav-badge',c.debt);
   setNavBadge('payms-nav-badge',c.payms);
+  setNavBadge('proms-nav-badge',c.proms);
+  {const _pn=el('ni-proms');if(_pn)_pn.style.display=PROMS_PILOT_USERS.includes(userKey())?'':'none';}
   setNavBadge('css-nav-badge',c.css);
   setNavBadge('chat-nav-badge',c.chat);
   const total=visibleNavBadgeTotal();
@@ -6172,6 +6197,18 @@ function paymsApprovalCount(){
     return false;
   }).length;
 }
+// ProMS: L1 = Pratim (Updesh can stand in), L2 = Updesh for over-PCA POs; buyer sees own rejected POs
+function promsApprovalCount(){
+  if(!CU)return 0;
+  const u=userKey();
+  return promsPosData.filter(p=>{
+    const st=String(p.status||'');
+    if(st==='PENDING_PRATIM'||st==='AMEND_PRATIM')return u==='pratim'||u==='updesh';
+    if(st==='PENDING_UPDESH'||st==='AMEND_UPDESH')return u==='updesh';
+    if(st==='REJECTED')return String(p.createdBy||'').toLowerCase()===u;
+    return false;
+  }).length;
+}
 function cssStatusKey(s){
   const k=String(s||'Pending').trim().toLowerCase();
   if(k==='open'||k==='pending reply')return'pending';
@@ -6197,6 +6234,7 @@ function startExternalApprovalBadgeListeners(){
   if(crmNotifyUnsub)crmNotifyUnsub();
   if(crmApprovalUnsub)crmApprovalUnsub();
   if(paymsReqUnsub)paymsReqUnsub();
+  if(promsPoUnsub)promsPoUnsub();
   if(debtCommitUnsub)debtCommitUnsub();
   if(debtCollectionUnsub)debtCollectionUnsub();
   if(debtAllocationUnsub)debtAllocationUnsub();
@@ -6210,6 +6248,7 @@ function startExternalApprovalBadgeListeners(){
     crmApprovalUnsub=db.collection(CRM_ACTIVITIES_COL).where('extensionStatus','==','pending').onSnapshot(sn=>{crmApprovalsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   }
   paymsReqUnsub=db.collection(PAYMS_REQ_COL).where('status','in',['PENDING_MANAGER','PENDING_PRATIM','PENDING_UPDESH','READY_FOR_PAYMENT']).onSnapshot(sn=>{paymsRequestsData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
+  promsPoUnsub=db.collection(PROMS_PO_COL).where('status','in',['PENDING_PRATIM','PENDING_UPDESH','AMEND_PRATIM','AMEND_UPDESH','REJECTED']).onSnapshot(sn=>{promsPosData=sn.docs.map(d=>({id:d.id,...d.data()}));refreshAppBadge();},()=>{});
   const watchDebtCycle=cycleId=>{
     if(debtCommitUnsub)debtCommitUnsub();if(debtCollectionUnsub)debtCollectionUnsub();if(debtAllocationUnsub)debtAllocationUnsub();
     debtCycleId=cycleId||'';debtCommitmentsData=[];debtCollectionsData=[];debtAllocationsData=[];debtCustomersData=[];
