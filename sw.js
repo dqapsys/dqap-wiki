@@ -1,4 +1,8 @@
 // DQAP Wiki Service Worker
+// Version 78.56 - Attendance: choosing "Other" in Mark OOO now shows a
+// Remarks box (optional), the same as Meeting, so people can say where they
+// are / what they are doing. Saved on the day's attendance record and shown
+// by the existing reports and exports. WFH and Leave still require a reason.
 // Version 78.55 - Attendance Rank card was silently omitting absences:
 // attRenderRank() only ever tallied present/OOO/late, so a half- or
 // full-day-absent record correctly zeroed that day's score in the total
@@ -109,7 +113,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.55-20260917-5';
+const CACHE_VERSION = 'dqap-wiki-v78.56-20261007-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
