@@ -1,4 +1,9 @@
 // DQAP Wiki Service Worker
+// Version 78.57 - PMO Project Documents: the upload box on every document
+// folder now accepts several files at once. Files are sent to Drive one after
+// another with an "Uploading 2 of 5" progress toast, over-size or failed files
+// are skipped and named in the result, and the project record is updated once
+// for everything that uploaded.
 // Version 78.56 - Attendance: choosing "Other" in Mark OOO now shows a
 // Remarks box (optional), the same as Meeting, so people can say where they
 // are / what they are doing. Saved on the day's attendance record and shown
@@ -113,7 +118,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.56-20261007-1';
+const CACHE_VERSION = 'dqap-wiki-v78.57-20261007-2';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
