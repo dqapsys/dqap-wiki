@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.56";
+const APP_VERSION="78.57";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261007-1";
+const APP_BUILD="20261007-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2315,7 +2315,7 @@ function docRowHtml(p,item,docs,canManage,inputPrefix,indent){
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
       <div style="font-size:12px;font-weight:600">${indent?'<i class="ti ti-corner-down-right" style="font-size:11px;color:var(--t2)"></i> ':''}${esc(item.label)}${activeCount?` <span class="muted" style="font-weight:400">(${activeCount})</span>`:''}${canManage?` <i class="ti ti-pencil" style="cursor:pointer;font-size:11px;color:var(--t2)" onclick="renameProjectDocFolder('${p.id}','${esc(item.key)}')" title="Rename"></i>`:''}</div>
       <div style="display:flex;gap:6px;align-items:center">
-        <input type="file" id="${inputId}" style="max-width:150px;font-size:10px">
+        <input type="file" id="${inputId}" multiple title="You can select several files at once" style="max-width:150px;font-size:10px">
         <button class="btn sm pri" onclick="uploadProjectDoc('${p.id}','${esc(item.key)}','${inputId}')"><i class="ti ti-upload"></i></button>
       </div>
     </div>
@@ -2456,33 +2456,49 @@ async function renameProjectDocFolder(projId,key){
 }
 async function uploadProjectDoc(projId,key,inputId){
   const input=el(inputId);
-  if(!input||!input.files||!input.files[0])return toast('Choose a file first','err');
-  const file=input.files[0];
-  if(file.size>MAX_PROJECT_DOC_BYTES)return toast(`File exceeds ${MAX_PROJECT_DOC_BYTES/(1024*1024)}MB limit`,'err');
+  const files=input&&input.files?Array.from(input.files):[];
+  if(!files.length)return toast('Choose one or more files first','err');
   const p=projectsData.find(x=>x.id===projId);
   const checklist=p?migratedChecklist(p):[];
   const item=findChecklistItem(checklist,key);
   if(!p||!item)return toast('Drive folder not found for this item','err');
-  toast('Uploading...','ok');
-  try{
-    const fileBase64=await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(reader.result.split(',')[1]);
-      reader.onerror=reject;reader.readAsDataURL(file);
-    });
-    const resp=await fetch(PROJECT_DOCS_API_URL,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'uploadProjectDoc',fileName:file.name,mimeType:file.type||'application/octet-stream',fileBase64,targetFolderId:item.folderId,uploadedByName:(CU&&(CU.fullName||CU.username))||''})
-    });
-    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Upload failed')}
-    const data=await resp.json();
-    const docs={...(p.projectDocuments||{})};
-    docs[key]=[...(docs[key]||[]),{fileName:data.fileName,webViewLink:data.webViewLink,uploadedBy:userKey(),uploadedByName:(CU&&(CU.fullName||CU.username))||'',uploadedAt:new Date().toISOString(),sizeKB:Math.round((data.sizeBytes||0)/1024)}];
-    await db.collection(PROJ).doc(projId).update({projectDocuments:docs,driveChecklist:checklist});
-    toast('Uploaded '+file.name,'ok');
-    input.value='';
-    renderPMO();
-  }catch(e){toast('Upload failed: '+e.message,'err');}
+  const uploaded=[],failed=[];
+  for(let i=0;i<files.length;i++){
+    const file=files[i];
+    toast(`Uploading ${i+1} of ${files.length}: ${file.name}`,'ok');
+    if(file.size>MAX_PROJECT_DOC_BYTES){failed.push(`${file.name} (over ${MAX_PROJECT_DOC_BYTES/(1024*1024)}MB)`);continue;}
+    try{
+      const fileBase64=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result.split(',')[1]);
+        reader.onerror=reject;reader.readAsDataURL(file);
+      });
+      const resp=await fetch(PROJECT_DOCS_API_URL,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'uploadProjectDoc',fileName:file.name,mimeType:file.type||'application/octet-stream',fileBase64,targetFolderId:item.folderId,uploadedByName:(CU&&(CU.fullName||CU.username))||''})
+      });
+      if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error||'Upload failed')}
+      const data=await resp.json();
+      uploaded.push({fileName:data.fileName,webViewLink:data.webViewLink,uploadedBy:userKey(),uploadedByName:(CU&&(CU.fullName||CU.username))||'',uploadedAt:new Date().toISOString(),sizeKB:Math.round((data.sizeBytes||0)/1024)});
+    }catch(e){failed.push(`${file.name} (${e.message})`);}
+  }
+  // One Firestore write for everything that reached Drive, merged onto the freshest project record
+  if(uploaded.length){
+    try{
+      const cur=projectsData.find(x=>x.id===projId)||p;
+      const docs={...(cur.projectDocuments||{})};
+      docs[key]=[...(docs[key]||[]),...uploaded];
+      await db.collection(PROJ).doc(projId).update({projectDocuments:docs,driveChecklist:checklist});
+    }catch(e){
+      toast('Files reached Drive but the list could not be saved: '+e.message,'err');
+      input.value='';renderPMO();return;
+    }
+  }
+  input.value='';
+  if(failed.length&&uploaded.length)toast(`Uploaded ${uploaded.length}; failed: ${failed.join(', ')}`,'err');
+  else if(failed.length)toast('Upload failed: '+failed.join(', '),'err');
+  else toast(uploaded.length===1?'Uploaded '+uploaded[0].fileName:`Uploaded ${uploaded.length} files`,'ok');
+  renderPMO();
 }
 function isPMOMaterialDispatchComplete(p){
   const summary=getPMODashboardStage(p?.stages||[],'Dispatch');
