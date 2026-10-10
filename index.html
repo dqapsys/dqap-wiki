@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.59";
+const APP_VERSION="78.60";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261010-2";
+const APP_BUILD="20261010-3";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5584,7 +5584,8 @@ async function deleteTask(id){
 }
 
 // â”€â”€ TASK RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ── TASK ASSESSMENT (Updesh only) ──────────────────────────────
+// ── TASK ASSESSMENT (Updesh and Pratim only) ──────────────────────────────
+function taCanAssess(){const u=String(CU?.username||'').trim().toLowerCase(),n=String(CU?.fullName||'').trim().toLowerCase();return ['updesh','pratim'].includes(u)||['updesh','pratim'].includes(n);}
 function taRevisionEntry(from,to,at,by,reason,kind){return {from:from||'',to:to||'',at:at||'',by:by||'',reason:reason||'',kind:kind||'edit'};}
 function taMs(v){if(!v)return NaN;if(v.toDate)return v.toDate().getTime();if(typeof v==='object'&&v.seconds)return v.seconds*1000;const s=String(v);return new Date(s.length<=10?s+'T23:59:00':s).getTime();}
 function taPostponements(revs){return (revs||[]).filter(r=>taMs(r.to)>taMs(r.from)).length;}
@@ -5638,7 +5639,7 @@ function taCompute(fromStr,toStr,p,inclSys){
 }
 function taFmtDl(s){if(!s)return '—';const d=new Date(String(s).length<=10?s+'T00:00:00':s);return isNaN(d)?s:d.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'2-digit',...(String(s).length>10?{hour:'2-digit',minute:'2-digit'}:{})});}
 function openTaskAssessment(){
-  if(!isUpdeshDataAdmin()){toast('Only Updesh can open the assessment report','err');return;}
+  if(!taCanAssess()){toast('Only Updesh or Pratim can open the assessment report','err');return;}
   let m=el('task-assess-modal');
   if(!m){
     m=document.createElement('div');m.id='task-assess-modal';
@@ -5774,7 +5775,7 @@ function openTaskDetails(id){
 }
 
 function renderTasks(){
-  const assessBtn=el('task-assess-btn');if(assessBtn)assessBtn.style.display=isUpdeshDataAdmin()?'inline-flex':'none';
+  const assessBtn=el('task-assess-btn');if(assessBtn)assessBtn.style.display=taCanAssess()?'inline-flex':'none';
   const view=el('task-ff-view')?.value||'mine';
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
