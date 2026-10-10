@@ -1,4 +1,6 @@
 // DQAP Wiki Service Worker
+// Version 78.60 - Task assessment report is now also available to Pratim
+// (Updesh and Pratim only).
 // Version 78.59 - Task assessment report now includes auto-created (system)
 // tasks by default; the checkbox can still exclude them.
 // Version 78.58 - Task Management: new "Assessment report" button (Updesh
@@ -125,7 +127,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.59-20261010-2';
+const CACHE_VERSION = 'dqap-wiki-v78.60-20261010-3';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
