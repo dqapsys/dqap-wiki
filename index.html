@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.57";
+const APP_VERSION="78.59";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261007-2";
+const APP_BUILD="20261010-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -414,7 +414,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
      affects other modules' add-buttons on mobile portrait too. */
   #v-tasks .topbar{display:flex!important;position:static;flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px}
   #v-tasks .topbar .tr{width:100%}
-  #v-tasks .topbar .tr#task-add-btn-wrap button{width:100%;justify-content:center}
+  #v-tasks .topbar .tr#task-add-btn-wrap button{width:100%;justify-content:center;margin:0 0 6px 0!important}
   .stats{grid-template-columns:1fr 1fr;gap:8px}
   .sc{padding:10px 11px;gap:8px}
   .sv{font-size:18px}.sl{font-size:9.5px}
@@ -1256,7 +1256,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <div id="v-tasks" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-checklist" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Task Management</div><div class="pg-s">Assign tasks down the hierarchy and track deadlines</div></div>
-    <div class="tr" id="task-add-btn-wrap"><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
+    <div class="tr" id="task-add-btn-wrap"><button class="btn" id="task-assess-btn" onclick="openTaskAssessment()" style="display:none;margin-right:8px"><i class="ti ti-report-analytics"></i>Assessment report</button><button class="btn pri" onclick="togTaskForm(true)"><i class="ti ti-plus"></i>Assign task</button></div>
   </div>
   <div class="content">
     <!-- Stats -->
@@ -5333,7 +5333,11 @@ async function reviewWikiDeadlineRequest(id,decision){
   const t=taskData.find(x=>x.id===id),remarks=g('wiki-deadline-review-remarks');
   if(!t||t.assignedBy!==CU.fullName||t.deadlineChangeStatus!=='pending'||!remarks){toast('Decision remarks are mandatory','err');return;}
   const now=new Date().toISOString(),d={deadlineChangeStatus:decision,deadlineChangeReviewedBy:CU.fullName,deadlineChangeReviewedAt:now,deadlineChangeReviewRemarks:remarks,updatedAt:now};
-  if(decision==='approved')d.deadline=t.proposedDeadline;
+  if(decision==='approved'){
+    d.deadline=t.proposedDeadline;
+    d.origDeadline=t.origDeadline||t.deadline;
+    d.deadlineRevisions=firebase.firestore.FieldValue.arrayUnion(taRevisionEntry(t.deadline,t.proposedDeadline,now,t.deadlineChangeRequestedBy||t.assignedTo,t.deadlineChangeReason||'','request'));
+  }
   showLoad('Saving decision...');try{await db.collection(TASK_COL).doc(id).update(d);await logAcknowledgement('tasks',id,t.title||t.name||'','deadline_'+decision);toast('Deadline request '+decision,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function completeWikiMandatoryTask(id){await updateTaskStatus(id,'Completed');modalHideWikiTask();}
@@ -5506,6 +5510,11 @@ async function saveTask(){
       const statusChanged=newStatus!==existing.status;
       const upd={title,description,assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,updatedAt:now,
         taskCode:existing.taskCode||genTaskCode(eid),assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null,deadlineChangeRequestedAt:null};
+      // Assessment: keep the deadline the task was first given and log every change to it
+      if(existing.deadline&&deadline!==existing.deadline){
+        upd.origDeadline=existing.origDeadline||existing.deadline;
+        upd.deadlineRevisions=firebase.firestore.FieldValue.arrayUnion(taRevisionEntry(existing.deadline,deadline,now,CU.fullName,'edited by '+CU.fullName,'edit'));
+      }
       await db.collection(TASK_COL).doc(eid).update(upd);
       const recips=sendTaskNotification('updated',{...existing,...upd});
       toast('Task updated'+(recips.length?' - in-app notification for '+recips.join(', '):''),'ok');
@@ -5517,6 +5526,7 @@ async function saveTask(){
       const tObj={title,description,taskCode:genTaskCode(ref.id),
         assignedBy:CU.fullName,assignedByRole:CU.role,
         assignedTo,assignedToRole,supervisor,deadline,priority,project,frequency,
+        origDeadline:deadline,deadlineRevisions:[],
         status:'Open',createdAt:now,updatedAt:now,assigneeActionRequiredAt:now,assigneeActionResolvedAt:null,deadlineChangeStatus:null};
       await ref.set(tObj);
       const recips=sendTaskNotification('created',tObj);
@@ -5535,10 +5545,12 @@ async function updateTaskStatus(id,status){
     if(status==='Completed'&&isRecurring){
       // Recurring task: log this completion and re-open with the next due date.
       const nextDl=nextTaskOccurrence(existing.deadline,existing.frequency);
-      const completion={date:now,by:CU.fullName,wasDue:existing.deadline||''};
+      const completion={date:now,by:CU.fullName,wasDue:existing.deadline||'',origDue:existing.origDeadline||existing.deadline||'',revisions:taPostponements(existing.deadlineRevisions)};
       const d={
         status:'Open',
         deadline:nextDl||existing.deadline,
+        origDeadline:nextDl||existing.deadline,
+        deadlineRevisions:[],
         updatedAt:now,
         lastCompletedAt:now,
         lastCompletedBy:CU.username,
@@ -5572,6 +5584,118 @@ async function deleteTask(id){
 }
 
 // â”€â”€ TASK RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── TASK ASSESSMENT (Updesh only) ──────────────────────────────
+function taRevisionEntry(from,to,at,by,reason,kind){return {from:from||'',to:to||'',at:at||'',by:by||'',reason:reason||'',kind:kind||'edit'};}
+function taMs(v){if(!v)return NaN;if(v.toDate)return v.toDate().getTime();if(typeof v==='object'&&v.seconds)return v.seconds*1000;const s=String(v);return new Date(s.length<=10?s+'T23:59:00':s).getTime();}
+function taPostponements(revs){return (revs||[]).filter(r=>taMs(r.to)>taMs(r.from)).length;}
+const TA_DEFAULTS={base:100,perPost:10,postCap:40,graceMin:0,b1:25,b3:40,b7:55,b8:70,notDone:30,wCritical:3,wHigh:2,wMedium:1,wLow:1};
+const TA_SYS_TYPES=['project_extension','project_change','attendance_approval','attendance_dispute','pmo_kickoff','pmo_kickoff_escalation'];
+let taLastReport=null;
+function taParams(){const p={};Object.keys(TA_DEFAULTS).forEach(k=>{const e=el('ta-p-'+k);const v=e?parseFloat(e.value):NaN;p[k]=isNaN(v)?TA_DEFAULTS[k]:v;});return p;}
+function taScore(post,doneMs,finalMs,nowMs,p){
+  let s=p.base-Math.min(p.postCap,post*p.perPost),pen=0,cat='';
+  const ref=isNaN(doneMs)?nowMs:doneMs;
+  const lateMs=ref-finalMs-p.graceMin*60000;
+  if(lateMs>0){const d=lateMs/864e5;pen=d<=1?p.b1:d<=3?p.b3:d<=7?p.b7:p.b8;}
+  if(isNaN(doneMs)){pen+=p.notDone;cat='overdue';}
+  else if(lateMs>0)cat='late';
+  else cat=post>0?'revised':'first';
+  return {score:Math.max(0,s-pen),cat,latePen:pen,postPen:Math.min(p.postCap,post*p.perPost)};
+}
+function taCompute(fromStr,toStr,p,inclSys){
+  const fromMs=new Date(fromStr+'T00:00:00').getTime(),toMs=new Date(toStr+'T23:59:59').getTime(),nowMs=Date.now();
+  const W={Critical:p.wCritical,High:p.wHigh,Medium:p.wMedium,Low:p.wLow};
+  const users=attTeamUsers();const byName={};
+  users.forEach(u=>{byName[u.name.toLowerCase()]={name:u.name,items:[]};});
+  (taskData||[]).forEach(t=>{
+    if(!inclSys&&TA_SYS_TYPES.includes(t.taskType))return;
+    const bucket=byName[String(t.assignedTo||'').trim().toLowerCase()];if(!bucket)return;
+    const w=W[t.priority]!==undefined?W[t.priority]:1;
+    const add=(finalStr,origStr,post,doneMs,status,tag)=>{
+      const finalMs=taMs(finalStr);if(isNaN(finalMs)||finalMs<fromMs||finalMs>toMs)return;
+      if(isNaN(doneMs)&&finalMs>=nowMs)return;
+      const r=taScore(post,doneMs,finalMs,nowMs,p);
+      bucket.items.push({code:t.taskCode||t.id,title:(t.title||'')+(tag||''),assignee:bucket.name,priority:t.priority||'',orig:origStr||finalStr,final:finalStr,post,doneMs,status,cat:r.cat,postPen:r.postPen,latePen:r.latePen,score:r.score,weight:w});
+    };
+    const recurring=t.frequency&&t.frequency!=='One Time';
+    if(recurring){
+      (t.completions||[]).forEach(c=>add(c.wasDue,c.origDue,Number(c.revisions)||0,taMs(c.date),'Completed',' (recurring)'));
+      if(t.status!=='Completed')add(t.deadline,t.origDeadline||t.deadline,taPostponements(t.deadlineRevisions),NaN,t.status||'Open',' (recurring)');
+    }else{
+      const done=t.status==='Completed'?(taMs(t.completedAt)||taMs(t.updatedAt)):NaN;
+      add(t.deadline,t.origDeadline||t.deadline,taPostponements(t.deadlineRevisions),done,t.status||'Open','');
+    }
+  });
+  const rows=Object.values(byName).map(b=>{
+    const it=b.items,sw=it.reduce((a,x)=>a+x.weight,0);
+    const marks=sw?Math.round(it.reduce((a,x)=>a+x.weight*x.score,0)/sw*10)/10:null;
+    const cnt=c=>it.filter(x=>x.cat===c).length;
+    return {name:b.name,marks,total:it.length,first:cnt('first'),revised:cnt('revised'),late:cnt('late'),overdue:cnt('overdue'),post:it.reduce((a,x)=>a+x.post,0),items:it};
+  });
+  rows.sort((a,b)=>(b.marks===null)-(a.marks===null)||(b.marks||0)-(a.marks||0)||b.total-a.total||a.name.localeCompare(b.name));
+  let rk=0;rows.forEach(r=>{r.rank=r.marks===null?null:++rk;});
+  return rows;
+}
+function taFmtDl(s){if(!s)return '—';const d=new Date(String(s).length<=10?s+'T00:00:00':s);return isNaN(d)?s:d.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'2-digit',...(String(s).length>10?{hour:'2-digit',minute:'2-digit'}:{})});}
+function openTaskAssessment(){
+  if(!isUpdeshDataAdmin()){toast('Only Updesh can open the assessment report','err');return;}
+  let m=el('task-assess-modal');
+  if(!m){
+    m=document.createElement('div');m.id='task-assess-modal';
+    m.style.cssText='display:none;position:fixed;inset:0;z-index:5002;background:rgba(8,20,40,.64);backdrop-filter:blur(3px);align-items:flex-start;justify-content:center;padding:18px;overflow:auto';
+    const inp='style="width:64px;padding:4px 6px;border:.5px solid var(--bds);border-radius:6px;font-size:12px"';
+    const pf=(k,l)=>`<label style="font-size:11px;color:var(--t2);display:flex;flex-direction:column;gap:2px">${l}<input id="ta-p-${k}" type="number" value="${TA_DEFAULTS[k]}" ${inp}></label>`;
+    m.innerHTML=`<div style="width:min(1100px,98vw);background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden">
+<div style="padding:14px 18px;background:linear-gradient(135deg,#006994,#263F65);color:#fff;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;font-weight:800;letter-spacing:1px">TASK MANAGEMENT</div><div style="font-size:18px;font-weight:700">Assessment report</div></div><button class="btn" onclick="el('task-assess-modal').style.display='none'" style="background:#fff">Close</button></div>
+<div style="padding:14px 18px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+<label style="font-size:11px;color:var(--t2);display:flex;flex-direction:column;gap:2px">Month<input type="month" id="ta-month" onchange="taSetMonth()" style="padding:5px 7px;border:.5px solid var(--bds);border-radius:6px;font-size:12px"></label>
+<label style="font-size:11px;color:var(--t2);display:flex;flex-direction:column;gap:2px">From<input type="date" id="ta-from" style="padding:5px 7px;border:.5px solid var(--bds);border-radius:6px;font-size:12px"></label>
+<label style="font-size:11px;color:var(--t2);display:flex;flex-direction:column;gap:2px">To<input type="date" id="ta-to" style="padding:5px 7px;border:.5px solid var(--bds);border-radius:6px;font-size:12px"></label>
+<label style="font-size:12px;display:flex;gap:5px;align-items:center;padding-bottom:6px"><input type="checkbox" id="ta-sys" checked> Include auto-created (system) tasks</label>
+<button class="btn pri" onclick="taGenerate()"><i class="ti ti-chart-bar"></i>Generate report</button>
+<button class="btn" id="ta-export" onclick="taExport()" style="display:none"><i class="ti ti-file-spreadsheet"></i>Export to Excel</button></div>
+<details style="margin-bottom:10px"><summary style="cursor:pointer;font-size:12px;font-weight:600">Scoring parameters (editable) &amp; how marks are calculated</summary>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0">${pf('base','Base marks')}${pf('perPost','Per postponement')}${pf('postCap','Postponement cap')}${pf('graceMin','Grace (min)')}${pf('b1','Late ≤1 day')}${pf('b3','Late ≤3 days')}${pf('b7','Late ≤7 days')}${pf('b8','Late &gt;7 days')}${pf('notDone','Not done (extra)')}${pf('wCritical','Wt Critical')}${pf('wHigh','Wt High')}${pf('wMedium','Wt Medium')}${pf('wLow','Wt Low')}</div>
+<div style="font-size:11.5px;color:var(--t2);line-height:1.6">Each task starts at base marks. Every later-dated deadline revision (approved request or assigner edit) deducts the per-postponement amount (up to the cap). Lateness is measured against the <b>final</b> deadline and deducted by band; tasks still open past deadline also get the "not done" deduction. Employee marks = priority-weighted average of task scores. Tasks are counted in the period their final deadline falls in; tasks not yet due are excluded. Date-only deadlines count as 23:59 that day. Rank is by marks (ties: more tasks, then name). <b>Note:</b> deadline-revision history is recorded only from v${APP_VERSION} onward; earlier revisions are not visible, so older tasks show 0 postponements.</div></details>
+<div id="ta-out" style="font-size:12px;color:var(--t2)">Choose a period and click Generate report.</div></div></div>`;
+    document.body.appendChild(m);
+    const d=new Date();el('ta-month').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');taSetMonth();
+  }
+  m.style.display='flex';
+}
+function taSetMonth(){const v=el('ta-month').value;if(!v)return;const [y,mo]=v.split('-').map(Number);const last=new Date(y,mo,0).getDate();el('ta-from').value=v+'-01';el('ta-to').value=v+'-'+String(last).padStart(2,'0');}
+function taGenerate(){
+  const f=el('ta-from').value,t=el('ta-to').value;if(!f||!t||f>t){toast('Select a valid period','err');return;}
+  const p=taParams(),sys=el('ta-sys').checked;
+  const rows=taCompute(f,t,p,sys);taLastReport={from:f,to:t,p,sys,rows};
+  const col=m=>m>=85?'#1a7f37':m>=60?'#b26a00':'#c0392b';
+  const th='style="padding:6px 8px;text-align:left;font-size:11px;background:#f4f6fa;border-bottom:1px solid var(--bd)"',td='style="padding:6px 8px;border-bottom:1px solid var(--bd);font-size:12px"';
+  let h=`<table style="width:100%;border-collapse:collapse"><thead><tr><th ${th}>Rank</th><th ${th}>Employee</th><th ${th}>Marks</th><th ${th}>Tasks</th><th ${th}>On time (first)</th><th ${th}>On time (after revision)</th><th ${th}>Late</th><th ${th}>Open overdue</th><th ${th}>Postponements</th><th ${th}></th></tr></thead><tbody>`;
+  rows.forEach((r,i)=>{
+    h+=`<tr><td ${td}>${r.rank===null?'—':r.rank}</td><td ${td}><b>${esc(r.name)}</b></td><td ${td}>${r.marks===null?'<span style="color:var(--t2)">No tasks</span>':`<b style="color:${col(r.marks)};font-size:14px">${r.marks.toFixed(1)}</b>`}</td><td ${td}>${r.total}</td><td ${td}>${r.first}</td><td ${td}>${r.revised}</td><td ${td}>${r.late}</td><td ${td}>${r.overdue}</td><td ${td}>${r.post}</td><td ${td}>${r.total?`<button class="btn" onclick="var d=el('ta-d-${i}');d.style.display=d.style.display==='none'?'table-row':'none'">Details</button>`:''}</td></tr>`;
+    if(r.total){
+      h+=`<tr id="ta-d-${i}" style="display:none"><td colspan="10" style="padding:6px 8px;background:#fafbfd"><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>${['Code','Task','Priority','Original deadline','Final deadline','Postp.','Completed','Status','Postp. pen.','Late pen.','Score','Wt'].map(x=>`<th ${th}>${x}</th>`).join('')}</tr></thead><tbody>`+
+      r.items.map(x=>`<tr><td ${td}>${esc(x.code)}</td><td ${td}>${esc(x.title)}</td><td ${td}>${esc(x.priority)}</td><td ${td}>${taFmtDl(x.orig)}</td><td ${td}>${taFmtDl(x.final)}</td><td ${td}>${x.post}</td><td ${td}>${isNaN(x.doneMs)?'—':new Date(x.doneMs).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td ${td}>${esc(x.status)}${x.cat==='overdue'?' (overdue)':''}</td><td ${td}>−${x.postPen}</td><td ${td}>−${x.latePen}</td><td ${td}><b>${x.score.toFixed(0)}</b></td><td ${td}>${x.weight}</td></tr>`).join('')+`</tbody></table></div></td></tr>`;
+    }
+  });
+  h+='</tbody></table>';
+  el('ta-out').innerHTML=`<div style="margin-bottom:6px">Period ${fmtDate(f)} – ${fmtDate(t)}${sys?' · system tasks included':''}</div>`+h;
+  el('ta-export').style.display='inline-flex';
+}
+function taExport(){
+  const R=taLastReport;if(!R)return;
+  const fd=ms=>isNaN(ms)?'':new Date(ms).toLocaleString('en-IN');
+  const sum=R.rows.map(r=>({Rank:r.rank===null?'':r.rank,Employee:r.name,Marks:r.marks===null?'':r.marks,Tasks:r.total,'On time (first)':r.first,'On time (after revision)':r.revised,Late:r.late,'Open overdue':r.overdue,Postponements:r.post}));
+  const det=[];R.rows.forEach(r=>r.items.forEach(x=>det.push({Employee:r.name,Code:x.code,Task:x.title,Priority:x.priority,'Original deadline':taFmtDl(x.orig),'Final deadline':taFmtDl(x.final),Postponements:x.post,'Completed at':fd(x.doneMs),Status:x.status,Outcome:({first:'On time',revised:'On time after revision',late:'Late',overdue:'Open overdue'})[x.cat],'Postponement penalty':x.postPen,'Late/not-done penalty':x.latePen,Score:x.score,Weight:x.weight})));
+  const par=[{Parameter:'Period from',Value:R.from},{Parameter:'Period to',Value:R.to},{Parameter:'System tasks included',Value:R.sys?'Yes':'No'}].concat(Object.keys(R.p).map(k=>({Parameter:k,Value:R.p[k]})));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sum),'Summary');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(det),'Task Detail');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(par),'Parameters');
+  XLSX.writeFile(wb,`Task_Assessment_${R.from}_to_${R.to}.xlsx`);
+}
+
 function closeTaskDetails(){const m=el('wiki-task-detail-modal');if(m)m.style.display='none';}
 async function loadTaskAckInfo(taskId){
   const box=el('task-ack-info');if(!box)return;
@@ -5650,6 +5774,7 @@ function openTaskDetails(id){
 }
 
 function renderTasks(){
+  const assessBtn=el('task-assess-btn');if(assessBtn)assessBtn.style.display=isUpdeshDataAdmin()?'inline-flex':'none';
   const view=el('task-ff-view')?.value||'mine';
   const statusF=el('task-ff-status')?.value||'';
   const q=(el('task-search')?.value||'').toLowerCase().trim();
