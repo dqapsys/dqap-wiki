@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.60";
+const APP_VERSION="78.62";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261010-3";
+const APP_BUILD="20261011-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1399,7 +1399,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
           <div class="fsec-t"><i class="ti ti-info-circle"></i>Project details</div>
           <div class="g3" style="margin-bottom:14px">
-            <div class="fg"><label class="fl r">Project number</label><input class="fi" id="np-num" placeholder="e.g. PRJ-2025-001"></div>
+            <div class="fg"><label class="fl r">Project number</label><input class="fi" id="np-num" readonly style="background:#f4f6fa;font-weight:700" title="Generated automatically by DORBIT" placeholder="Generated automatically"><div style="font-size:10px;color:var(--t2);margin-top:2px">Generated automatically by DORBIT</div></div>
             <div class="fg"><label class="fl r">Project name</label><input class="fi" id="np-name" placeholder="e.g. BPCL Panipat FDAS"></div>
             <div class="fg"><label class="fl r">Project Scope</label>
               <select class="fs" id="np-scope">
@@ -3786,7 +3786,8 @@ function sendTaskNotification(action,t){
 // new project with the deal and, once the PMO entry is also created, to
 // auto-complete the originating task.
 function startPmoKickoffFromTask(taskId,dealId){
-  pmoKickoffLink={taskId,dealId,projId:null};
+  const kt=taskData.find(x=>x.id===taskId)||{};
+  pmoKickoffLink={taskId,dealId,dealCode:kt.dealCode||'',projId:null};
   modalHideWikiTask();
   go('projects');
   setTimeout(()=>{togNewProj();toast('Create the project, then you\'ll be taken to New PMO Project','ok');},150);
@@ -3806,9 +3807,31 @@ async function completePmoKickoffTask(taskId){
 }
 
 // â”€â”€ PROJECTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function nextProjectNumber(extraTaken){
+  const taken=new Set((projectsData||[]).map(x=>String(x.number||'').trim()).concat(extraTaken||[]));
+  // Deal-linked project: number is D-PRJ-<Deal ID>
+  const dealRef=pmoKickoffLink&&String(pmoKickoffLink.dealCode||pmoKickoffLink.dealId||'').trim().replace(/^D-/i,'');
+  if(dealRef){
+    const baseNo='D-PRJ-'+dealRef;let cand=baseNo,i=1;
+    while(taken.has(cand)){i++;cand=baseNo+'-'+i;}
+    return cand;
+  }
+  const yr=String(new Date().getFullYear());
+  const all=(projectsData||[]).filter(x=>x.number);
+  if(!all.length)return 'PRJ-'+yr+'-001';
+  const latest=all.slice().sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0];
+  const m=/^(.*?)(\d+)$/.exec(String(latest.number).trim());
+  if(!m)return 'PRJ-'+yr+'-001';
+  let prefix=m[1];const width=m[2].length;
+  const y=/(20\d\d)/.exec(prefix);
+  if(y&&y[1]!==yr)prefix=prefix.replace(y[1],yr);
+  let max=0;
+  [...taken].forEach(n=>{if(n.startsWith(prefix)){const r=/^(\d+)$/.exec(n.slice(prefix.length));if(r)max=Math.max(max,parseInt(r[1],10));}});
+  return prefix+String(max+1).padStart(width,'0');
+}
 function togNewProj(){
   const p=el('new-proj-panel');p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value='';el('np-name').value='';el('np-ld-date').value='';el('np-target-date').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';const pl=el('np-po-list');if(pl){pl.innerHTML='';addPORow('np-po-list');}renderNpItems();}
+  if(p.style.display==='block'){npClients=[];npSites=[];el('np-num').value=nextProjectNumber();el('np-name').value='';el('np-ld-date').value='';el('np-target-date').value='';el('np-budget-alloc').value='';el('np-pm').value='';el('np-scope').value='';el('np-cli-inp').value='';el('np-site-inp').value='';const pl=el('np-po-list');if(pl){pl.innerHTML='';addPORow('np-po-list');}renderNpItems();}
 }
 function addNpItem(type){const inp=el(`np-${type}-inp`),val=(inp.value||'').trim();if(!val)return;if(type==='cli'){if(!npClients.includes(val))npClients.push(val);}else{if(!npSites.includes(val))npSites.push(val);}inp.value='';renderNpItems();inp.focus();}
 function removeNpItem(type,val){if(type==='cli')npClients=npClients.filter(v=>v!==val);else npSites=npSites.filter(v=>v!==val);renderNpItems();}
@@ -3817,8 +3840,8 @@ function renderNpItems(){
 }
 async function saveNewProject(){
   if(!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Unauthorized access','err');return;}
-  const num=(el('np-num').value||'').trim(),name=(el('np-name').value||'').trim();
-  if(!num){toast('Project number is required','err');return;}if(!name){toast('Project name is required','err');return;}
+  let num=(el('np-num').value||'').trim();const name=(el('np-name').value||'').trim();
+  if(!num)num=nextProjectNumber();if(!name){toast('Project name is required','err');return;}
   if(!npClients.length){toast('Add at least one client','err');return;}if(!npSites.length){toast('Add at least one site','err');return;}
   const exists=projectsData.find(p=>p.name.toLowerCase()===name.toLowerCase());if(exists){toast('Project already exists','err');return;}
   const scope=(el('np-scope').value||'').trim();
@@ -3835,6 +3858,12 @@ async function saveNewProject(){
   if(!projectManager){toast('Select a Project Manager','err');return;}
   showLoad('Saving…');
   try{
+    // Guard against two people creating projects at the same moment: confirm the number is still free.
+    for(let i=0;i<5;i++){
+      const clash=await db.collection(PROJ).where('number','==',num).limit(1).get();
+      if(clash.empty)break;
+      num=nextProjectNumber([num]);el('np-num').value=num;
+    }
     const now=new Date().toISOString();
     // originalTargetCompletionDate never changes after this - it's the audit baseline.
     // targetCompletionDate is the working/scored baseline and moves only when an
@@ -4656,7 +4685,7 @@ function loadDebtFrame(){
 function go(n){
   const mandatoryTask=mandatoryWikiTaskAction();
   if(mandatoryTask&&n!=='attendance'){
-    showWikiTaskNotificationModal();
+    showWikiTaskNotificationModal(true);
     toast('Complete the mandatory task action first. Only Attendance is currently available.','err');
     return;
   }
@@ -5242,7 +5271,7 @@ function mandatoryWikiTaskAction(){
   if(!CU)return null;
   const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending');
   if(review)return{type:'assigner-review',task:review};
-  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending')
+  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending'&&!(pmoKickoffLink&&pmoKickoffLink.taskId===t.id))
     .sort((a,b)=>{
       const ao=isWikiTaskOverdue(a),bo=isWikiTaskOverdue(b);
       if(ao!==bo)return ao?-1:1;
@@ -5256,13 +5285,31 @@ function wikiTaskActionCard(t,color,bg){return`<div style="padding:12px;border-l
   ${t.description?`<div style="font-size:11.5px;margin-top:6px">${esc(t.description)}</div>`:''}
   <div style="font-size:10.5px;color:var(--t2);margin-top:8px;line-height:1.7">Assignee: <b>${esc(t.assignedTo||'-')}</b> - Assigned by: <b>${esc(t.assignedBy||'-')}</b><br>Deadline: <b>${fmtDate(t.deadline)}</b> - Priority: <b>${esc(t.priority||'Medium')}</b>${t.project?' - Project: <b>'+esc(t.project)+'</b>':''}</div>
 </div>`;}
-function showWikiTaskNotificationModal(){
+function taNoticeBadge(list){
+  let b=el('wiki-task-notice-badge');
+  if(!list||!list.length){if(b)b.style.display='none';return;}
+  if(!b){
+    b=document.createElement('div');b.id='wiki-task-notice-badge';
+    b.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:4000;background:#F59E0B;color:#3a2200;font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,.28);cursor:pointer;max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    b.onclick=function(){showWikiTaskNotificationModal(true);};
+    document.body.appendChild(b);
+  }
+  const k=list.find(t=>t.taskType==='pmo_kickoff');
+  b.innerHTML='<i class="ti ti-bell-ringing"></i> '+(k?'New project to create: '+esc(k.customerCompanyName||k.project||k.title||'')+(list.length>1?' (+'+(list.length-1)+' more)':''):list.length+' task notice'+(list.length>1?'s':'')+' pending')+' - click to view';
+  b.style.display='block';
+}
+function dismissWikiTaskNotice(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';showWikiTaskNotificationModal();}
+function showWikiTaskNotificationModal(force){
   const modal=el('wiki-task-notify-modal'),list=el('wiki-task-notify-list'),title=el('wiki-task-notify-title'),actions=el('wiki-task-notify-actions');if(!modal||!list||!CU)return;
   const mandatory=mandatoryWikiTaskAction();
   const attendanceOpen=el('v-attendance')&&el('v-attendance').style.display!=='none';
   if(mandatory){
+    taNoticeBadge(null);
     if(attendanceOpen){modal.style.display='none';return;}
     const t=mandatory.task;
+    const msig='M:'+t.id+':'+mandatory.type+':'+(t.deadline||'')+':'+(t.proposedDeadline||'');
+    if(force!==true&&modal.style.display==='flex'&&modal.dataset.sig===msig)return; // don't wipe what the user is typing
+    modal.dataset.sig=msig;
     if(mandatory.type==='assignee-action'){
       title.textContent=mandatory.overdue?'Overdue task action required':'Task due action required';
       list.innerHTML=`<div style="font-size:11px;font-weight:700;color:#B71C1C;margin-bottom:9px">${mandatory.overdue?'This task is overdue. ':''}Complete it or submit a deadline-change request before using any module other than Attendance.</div>${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"></div>`;
@@ -5276,8 +5323,14 @@ function showWikiTaskNotificationModal(){
   }
   const critical=criticalWikiTasksForUser();
   if(critical.length&&!attendanceOpen){
+    const csig='C:'+critical.map(x=>x.id).join(',');
+    if(force!==true&&modal.dataset.sig===csig){ // already shown once: stay out of the way
+      if(modal.style.display!=='flex')taNoticeBadge(critical);
+      return;
+    }
+    modal.dataset.sig=csig;taNoticeBadge(null);
     title.textContent='Critical task requires attention';
-    actions.innerHTML='<button class="btn" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
+    actions.innerHTML='<button class="btn" onclick="dismissWikiTaskNotice()">Work on it later</button><button class="btn" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
     list.innerHTML=`<div style="font-size:11px;font-weight:800;color:#B71C1C;margin-bottom:9px">Critical tasks are displayed until completed or a deadline revision request is submitted.</div>`+
       critical.slice(0,6).map(t=>{
         const isPmoKickoff=t.taskType==='pmo_kickoff';
@@ -5299,9 +5352,15 @@ function showWikiTaskNotificationModal(){
     modal.style.display='flex';return;
   }
   const tasks=pendingWikiTaskNotifications();
-  if(!tasks.length){modal.style.display='none';return;}
+  if(!tasks.length){modal.style.display='none';modal.dataset.sig='';taNoticeBadge(null);return;}
+  const nsig='N:'+tasks.map(x=>x.id+(x.updatedAt||'')).join(',');
+  if(force!==true&&modal.dataset.sig===nsig){
+    if(modal.style.display!=='flex')taNoticeBadge(tasks);
+    return;
+  }
+  modal.dataset.sig=nsig;taNoticeBadge(null);
   title.textContent='New or updated tasks';
-  actions.innerHTML='<button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button><button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
+  actions.innerHTML='<button class="btn" onclick="dismissWikiTaskNotice()">Later</button><button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button><button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
   const colors={Critical:['#B71C1C','#FFEBEE'],High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
   list.innerHTML=tasks.slice(0,8).map(t=>{const c=t.status==='Completed'?['#1B5E20','#E8F5E9']:(colors[t.priority]||colors.Medium);return`<div style="margin-bottom:9px;padding:11px 12px;border-left:4px solid ${c[0]};background:${c[1]};border-radius:7px">
     <div style="display:flex;justify-content:space-between;gap:8px"><b style="color:${c[0]}">${esc(t.title||'Task')}</b><span class="badge">${esc(t.priority||'Medium')}</span></div>
@@ -5320,7 +5379,7 @@ function showWikiCriticalDeadlineRequestForm(id){
   const t=taskData.find(x=>x.id===id);if(!t)return;
   el('wiki-task-notify-title').textContent='Request deadline revision';
   el('wiki-task-notify-list').innerHTML=`${wikiTaskActionCard(t,'#B71C1C','#FFEBEE')}<div id="wiki-task-action-inputs" style="margin-top:12px"><div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div></div>`;
-  el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="showWikiTaskNotificationModal()">Back</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
+  el('wiki-task-notify-actions').innerHTML=`<button class="btn" onclick="showWikiTaskNotificationModal(true)">Back</button><button class="btn pri" onclick="submitWikiDeadlineRequest('${id}')">Send Request</button>`;
 }
 async function submitWikiDeadlineRequest(id){
   const t=taskData.find(x=>x.id===id),proposed=g('wiki-proposed-deadline'),reason=g('wiki-deadline-reason');
@@ -5341,7 +5400,7 @@ async function reviewWikiDeadlineRequest(id,decision){
   showLoad('Saving decision...');try{await db.collection(TASK_COL).doc(id).update(d);await logAcknowledgement('tasks',id,t.title||t.name||'','deadline_'+decision);toast('Deadline request '+decision,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function completeWikiMandatoryTask(id){await updateTaskStatus(id,'Completed');modalHideWikiTask();}
-function modalHideWikiTask(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';}
+function modalHideWikiTask(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';setTimeout(()=>showWikiTaskNotificationModal(),0);}
 function openAttendanceDuringTaskBlock(){modalHideWikiTask();go('attendance');}
 function ackWikiTaskNotifications(){markTasksSeen();logAcknowledgement('tasks','notification','Task notifications','notification_acknowledged');el('wiki-task-notify-modal').style.display='none';}
 function openNotifiedTasks(){ackWikiTaskNotifications();go('tasks');}
