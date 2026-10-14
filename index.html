@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.63";
+const APP_VERSION="78.64";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261014-1";
+const APP_BUILD="20261015-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -101,7 +101,7 @@ const LIB_CATS=["Manuals & Datasheets","Standards & Norms","Drawings & Schematic
 const PMO_STAGES=["PO Acceptance","Kick Off","Approvals / MFC","BOM","Procurement","Manufacturing","Dispatch","Cabling / Installation","Commissioning","System Handover","Payment"];
 const PROJECT_DOCS_API_URL='https://upload-receipt-932523956178.asia-south2.run.app';
 const PROJECT_DOC_CHECKLIST=["RFP","Offer, Queries & Costing","PO","Approvals, Queries & Response","Procurement","ProMS","Inspection & Dispatch","PMO","Payments","As Built Submission","Handover"];
-const MAX_PROJECT_DOC_BYTES=15*1024*1024;
+const MAX_PROJECT_DOC_BYTES=20*1024*1024;
 const PROJECT_DOC_TEMPLATE_COL='dqap_project_doc_template';
 let projectDocTemplate=null,projectDocTemplateUnsub=null;
 const STAGE_COLORS=["#1565C0","#2E7D32","#F57F17","#6A1B9A","#00838F","#E64A19","#0277BD","#EF6C00","#AD1457","#1B5E20","#B71C1C"];
@@ -1491,7 +1491,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
     <div class="card">
       <div class="ch"><div class="ct"><i class="ti ti-list" style="font-size:14px"></i>Active users</div><button class="btn sm" onclick="loadUsers()"><i class="ti ti-refresh"></i>Refresh</button></div>
-      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Department</th><th>Reporting Manager</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      <div style="overflow:hidden"><table class="wtable"><thead><tr><th>Full name</th><th>Username</th><th>Email</th><th>Department</th><th>Reporting Manager</th><th>Role</th><th title="Allow / block access to PMO Details">PMO Details</th><th>Created</th><th>Actions</th></tr></thead><tbody id="u-list"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -2107,6 +2107,7 @@ function resetPMOForm(){
 }
 
 function setPMOView(v){
+  if(v==='cards'&&!canViewPMODetails()){toast('You do not have access to PMO Details','err');v='chart';}
   pmoDashView=v;
   const db=el('pmo-dash-btn'),det=el('pmo-det-btn');
   if(db)db.className='btn'+(v==='chart'?' pri':'');
@@ -3034,6 +3035,7 @@ ${bodyRows}
 }
 
 function renderPMO(){
+  {const canDet=canViewPMODetails();const _d=el('pmo-det-btn');if(_d)_d.style.display=canDet?'':'none';if(!canDet&&pmoDashView==='cards')pmoDashView='chart';}
   const dataTools=el('pmo-data-tools');if(dataTools)dataTools.style.display=isUpdeshDataAdmin()&&pmoDashView==='cards'?'inline-flex':'none';
   const statusF=el('pmo-ff-status')?.value||'';
   const q=(el('pmo-search')?.value||'').toLowerCase().trim();
@@ -4199,6 +4201,7 @@ async function loadUsers(){
       <td>${u.department?`<span class="chip" style="background:var(--pl);color:var(--p);font-weight:600">${esc(u.department)}</span>`:'<span style="color:#aaa;font-size:11px">— not set —</span>'}</td>
       <td>${u.reportingManager?esc(u.reportingManager):'<span style="color:#aaa;font-size:11px">— not set —</span>'}</td>
       <td>${(u.role==='admin'||u.isAdmin)?'<span class="badge b-adm">Admin</span>':u.role==='manager'?'<span class="badge b-mgr">Manager</span>':'<span class="badge b-usr">User</span>'}</td>
+      <td style="text-align:center"><input type="checkbox" title="Allow access to PMO Details" ${u.pmoDetails!==false||String(u.username||'').toLowerCase()==='updesh'?'checked':''} ${(CU&&CU.isAdmin)&&String(u.username||'').toLowerCase()!=='updesh'?'':'disabled'} onchange="setPmoDetailsAccess('${u.id}',this.checked,'${esc(u.fullName)}',this)"></td>
       <td style="font-size:11px;color:var(--t2)">${(u.createdAt||'').split('T')[0]}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn sm" onclick="editUser('${u.id}', '${esc(u.fullName)}', '${esc(u.username)}', '${u.email||''}', '${u.role||(u.isAdmin?'admin':'user')}')"><i class="ti ti-edit"></i>Edit</button>
@@ -4209,8 +4212,23 @@ async function loadUsers(){
         <button class="btn sm danger" onclick="delUser('${u.id}','${esc(u.username)}')" ${u.username===CU.username?'disabled':''}><i class="ti ti-trash"></i></button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
+    :'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--t2)">No users</td></tr>';
   }catch(e){toast('Failed','err');}finally{hideLoad();}
+}
+async function setPmoDetailsAccess(id,allowed,name,box){
+  if(!(CU&&CU.isAdmin)){toast('Only an Admin can change access','err');if(box)box.checked=!allowed;return;}
+  try{
+    await db.collection(USERS).doc(id).update({pmoDetails:!!allowed,updatedAt:new Date().toISOString()});
+    toast('PMO Details '+(allowed?'enabled':'blocked')+' for '+name,'ok');
+  }catch(e){toast('Failed: '+e.message,'err');if(box)box.checked=!allowed;}
+}
+// PMO Details view: open to everyone unless the user's "PMO Details" box is unticked in Users
+function canViewPMODetails(){
+  if(!CU)return false;
+  const un=String(CU.username||'').toLowerCase();
+  if(un==='updesh')return true;
+  const live=(usersData||[]).find(u=>String(u.username||'').toLowerCase()===un);
+  return (live?live.pmoDetails:CU.pmoDetails)!==false;
 }
 async function changeRole(id,currentRole,name){
   const roles=['user','manager','admin'];
