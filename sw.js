@@ -1,9 +1,13 @@
 // DQAP Wiki Service Worker
-// Version 78.61 - Sales Support tasks created by the Sales CRM (taskType
-// 'crm_support') no longer block the screen: they show as a dismissible daily
-// reminder and in the Tasks badge, with deadline request/review available from
-// the task details. Cache-bust links for the Sales CRM and Debt Management
-// modules updated to 20261011.1.
+// Version 78.63 - ProMS menu entry, badge and approvals listener restored
+// (it had dropped out when later builds were made from a base without it).
+// Version 78.62 - Project created from a CRM deal gets number D-PRJ-<Deal ID>.
+// Version 78.61 - PMO kickoff: (1) the "create new project" task popup no
+// longer re-appears every minute / on every task update and wipes the work in
+// progress - it shows once, then an amber badge at the top keeps the reminder
+// (click to reopen; "Work on it later" on the popup); a kickoff task being
+// worked on no longer blocks navigation. (2) New Project Number is generated
+// automatically (continues the latest numbering pattern, duplicate-checked).
 // Version 78.60 - Task assessment report is now also available to Pratim
 // (Updesh and Pratim only).
 // Version 78.59 - Task assessment report now includes auto-created (system)
@@ -132,7 +136,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.61-20261011-1';
+const CACHE_VERSION = 'dqap-wiki-v78.63-20261014-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
