@@ -1,7 +1,8 @@
 // DQAP Wiki Service Worker
-// Version 78.64 - PMO document upload limit raised from 15MB to 20MB per file;
-// Users screen has a new "PMO Details" checkbox to allow/block each user's
-// access to the PMO Details view (default: allowed; Updesh always allowed).
+// Service worker for Wiki 78.65 (build 20261018-1).
+// Version 78.65 - Sales CRM support-hand tasks: non-blocking daily reminders,
+// completion notice to CRM, deadline change request/review, CRM/Debt launch
+// links refreshed (?v=20261018.1).
 // Version 78.63 - ProMS menu entry, badge and approvals listener restored
 // (it had dropped out when later builds were made from a base without it).
 // Version 78.62 - Project created from a CRM deal gets number D-PRJ-<Deal ID>.
@@ -139,7 +140,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.64-20261015-1';
+const CACHE_VERSION = 'dqap-wiki-v78.65-20261018-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
