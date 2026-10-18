@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.64";
+const APP_VERSION="78.65";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261015-1";
+const APP_BUILD="20261018-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4606,7 +4606,7 @@ function openDebtManagement(){
   try {
     try{localStorage.setItem('dqap_debt_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20261018.1#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -4626,7 +4626,7 @@ function openSalesCRM(targetTab=''){
     try{localStorage.setItem('dqap_crm_handoff',JSON.stringify({session:sess,ts:Date.now(),targetTab}));}catch(e){}
     // Use URL fragment to pass session (not sent to server)
     const tabParam = targetTab ? `&tab=${encodeURIComponent(targetTab)}` : '';
-    const url = `https://dqapsys.github.io/dqap-crm/?v=20260703.1${tabParam}#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/dqap-crm/?v=20261018.1${tabParam}#sess=${encodeURIComponent(sess)}`;
     const crmWindow = window.open(url, '_blank');
     if(crmWindow) crmWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -4717,7 +4717,7 @@ function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=currentWikiSession();
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20260622.5#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20261018.1#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
@@ -5280,6 +5280,14 @@ function taskSeenKey(){return 'dqap_task_seen_'+((CU&&CU.username)||'x');}
 function getTaskSeen(){try{return localStorage.getItem(taskSeenKey())||'';}catch(e){return '';}}
 function setTaskSeen(ts){try{localStorage.setItem(taskSeenKey(),ts);}catch(e){}}
 function markTasksSeen(){setTaskSeen(new Date().toISOString());updateTaskNavBadge();}
+function crmSupportReminderKey(){return 'dqap_support_reminder_'+String(CU&&CU.username||'').toLowerCase();}
+function crmSupportReminderTasks(){
+  if(!CU)return[];
+  const today=new Date().toISOString().slice(0,10);
+  let ack='';try{ack=localStorage.getItem(crmSupportReminderKey())||'';}catch(e){}
+  if(ack===today)return[];
+  return taskData.filter(t=>t.taskType==='crm_support'&&t.assignedTo===CU.fullName&&t.status!=='Completed');
+}
 function pendingWikiTaskNotifications(){
   if(!CU)return[];
   const seen=getTaskSeen();
@@ -5307,11 +5315,18 @@ function isWikiTaskDueForBlocking(t){
   const dueDay=new Date(deadline);dueDay.setHours(0,0,0,0);
   return dueDay.getTime()<=today.getTime();
 }
+let wikiTaskForceId=null;
 function mandatoryWikiTaskAction(){
   if(!CU)return null;
-  const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending');
+  // Sales Support tasks (from the Sales CRM) never block the screen; a deadline request on one is
+  // only reviewed when the user opens it on purpose from the task details.
+  if(wikiTaskForceId){
+    const ft=taskData.find(t=>t.id===wikiTaskForceId);
+    if(ft&&ft.assignedBy===CU.fullName&&ft.deadlineChangeStatus==='pending')return{type:'assigner-review',task:ft};
+  }
+  const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending'&&t.taskType!=='crm_support');
   if(review)return{type:'assigner-review',task:review};
-  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending'&&!(pmoKickoffLink&&pmoKickoffLink.taskId===t.id))
+  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending'&&t.taskType!=='crm_support'&&!(pmoKickoffLink&&pmoKickoffLink.taskId===t.id))
     .sort((a,b)=>{
       const ao=isWikiTaskOverdue(a),bo=isWikiTaskOverdue(b);
       if(ao!==bo)return ao?-1:1;
@@ -5359,6 +5374,7 @@ function showWikiTaskNotificationModal(force){
       list.innerHTML=`${wikiTaskActionCard(t,'#6A1B9A','#F3E5F5')}<div style="margin-top:10px;padding:10px;background:#FFF3E0;border:1px solid #FFB74D;border-radius:7px;color:#E65100"><b>Requested deadline: ${fmtDate(t.proposedDeadline)}</b><br>Reason: ${esc(t.deadlineChangeReason||'-')}</div><div style="margin-top:10px"><label class="fl r">Decision remarks</label><textarea class="fi" id="wiki-deadline-review-remarks" placeholder="Remarks are mandatory"></textarea></div>`;
       actions.innerHTML=`<button class="btn" onclick="openAttendanceDuringTaskBlock()"><i class="ti ti-user-check"></i>Attendance</button><button class="btn" style="color:#B71C1C;border-color:#B71C1C" onclick="reviewWikiDeadlineRequest('${t.id}','rejected')">Reject</button><button class="btn pri" onclick="reviewWikiDeadlineRequest('${t.id}','approved')">Approve</button>`;
     }
+    if(wikiTaskForceId)actions.insertAdjacentHTML('afterbegin','<button class="btn" onclick="modalHideWikiTask()">Close</button>');
     modal.style.display='flex';return;
   }
   const critical=criticalWikiTasksForUser();
@@ -5392,14 +5408,16 @@ function showWikiTaskNotificationModal(force){
     modal.style.display='flex';return;
   }
   const tasks=pendingWikiTaskNotifications();
+  const supportRem=crmSupportReminderTasks();
+  supportRem.forEach(t=>{if(!tasks.includes(t))tasks.push(t);});
   if(!tasks.length){modal.style.display='none';modal.dataset.sig='';taNoticeBadge(null);return;}
-  const nsig='N:'+tasks.map(x=>x.id+(x.updatedAt||'')).join(',');
+  const nsig='N:'+tasks.map(x=>x.id+(x.updatedAt||'')).join(',')+(supportRem.length?':R'+new Date().toISOString().slice(0,10):'');
   if(force!==true&&modal.dataset.sig===nsig){
     if(modal.style.display!=='flex')taNoticeBadge(tasks);
     return;
   }
   modal.dataset.sig=nsig;taNoticeBadge(null);
-  title.textContent='New or updated tasks';
+  title.textContent=supportRem.length?'Task reminders - Sales Support pending':'New or updated tasks';
   actions.innerHTML='<button class="btn" onclick="dismissWikiTaskNotice()">Later</button><button class="btn" onclick="ackWikiTaskNotifications()">Acknowledge</button><button class="btn pri" onclick="openNotifiedTasks()"><i class="ti ti-checklist"></i>Open Task Management</button>';
   const colors={Critical:['#B71C1C','#FFEBEE'],High:['#B71C1C','#FFEBEE'],Medium:['#E65100','#FFF3E0'],Low:['#006994','#EAF3FB']};
   list.innerHTML=tasks.slice(0,8).map(t=>{const c=t.status==='Completed'?['#1B5E20','#E8F5E9']:(colors[t.priority]||colors.Medium);return`<div style="margin-bottom:9px;padding:11px 12px;border-left:4px solid ${c[0]};background:${c[1]};border-radius:7px">
@@ -5410,6 +5428,8 @@ function showWikiTaskNotificationModal(force){
   </div>`;}).join('')+(tasks.length>8?`<div style="font-size:11px;color:var(--t2)">+ ${tasks.length-8} more task notification(s)</div>`:'');
   modal.style.display='flex';
 }
+function openSupportDeadlineRequest(id){const m=el('wiki-task-notify-modal');if(!m)return;m.style.display='flex';showWikiCriticalDeadlineRequestForm(id);}
+function openSupportDeadlineReview(id){wikiTaskForceId=id;showWikiTaskNotificationModal();}
 function showWikiDeadlineRequestForm(id){
   const t=taskData.find(x=>x.id===id);if(!t)return;
   el('wiki-task-action-inputs').innerHTML=`<div class="g2"><div class="fg"><label class="fl r">Proposed deadline</label><input type="datetime-local" class="fi" id="wiki-proposed-deadline"></div><div class="fg"><label class="fl r">Reason</label><textarea class="fi" id="wiki-deadline-reason" placeholder="Reason is mandatory"></textarea></div></div>`;
@@ -5440,9 +5460,9 @@ async function reviewWikiDeadlineRequest(id,decision){
   showLoad('Saving decision...');try{await db.collection(TASK_COL).doc(id).update(d);await logAcknowledgement('tasks',id,t.title||t.name||'','deadline_'+decision);toast('Deadline request '+decision,'ok');modalHideWikiTask();}catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 async function completeWikiMandatoryTask(id){await updateTaskStatus(id,'Completed');modalHideWikiTask();}
-function modalHideWikiTask(){const m=el('wiki-task-notify-modal');if(m)m.style.display='none';setTimeout(()=>showWikiTaskNotificationModal(),0);}
+function modalHideWikiTask(){wikiTaskForceId=null;const m=el('wiki-task-notify-modal');if(m)m.style.display='none';setTimeout(()=>showWikiTaskNotificationModal(),0);}
 function openAttendanceDuringTaskBlock(){modalHideWikiTask();go('attendance');}
-function ackWikiTaskNotifications(){markTasksSeen();logAcknowledgement('tasks','notification','Task notifications','notification_acknowledged');el('wiki-task-notify-modal').style.display='none';}
+function ackWikiTaskNotifications(){try{localStorage.setItem(crmSupportReminderKey(),new Date().toISOString().slice(0,10));}catch(e){}markTasksSeen();logAcknowledgement('tasks','notification','Task notifications','notification_acknowledged');el('wiki-task-notify-modal').style.display='none';}
 function openNotifiedTasks(){ackWikiTaskNotifications();go('tasks');}
 function updateTaskNavBadge(){
   const badge=el('task-nav-badge');if(!badge||!CU)return;
@@ -5454,6 +5474,8 @@ function updateTaskNavBadge(){
     const ts=t.updatedAt||t.createdAt||'';
     if(!seen||ts>seen)n++;
   });
+  const openSupport=taskData.filter(t=>t.taskType==='crm_support'&&t.assignedTo===CU.fullName&&t.status!=='Completed').length;
+  if(openSupport>n)n=openSupport;
   if(mandatoryWikiTaskAction()||criticalWikiTasksForUser().length)n=Math.max(n,criticalWikiTasksForUser().length||1);
   if(n>0){badge.style.display='inline-block';badge.textContent=n;}
   else badge.style.display='none';
@@ -5635,6 +5657,16 @@ async function saveTask(){
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
 
+// A Sales Support task completed here is reported to the salesperson (who must confirm it in the
+// Sales CRM) and to Updesh, through the CRM's own notification list.
+async function notifyCrmSupportDone(t){
+  try{
+    const me=String(CU&&CU.username||'').toLowerCase();
+    const to=[...new Set([String(t.assignedByUsername||'').toLowerCase(),'updesh'].filter(u=>u&&u!==me))];
+    const msg=(CU.fullName||me)+' completed the Sales Support task "'+(t.title||'')+'"'+(t.dealCode?' ('+t.dealCode+')':'')+'. '+(t.assignedBy||'Salesperson')+', please confirm completion in the Sales CRM or send it back with a reason.';
+    await Promise.all(to.map(u=>db.collection(CRM_NOTIFICATIONS_COL).add({recipientUsername:u,senderUsername:me,type:'support_done_pending_confirmation',activityId:t.crmActivityId||null,dealId:t.dealId||null,leadId:null,dueDate:t.deadline?String(t.deadline).slice(0,10):null,partnerUsername:null,message:msg,read:false,createdAt:new Date()})));
+  }catch(e){console.warn('CRM support notification failed',e);}
+}
 async function updateTaskStatus(id,status){
   showLoad('Updating...');
   try{
@@ -5672,6 +5704,7 @@ async function updateTaskStatus(id,status){
       if(status==='Completed')await logAcknowledgement('tasks',id,existing.title||existing.name||'','completed');
       toast('Status updated','ok');
       sendTaskNotification('status changed to '+status,{...existing,...d});
+      if(status==='Completed'&&existing.taskType==='crm_support')notifyCrmSupportDone(existing);
     }
   }catch(e){toast('Failed: '+e.message,'err');}finally{hideLoad();}
 }
@@ -5843,6 +5876,7 @@ function openTaskDetails(id){
   </div>
   ${ds?`<div style="margin-top:10px"><span class="ld-chip" style="background:${ds.bg};color:${ds.color}"><i class="ti ${ds.icon}"></i>${ds.label}</span></div>`:''}
   ${t.deadlineChangeStatus?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF3E0;color:#E65100;font-size:11.5px"><b>Deadline request:</b> ${esc(t.deadlineChangeStatus)}${t.proposedDeadline?' - Proposed '+esc(fmtDate(t.proposedDeadline)):''}${t.deadlineChangeReason?' - Reason: '+esc(t.deadlineChangeReason):''}${t.deadlineChangeReviewRemarks?' - Review: '+esc(t.deadlineChangeReviewRemarks):''}</div>`:''}
+  ${t.taskType==='crm_support'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#E3F2FD;color:#0D47A1;font-size:11.5px"><b>Sales Support</b> - raised from the Sales CRM${t.dealCode||t.dealTitle?' for <b>'+esc((t.dealCode?t.dealCode+' ':'')+(t.dealTitle||''))+'</b>':''}${t.customerCompanyName?' ('+esc(t.customerCompanyName)+')':''}. Mark it complete when your support is done; <b>${esc(t.assignedBy||'the salesperson')}</b> then confirms.${t.crmSentBackReason&&t.status!=='Completed'?`<div style="margin-top:6px;color:#B71C1C;font-weight:700">Sent back by ${esc(t.crmSentBackBy||'the salesperson')}: ${esc(t.crmSentBackReason)}</div>`:''}${t.status==='Completed'?`<div style="margin-top:6px">Completed${t.completedByName?' by '+esc(t.completedByName):''} - awaiting confirmation from ${esc(t.assignedBy||'the salesperson')} in the Sales CRM.</div>`:''}</div>`:''}
   ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
   ${t.taskType==='project_change'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF8E1;color:#6D4C00;font-size:11.5px"><b>Project change approval</b> - Status: <b>${esc(t.projectChangeStatus||'pending')}</b></div>`:''}
   ${t.taskType==='attendance_approval'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#F3E8FF;color:#6A1B9A;font-size:11.5px"><b>Attendance approval</b> - Status: <b>${esc(t.approvalStatus||'pending')}</b></div>`:''}
@@ -5856,7 +5890,12 @@ function openTaskDetails(id){
   const isProjectChangeAction=t.taskType==='project_change'&&(t.projectChangeStatus||'pending')==='pending'&&((String(t.assignedToUsername||'').toLowerCase()===userKey())||t.assignedTo===CU.fullName||isSuperUser());
   const isAttendanceApprovalAction=t.taskType==='attendance_approval'&&(t.approvalStatus||'pending')==='pending'&&(t.assignedTo===CU.fullName||isSuperUser());
   const isAttendanceDisputeAction=t.taskType==='attendance_dispute'&&(t.disputeDecision||'pending')==='pending'&&isSuperUser();
+  const isSupport=t.taskType==='crm_support';
+  const supportReq=isSupport&&t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending';
+  const supportReview=isSupport&&t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending';
   actions.innerHTML=`<button class="btn" onclick="closeTaskDetails()">Close</button>
+    ${supportReq?`<button class="btn" onclick="closeTaskDetails();openSupportDeadlineRequest('${t.id}')"><i class="ti ti-calendar-event"></i>Request Deadline Change</button>`:''}
+    ${supportReview?`<button class="btn pri" onclick="closeTaskDetails();openSupportDeadlineReview('${t.id}')"><i class="ti ti-calendar-check"></i>Review Deadline Request</button>`:''}
     ${isExtensionAction?`<button class="btn" style="border-color:#B71C1C;color:#B71C1C" onclick="decideProjectExtension('${t.id}','reject')"><i class="ti ti-x"></i>Reject</button>`:''}
     ${isExtensionAction&&!t.referredBy&&(CU.username||'').toLowerCase()==='pratim'?`<button class="btn" onclick="decideProjectExtension('${t.id}','refer')"><i class="ti ti-corner-up-right"></i>Refer to Updesh</button>`:''}
     ${isExtensionAction?`<button class="btn pri" onclick="decideProjectExtension('${t.id}','approve')"><i class="ti ti-check"></i>Approve</button>`:''}
@@ -5868,8 +5907,8 @@ function openTaskDetails(id){
     ${isAttendanceDisputeAction?`<button class="btn danger" onclick="decideAttendanceDispute('${t.id}','confirm_late')" title="They did show up, just misrepresented when"><i class="ti ti-clock"></i>Confirm - Late, Not Absent (Half-day LOP)</button>`:''}
     ${isAttendanceDisputeAction?`<button class="btn danger" onclick="decideAttendanceDispute('${t.id}','confirm_noshow')" title="They did not attend at all that day"><i class="ti ti-alert-triangle"></i>Confirm - Full No-show (Full-day LOP)</button>`:''}
     ${!isExtensionAction&&!isProjectChangeAction&&!isAttendanceApprovalAction&&!isAttendanceDisputeAction&&canStatus&&t.status!=='Completed'?`<button class="btn pri" onclick="updateTaskStatus('${t.id}','Completed');closeTaskDetails()">Mark Complete</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'&&t.taskType!=='attendance_dispute'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
-    ${canEditTask&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'&&t.taskType!=='attendance_dispute'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
+    ${canEditTask&&!isSupport&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'&&t.taskType!=='attendance_dispute'?`<button class="btn" onclick="closeTaskDetails();togTaskForm(true,taskData.find(x=>x.id==='${t.id}'))"><i class="ti ti-edit"></i>Edit</button>`:''}
+    ${canEditTask&&!isSupport&&t.taskType!=='project_extension'&&t.taskType!=='project_change'&&t.taskType!=='attendance_approval'&&t.taskType!=='attendance_dispute'?`<button class="btn danger" onclick="closeTaskDetails();deleteTask('${t.id}')"><i class="ti ti-trash"></i>Delete</button>`:''}`;
   modal.style.display='flex';
 }
 
