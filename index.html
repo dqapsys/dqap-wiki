@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.65";
+const APP_VERSION="78.66";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261018-1";
+const APP_BUILD="20261022-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -960,6 +960,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
       </div>
       <div class="card" style="background:linear-gradient(135deg,var(--p),#0056a0);color:#fff;padding:16px;border:none;margin-bottom:12px"><div style="font-size:11px;opacity:.9">Today</div><div style="font-size:22px;font-weight:700;margin-top:4px" id="att-today">-</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn pri" id="att-checkin-btn" onclick="attCheckIn()"><i class="ti ti-check"></i>I am in office</button><button class="btn" id="att-ooo-btn" onclick="attShowOOO()" style="background:var(--pl);color:var(--p);border-color:var(--p)"><i class="ti ti-map-pin"></i>OOO / Client Visit / WFH</button></div>
+      <div style="margin-bottom:12px"><button class="btn" id="att-leave-btn" onclick="attOpenLeave()" style="width:100%;background:#F3E8FF;color:#6A1B9A;border-color:#6A1B9A"><i class="ti ti-beach"></i>Apply for Leave (from - to date)</button></div>
       <div id="att-late-alert" style="display:none;margin-bottom:12px"></div>
       <div id="att-holidays-hd" style="font-weight:500;font-size:11px;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Holidays</div>
       <div id="att-holidays-list" style="margin-bottom:14px"></div>
@@ -1038,6 +1039,27 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn pri" onclick="attSaveOOO()">Save</button>
       <button class="btn" onclick="attCloseOOO()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEAVE APPLICATION MODAL -->
+<div id="att-leave-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;padding:12px;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:12px 12px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:14px;font-weight:600;margin-bottom:4px">Apply for Leave</div>
+    <div style="font-size:11px;color:var(--t2);margin-bottom:14px">Goes to your reporting manager for approval. Sundays, Saturdays and holidays are not counted.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div><div style="font-weight:600;font-size:12px;margin-bottom:4px">From</div><input id="att-leave-from" type="date" class="fi" onchange="attLeavePreview()"></div>
+      <div><div style="font-weight:600;font-size:12px;margin-bottom:4px">To</div><input id="att-leave-to" type="date" class="fi" onchange="attLeavePreview()"></div>
+    </div>
+    <div id="att-leave-preview" style="font-size:11.5px;color:var(--t2);margin-bottom:12px"></div>
+    <div style="margin-bottom:16px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">Reason for leave <span style="color:#B71C1C">*</span></div>
+      <textarea id="att-leave-reason" class="fta" placeholder="State the reason - your manager will see this on the approval request" style="min-height:80px"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn pri" id="att-leave-submit" onclick="attSubmitLeave()">Submit for approval</button>
+      <button class="btn" onclick="attCloseLeave()">Cancel</button>
     </div>
   </div>
 </div>
@@ -4023,10 +4045,13 @@ async function decideAttendanceApproval(taskId,decision){
   showLoad('Saving decision…');
   try{
     const now=new Date().toISOString();
-    await db.collection(ATTENDANCE_COL).doc(attDocId(t.attendanceUsername,t.attendanceDate)).update({
+    const decidedDates=(Array.isArray(t.leaveDates)&&t.leaveDates.length)?t.leaveDates:[t.attendanceDate];
+    const attBatch=db.batch();
+    decidedDates.forEach(ds=>attBatch.update(db.collection(ATTENDANCE_COL).doc(attDocId(t.attendanceUsername,ds)),{
       approvalStatus:decision==='approve'?'approved':'rejected',
       approvalDecidedBy:CU.fullName,approvalDecidedAt:now,approvalRemarks:remarks
-    });
+    }));
+    await attBatch.commit();
     await db.collection(TASK_COL).doc(taskId).update({status:'Completed',approvalStatus:decision==='approve'?'approved':'rejected',completedAt:now,completedByName:CU.fullName,updatedAt:now,description:(t.description||'')+`\n\n${decision==='approve'?'Approved':'Rejected'} by ${CU.fullName}${remarks?': '+remarks:''}.`});
     toast('Attendance request '+(decision==='approve'?'approved':'rejected - will be re-evaluated as absent if the day has already passed'),decision==='approve'?'ok':'err');
     closeTaskDetails();
@@ -5879,7 +5904,7 @@ function openTaskDetails(id){
   ${t.taskType==='crm_support'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#E3F2FD;color:#0D47A1;font-size:11.5px"><b>Sales Support</b> - raised from the Sales CRM${t.dealCode||t.dealTitle?' for <b>'+esc((t.dealCode?t.dealCode+' ':'')+(t.dealTitle||''))+'</b>':''}${t.customerCompanyName?' ('+esc(t.customerCompanyName)+')':''}. Mark it complete when your support is done; <b>${esc(t.assignedBy||'the salesperson')}</b> then confirms.${t.crmSentBackReason&&t.status!=='Completed'?`<div style="margin-top:6px;color:#B71C1C;font-weight:700">Sent back by ${esc(t.crmSentBackBy||'the salesperson')}: ${esc(t.crmSentBackReason)}</div>`:''}${t.status==='Completed'?`<div style="margin-top:6px">Completed${t.completedByName?' by '+esc(t.completedByName):''} - awaiting confirmation from ${esc(t.assignedBy||'the salesperson')} in the Sales CRM.</div>`:''}</div>`:''}
   ${t.taskType==='project_extension'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#EAF3FB;color:#004A68;font-size:11.5px"><b>Extension request</b> - Status: <b>${esc(t.extensionStatus||'pending')}</b>${t.referredBy?' - Referred by '+esc(t.referredBy):''}</div>`:''}
   ${t.taskType==='project_change'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFF8E1;color:#6D4C00;font-size:11.5px"><b>Project change approval</b> - Status: <b>${esc(t.projectChangeStatus||'pending')}</b></div>`:''}
-  ${t.taskType==='attendance_approval'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#F3E8FF;color:#6A1B9A;font-size:11.5px"><b>Attendance approval</b> - Status: <b>${esc(t.approvalStatus||'pending')}</b></div>`:''}
+  ${t.taskType==='attendance_approval'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#F3E8FF;color:#6A1B9A;font-size:11.5px"><b>${t.leaveDates?'Leave application':'Attendance approval'}</b> - Status: <b>${esc(t.approvalStatus||'pending')}</b>${t.leaveDates?`<div style="margin-top:6px">Applicant: <b>${esc(t.assignedBy||'')}</b><br>Period: <b>${esc(t.leaveFrom)}</b> to <b>${esc(t.leaveTo)}</b> (${t.leaveDates.length} working day${t.leaveDates.length>1?'s':''})<br>Reason: ${esc(t.leaveReason||'')}</div>`:''}</div>`:''}
   ${t.taskType==='attendance_dispute'?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:#FFEBEE;color:#B71C1C;font-size:11.5px"><b>Attendance dispute</b> - Status: <b>${esc(t.disputeDecision||'pending')}</b></div>`:''}
   <div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--bg)">
     <div style="font-size:10px;color:var(--t2);font-weight:800;text-transform:uppercase;letter-spacing:.04em">Acknowledgement Trail</div>
@@ -7172,7 +7197,7 @@ function attStatusLabel(r){
   const disputeTag=r.disputeStatus==='flagged'?' - âš  DISPUTED (pending Updesh review)':(r.disputeStatus==='confirmed'?(r.lopFullDay?' - âš  CONFIRMED FULL NO-SHOW (full-day LOP applied)':' - âš  CONFIRMED FALSE CLAIM (half-day LOP applied)'):(r.disputeStatus==='dismissed'?' - Dispute dismissed':''));
   if(r.status==='present')return `Present${r.isLate?' - Late':''}${r.checkin_time?' - '+r.checkin_time:''}${attLopTag(r)}${disputeTag}`;
   if(r.status==='ooo'){
-    const approvalTag=r.approvalStatus==='pending'?' - Awaiting manager approval':(r.approvalStatus==='rejected'?' - Rejected by manager':(r.approvalStatus==='approved'?' - Approved':''));
+    const approvalTag=r.approvalStatus==='pending'?' - Awaiting manager approval':(r.approvalStatus==='rejected'?' - Rejected by manager':(r.approvalStatus==='approved'?' - Approved':''))+(r.approvalRemarks&&r.approvalStatus!=='pending'?' (Manager remarks: '+r.approvalRemarks+')':'');
     return `OOO - ${r.oof_reason}${r.isLate?' - Late':''}${r.remarks?' - '+r.remarks:''}${approvalTag}${attLopTag(r)}${disputeTag}`;
   }
   if(r.status==='half-day-absent')return `Half-day Absent${attLopTag(r)}`;
@@ -7723,6 +7748,102 @@ function attCalNav(delta){
     attCalYear=y;attCalMonth=m;
   }
   attRenderCalendar();
+}
+
+// ===== Leave application (advance, date range) =====
+const ATT_LEAVE_MAX_DAYS=30;
+function attLeaveDates(from,to){
+  const out=[];
+  if(!from||!to||to<from)return out;
+  const c=new Date(from+'T00:00:00'),end=new Date(to+'T00:00:00');
+  let guard=0;
+  while(c<=end&&guard++<400){
+    const ds=attDateKey(c);
+    if(attDayType(ds).requiresEntry)out.push(ds);
+    c.setDate(c.getDate()+1);
+  }
+  return out;
+}
+function attOpenLeave(){
+  const m=el('att-leave-modal');if(!m)return;
+  const t=attDateKey(new Date());
+  el('att-leave-from').value=t;el('att-leave-to').value=t;
+  el('att-leave-from').min=t;el('att-leave-to').min=t;
+  el('att-leave-reason').value='';
+  attLeavePreview();
+  m.style.display='flex';
+}
+function attCloseLeave(){const m=el('att-leave-modal');if(m)m.style.display='none';}
+function attLeavePreview(){
+  const f=el('att-leave-from').value,t=el('att-leave-to').value,box=el('att-leave-preview');
+  if(!box)return;
+  if(f&&t&&t<f){box.innerHTML='<span style="color:#B71C1C">"To" date cannot be before "From" date.</span>';return;}
+  const d=attLeaveDates(f,t);
+  if(!d.length){box.innerHTML='<span style="color:#B71C1C">No working days in this range (all are weekends / holidays).</span>';return;}
+  box.innerHTML=`<b>${d.length}</b> working day${d.length>1?'s':''} will be applied: ${d.map(x=>x.slice(8)+'/'+x.slice(5,7)).join(', ')}`;
+}
+async function attSubmitLeave(){
+  if(!CU){toast('Login required','err');return;}
+  const from=el('att-leave-from').value,to=el('att-leave-to').value;
+  const reason=(el('att-leave-reason').value||'').trim();
+  const today=attDateKey(new Date());
+  if(!from||!to){toast('Select From and To dates','err');return;}
+  if(from<today){toast('Leave cannot start in the past','err');return;}
+  if(to<from){toast('"To" date cannot be before "From" date','err');return;}
+  if(!reason){toast('Reason for leave is mandatory','err');return;}
+  const dates=attLeaveDates(from,to);
+  if(!dates.length){toast('No working days in the selected range','err');return;}
+  if(dates.length>ATT_LEAVE_MAX_DAYS){toast('Maximum '+ATT_LEAVE_MAX_DAYS+' working days per application','err');return;}
+  const btn=el('att-leave-submit');if(btn)btn.disabled=true;
+  showLoad('Submitting leave application…');
+  try{
+    const uk=attUserKey();
+    // skip days that already have a record (present / OOO / pending leave)
+    const free=[],skipped=[];
+    for(const ds of dates){
+      const ex=await attGet(uk,ds);
+      if(ex&&!(ex.status==='ooo'&&ex.approvalStatus==='rejected'))skipped.push(ds);else free.push(ds);
+    }
+    if(!free.length){toast('Attendance is already recorded for all these days','err');return;}
+    const me=(usersData||[]).find(u=>String(u.username||'').toLowerCase()===uk);
+    const mgrName=me?.reportingManager||'';
+    const mgr=mgrName?(usersData||[]).find(u=>String(u.username||'').toLowerCase()===String(mgrName).toLowerCase()):null;
+    const approverName=mgr?mgr.fullName:'Updesh';
+    const approverUser=mgr?mgr.username:'updesh';
+    const groupId='LV-'+Date.now().toString(36);
+    const nowIso=new Date().toISOString();
+    const batch=db.batch();
+    free.forEach(ds=>{
+      const d=new Date(ds+'T00:00:00');
+      batch.set(db.collection(ATTENDANCE_COL).doc(attDocId(uk,ds)),{
+        username:uk,userId:uk,fullName:attUserName(),date:ds,month:attMonthKey(d),weekStart:attWeekStartKey(d),
+        status:'ooo',oof_type:'leave',oof_reason:'Leave',remarks:reason,isLate:false,
+        monthlyTriggerNumber:null,lopHalfDay:false,verificationMode:'leave-application',
+        approvalStatus:'pending',approverUsername:approverUser,
+        leaveGroupId:groupId,leaveFrom:free[0],leaveTo:free[free.length-1],
+        timestamp:firebase.firestore.FieldValue.serverTimestamp(),createdAt:nowIso
+      });
+    });
+    const ref=db.collection(TASK_COL).doc();
+    const rangeTxt=free.length>1?`${free[0]} to ${free[free.length-1]} (${free.length} working days)`:free[0];
+    batch.set(ref,{
+      title:`Leave Approval - ${attUserName()} - ${rangeTxt}`,
+      description:`${attUserName()} has applied for leave: ${rangeTxt}.\nDates: ${free.join(', ')}\nReason: ${reason}`,
+      taskCode:genTaskCode(ref.id),
+      assignedBy:attUserName(),assignedByRole:CU?.role||'user',
+      assignedTo:approverName,assignedToRole:'manager',
+      supervisor:'',priority:'Medium',project:'',frequency:'One Time',
+      status:'Open',createdAt:nowIso,updatedAt:nowIso,
+      taskType:'attendance_approval',attendanceUsername:uk,attendanceDate:free[0],
+      leaveGroupId:groupId,leaveDates:free,leaveFrom:free[0],leaveTo:free[free.length-1],leaveReason:reason,
+      approvalStatus:'pending'
+    });
+    await batch.commit();
+    attCloseLeave();
+    toast(`Leave applied for ${free.length} day${free.length>1?'s':''} - sent to ${approverName} for approval`+(skipped.length?` (${skipped.length} day(s) skipped - already recorded)`:''),'ok');
+    setTimeout(()=>{attRenderEmp();updateAttendanceNavBadge();},300);
+  }catch(e){toast('Error: '+e.message,'err');}
+  finally{hideLoad();if(btn)btn.disabled=false;}
 }
 
 
