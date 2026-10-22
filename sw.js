@@ -1,5 +1,8 @@
 // DQAP Wiki Service Worker
-// Service worker for Wiki 78.65 (build 20261018-1).
+// Service worker for Wiki 78.66 (build 20261022-1).
+// Version 78.66 - Attendance: Apply for Leave (from/to dates, mandatory reason),
+// one approval task for the manager covering the whole range; approve/reject
+// with remarks updates every day of the leave.
 // Version 78.65 - Sales CRM support-hand tasks: non-blocking daily reminders,
 // completion notice to CRM, deadline change request/review, CRM/Debt launch
 // links refreshed (?v=20261018.1).
@@ -140,7 +143,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.65-20261018-1';
+const CACHE_VERSION = 'dqap-wiki-v78.66-20261022-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
