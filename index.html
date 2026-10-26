@@ -4840,7 +4840,7 @@ function brmaStatus(v){const m={Raised:'rai',Approved:'apr','Replacement Receive
 // â”€â”€ LD DATE HELPER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ldStatus(ldDate,inactive=false){
   if(!ldDate)return null;
-  if(inactive)return{color:'#607D8B',bg:'#ECEFF1',icon:'ti-circle-check',label:'Inactive after dispatch',days:null,inactive:true};
+  if(inactive)return{color:'#607D8B',bg:'#ECEFF1',icon:'ti-circle-check',label:'NA - Material Dispatched',days:null,inactive:true};
   const today=new Date();today.setHours(0,0,0,0);
   const ld=new Date(ldDate);ld.setHours(0,0,0,0);
   const days=Math.round((ld-today)/(1000*60*60*24));
