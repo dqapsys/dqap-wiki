@@ -1,5 +1,7 @@
 // DQAP Wiki Service Worker
-// Service worker for Wiki 78.67 (build 20261029-1).
+// Service worker for Wiki 78.68 (build 20261029-2).
+// Version 78.68 - SyProC dashboard strip (Pratim's dashboard) on top of every page, shown only to
+// the users listed in dqap_syproc_config/current (default: Updesh). Read-only.
 // Version 78.67 - SyProC: Dev gets three monthly upload tasks (Sales Register,
 // Debtors CSV, Creditors CSV) on his first login of the month; each closes by
 // itself when the upload is done. They never block navigation. Debt Management
@@ -147,7 +149,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.67-20261029-1';
+const CACHE_VERSION = 'dqap-wiki-v78.68-20261029-2';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
