@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.66";
+const APP_VERSION="78.67";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261022-1";
+const APP_BUILD="20261029-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4631,7 +4631,7 @@ function openDebtManagement(){
   try {
     try{localStorage.setItem('dqap_debt_handoff',JSON.stringify({session:sess,ts:Date.now()}));}catch(e){}
     // Put the short-lived handoff in the fragment. Fragments are not sent to GitHub's server.
-    const url = `https://dqapsys.github.io/debt-management/?v=20261018.1#sess=${encodeURIComponent(sess)}`;
+    const url = `https://dqapsys.github.io/debt-management/?v=20261029.1#sess=${encodeURIComponent(sess)}`;
     const debtWindow = window.open(url, '_blank');
     if(debtWindow) debtWindow.opener=null;
     else toast('Please allow pop-ups for the Wiki portal','err');
@@ -4742,7 +4742,7 @@ function loadDebtFrame(){
   const frame=el('debt-frame');
   const sess=currentWikiSession();
   if(!frame||!sess)return;
-  const url=`https://dqapsys.github.io/debt-management/?v=20261018.1#sess=${encodeURIComponent(sess)}`;
+  const url=`https://dqapsys.github.io/debt-management/?v=20261029.1#sess=${encodeURIComponent(sess)}`;
   if(frame.src!==url)frame.src=url;
 }
 
@@ -5214,7 +5214,7 @@ function startTaskListen(){
     if(onPage)renderTasks();
     updateTaskNavBadge();
     showWikiTaskNotificationModal();
-    checkPmoKickoffEscalations();
+    checkPmoKickoffEscalations();syprocUploadTasks();
   },err=>{});
   taskDeadlineTimer=setInterval(()=>{
     if(!CU)return;
@@ -5222,7 +5222,7 @@ function startTaskListen(){
     if(onPage)renderTasks();
     updateTaskNavBadge();
     showWikiTaskNotificationModal();
-    checkPmoKickoffEscalations();
+    checkPmoKickoffEscalations();syprocUploadTasks();
   },60000);
 }
 // â”€â”€ PMO KICKOFF SLA ESCALATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -5273,6 +5273,62 @@ async function escalatePmoKickoffTask(t){
   finally{pmoEscalationInFlight.delete(t.id);}
 }
 const PMO_KICKOFF_SLA_HOURS=24;
+// ── SyProC: monthly upload tasks for Dev ──────────────────────────────
+// Same client-driven pattern as the PMO kickoff escalation: runs from whichever
+// of Dev / Updesh / Pratim has the Wiki open (at most once every 30 minutes).
+// Once a month Dev gets three tasks - Tally Sales Register (SalesTD), Debtors CSV
+// and Creditors CSV - each created on his first login of the month. A task has a
+// fixed id (syproc_<kind>_<YYYY-MM>) so two open sessions can never create it twice.
+// It closes itself when the matching upload record in Firestore is dated this month.
+// These tasks never block navigation (the uploads live in the Debt module).
+const SYPROC_START_MONTH='2026-11';   // first month tasks are created
+const SYPROC_DUE_DAY=3;               // deadline: this day of the month, 18:00
+const SYPROC_UPLOADS=[
+  {key:'sales',type:'syproc_sales_upload',col:'dqap_sales_meta',doc:'latest',title:'Upload Tally Sales Register',desc:'Export the Sales Register from Tally as CSV (1 April to date) and upload it in Debt Management > SalesTD. The file is checked against the Tally Grand Total before it is imported.'},
+  {key:'debt',type:'syproc_debt_upload',col:'dqap_debt_meta',doc:'latest_csv',title:'Upload Tally Debtors CSV',desc:'Export the debtors CSV from Tally and upload it in Debt Management > Upload CSV.'},
+  {key:'creditors',type:'syproc_creditors_upload',col:'dqap_creditors_meta',doc:'latest',title:'Upload Tally Creditors CSV',desc:'Export the Sundry Creditors group summary from Tally as CSV and upload it in Debt Management > Creditors.'}
+];
+let syprocLastRun=0,syprocBusy=false;
+async function syprocUploadTasks(force){
+  if(!CU||!db||syprocBusy)return;
+  const u=String(CU.username||'').toLowerCase();
+  if(!['dev','updesh','pratim'].includes(u))return;
+  if(!force&&Date.now()-syprocLastRun<30*60*1000)return;
+  syprocBusy=true;syprocLastRun=Date.now();
+  try{
+    const now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    if(mk<SYPROC_START_MONTH)return;
+    const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+    for(const sp of SYPROC_UPLOADS){
+      const metaSnap=await db.collection(sp.col).doc(sp.doc).get();
+      let done=false;
+      if(metaSnap.exists){const ts=metaSnap.data().uploadedAt;const t=ts&&ts.toDate?ts.toDate():null;done=!!t&&t>=monthStart;}
+      const ref=db.collection(TASK_COL).doc('syproc_'+sp.key+'_'+mk);
+      const iso=new Date().toISOString();
+      if(done){
+        const sn=await ref.get();
+        if(sn.exists&&sn.data().status!=='Completed')await ref.update({status:'Completed',completedAt:iso,completedBy:'system',completedByName:'System (upload detected)',updatedAt:iso,assigneeActionResolvedAt:iso});
+      }else if(u==='dev'){
+        const pratim=(usersData||[]).find(x=>String(x.username||'').toLowerCase()==='pratim');
+        await db.runTransaction(async tx=>{
+          const sn=await tx.get(ref);if(sn.exists)return;
+          tx.set(ref,{
+            title:sp.title+' - '+now.toLocaleString('en-IN',{month:'long',year:'numeric'}),
+            description:sp.desc+'\n\nDue by '+SYPROC_DUE_DAY+' '+now.toLocaleString('en-IN',{month:'long'})+'. This task closes by itself once the upload is done.',
+            taskCode:genTaskCode(''),
+            assignedBy:'System (SyProC)',assignedByRole:'system',
+            assignedTo:CU.fullName,assignedToUsername:u,assignedToRole:CU.role||'user',
+            supervisor:pratim?.fullName||'Pratim Sinha',priority:'High',project:'',frequency:'One Time',
+            deadline:mk+'-'+String(SYPROC_DUE_DAY).padStart(2,'0')+'T18:00',
+            status:'Open',createdAt:iso,updatedAt:iso,assigneeActionRequiredAt:null,assigneeActionResolvedAt:null,deadlineChangeStatus:null,
+            taskType:sp.type,syprocMonth:mk
+          });
+        });
+      }
+    }
+  }catch(e){/* best-effort; the next check retries */}
+  finally{syprocBusy=false;}
+}
 function startUsersListen(){
   if(usersUnsub)usersUnsub();
   usersUnsub=db.collection(USERS).orderBy('fullName','asc').onSnapshot(sn=>{
@@ -5351,7 +5407,7 @@ function mandatoryWikiTaskAction(){
   }
   const review=taskData.find(t=>t.assignedBy===CU.fullName&&t.deadlineChangeStatus==='pending'&&t.taskType!=='crm_support');
   if(review)return{type:'assigner-review',task:review};
-  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending'&&t.taskType!=='crm_support'&&!(pmoKickoffLink&&pmoKickoffLink.taskId===t.id))
+  const candidates=taskData.filter(t=>t.assignedTo===CU.fullName&&t.status!=='Completed'&&t.deadlineChangeStatus!=='pending'&&t.taskType!=='crm_support'&&!String(t.taskType||'').startsWith('syproc_')&&!(pmoKickoffLink&&pmoKickoffLink.taskId===t.id))
     .sort((a,b)=>{
       const ao=isWikiTaskOverdue(a),bo=isWikiTaskOverdue(b);
       if(ao!==bo)return ao?-1:1;
@@ -5747,7 +5803,7 @@ function taRevisionEntry(from,to,at,by,reason,kind){return {from:from||'',to:to|
 function taMs(v){if(!v)return NaN;if(v.toDate)return v.toDate().getTime();if(typeof v==='object'&&v.seconds)return v.seconds*1000;const s=String(v);return new Date(s.length<=10?s+'T23:59:00':s).getTime();}
 function taPostponements(revs){return (revs||[]).filter(r=>taMs(r.to)>taMs(r.from)).length;}
 const TA_DEFAULTS={base:100,perPost:10,postCap:40,graceMin:0,b1:25,b3:40,b7:55,b8:70,notDone:30,wCritical:3,wHigh:2,wMedium:1,wLow:1};
-const TA_SYS_TYPES=['project_extension','project_change','attendance_approval','attendance_dispute','pmo_kickoff','pmo_kickoff_escalation'];
+const TA_SYS_TYPES=['project_extension','project_change','attendance_approval','attendance_dispute','pmo_kickoff','pmo_kickoff_escalation','syproc_sales_upload','syproc_debt_upload','syproc_creditors_upload'];
 let taLastReport=null;
 function taParams(){const p={};Object.keys(TA_DEFAULTS).forEach(k=>{const e=el('ta-p-'+k);const v=e?parseFloat(e.value):NaN;p[k]=isNaN(v)?TA_DEFAULTS[k]:v;});return p;}
 function taScore(post,doneMs,finalMs,nowMs,p){
