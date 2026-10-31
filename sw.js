@@ -1,5 +1,7 @@
 // DQAP Wiki Service Worker
-// Service worker for Wiki 78.69 (build 20261031-2).
+// Service worker for Wiki 78.70 (build 20261031-3).
+// Version 78.70 - Home: new default landing page for every user (time-aware greeting, colour-coded module
+// groups, same badges and role rules as the sidebar). SyProC added to the sidebar for Updesh and Pratim.
 // Version 78.69 - SyProC provision cover now nets off payments actually made: PayMS claims marked
 // PAID this month are subtracted, approved-unpaid claims are held back, cash cover shown beside the
 // cover with commitments (red below 100%).
@@ -151,7 +153,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.69-20261031-2';
+const CACHE_VERSION = 'dqap-wiki-v78.70-20261031-3';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
