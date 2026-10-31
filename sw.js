@@ -1,11 +1,13 @@
 // DQAP Wiki Service Worker
-// Service worker for Wiki 78.68 (build 20261029-2).
+// Service worker for Wiki 78.69 (build 20261031-1).
+// Version 78.69 - SyProC provision cover now nets off payments actually made: PayMS claims marked
+// PAID this month are subtracted, approved-unpaid claims are held back, cash cover shown beside the
+// cover with commitments (red below 100%).
 // Version 78.68 - SyProC dashboard strip (Pratim's dashboard) on top of every page, shown only to
 // the users listed in dqap_syproc_config/current (default: Updesh). Read-only.
-// Version 78.67 - SyProC: Dev gets three monthly upload tasks (Sales Register,
-// Debtors CSV, Creditors CSV) on his first login of the month; each closes by
-// itself when the upload is done. They never block navigation. Debt Management
-// launch link refreshed (?v=20261029.1).
+// Version 78.67 - SyProC: Dev gets three monthly upload tasks (Sales Register, Debtors CSV,
+// Creditors CSV) on his first login of the month; each closes by itself when the upload is done.
+// They never block navigation. Debt Management launch link refreshed (?v=20261029.1).
 // Version 78.66 - Attendance: Apply for Leave (from/to dates, mandatory reason),
 // one approval task for the manager covering the whole range; approve/reject
 // with remarks updates every day of the leave.
@@ -149,7 +151,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.68-20261029-2';
+const CACHE_VERSION = 'dqap-wiki-v78.69-20261031-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
