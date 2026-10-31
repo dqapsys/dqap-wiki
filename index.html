@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.68";
+const APP_VERSION="78.69";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261029-2";
+const APP_BUILD="20261031-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5321,7 +5321,7 @@ let syprocLastRun=0,syprocBusy=false;
 const SYP_CFG_COL='dqap_syproc_config';
 const SYP_EMI=750000,SYP_SALARY=650000;
 const SYP_PLAN_FY='2026-27',SYP_PLAN_BILLING=120000000,SYP_PLAN_WEIGHTS={q1:.2,q2:.3,q3:.2,q4:.3};
-let sypCfg=null,sypSales=[],sypVendors=[],sypPlanCfg=null,sypUnsubs=[],sypOpen=false,sypStarted=false,sypTimer=null;
+let sypPay=[],sypPaid=[],sypCfg=null,sypSales=[],sypVendors=[],sypPlanCfg=null,sypUnsubs=[],sypOpen=false,sypStarted=false,sypTimer=null;
 const sypRs=n=>(n<0?'-':'')+'₹'+Math.round(Math.abs(Number(n||0))).toLocaleString('en-IN');
 const sypPct=(a,b)=>b>0?Math.round(a/b*100):0;
 function sypViewer(){
@@ -5341,13 +5341,16 @@ function sypSync(){
   if(sypViewer()&&!sypDataOn){
     sypDataOn=true;
     sypUnsubs.push(db.collection('dqap_sales_invoices').onSnapshot(sn=>{sypSales=sn.docs.map(d=>d.data());sypRender();},()=>{}));
+    sypUnsubs.push(db.collection(PAYMS_REQ_COL).where('status','in',['PENDING_MANAGER','PENDING_PRATIM','PENDING_UPDESH','APPROVED','READY_FOR_PAYMENT']).onSnapshot(sn=>{sypPay=sn.docs.map(d=>({id:d.id,...d.data()}));sypRender();},()=>{}));
+    const _n=new Date(),_ms=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-01';
+    sypUnsubs.push(db.collection(PAYMS_REQ_COL).where('payment.date','>=',_ms).onSnapshot(sn=>{sypPaid=sn.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status==='PAID');sypRender();},()=>{}));
     sypUnsubs.push(db.collection('dqap_creditors_vendors').onSnapshot(sn=>{sypVendors=sn.docs.map(d=>({id:d.id,...d.data()}));sypRender();},()=>{}));
     sypUnsubs.push(db.collection('dqap_crm_lead_incentive_config').doc('current').onSnapshot(d=>{sypPlanCfg=d.exists?d.data():null;sypRender();},()=>{}));
   }
   sypRender();
 }
 function syprocStop(){
-  sypUnsubs.forEach(u=>{try{u();}catch(e){}});sypUnsubs=[];sypStarted=false;sypDataOn=false;sypCfg=null;sypSales=[];sypVendors=[];sypPlanCfg=null;
+  sypUnsubs.forEach(u=>{try{u();}catch(e){}});sypUnsubs=[];sypStarted=false;sypDataOn=false;sypCfg=null;sypSales=[];sypVendors=[];sypPlanCfg=null;sypPay=[];sypPaid=[];
   if(sypTimer)clearInterval(sypTimer);sypTimer=null;const h=el('syproc-strip');if(h){h.style.display='none';h.innerHTML='';}
 }
 function sypToggle(){sypOpen=!sypOpen;try{localStorage.setItem('syp_open',sypOpen?'1':'0');}catch(e){}sypRender();}
@@ -5367,12 +5370,20 @@ function sypCalc(){
   const later=open.filter(o=>o.rem>0&&o.c.commitDate&&o.c.commitDate>todayS&&o.c.commitDate.slice(0,7)===mk);
   const collectedMonth=recs.filter(x=>x.recordType!=='settlement'&&String(x.collectionDate||'').slice(0,7)===mk).reduce((s,x)=>s+Number(x.amount||0),0);
   const committedMonth=(debtCommitmentsData||[]).filter(c=>c.commitDate&&c.commitDate.slice(0,7)===mk).reduce((s,c)=>s+Number(c.amount||0),0);
-  const inflow=collectedMonth+later.reduce((s,o)=>s+o.rem,0);
-  const payms=(paymsRequestsData||[]).filter(r=>r.status==='READY_FOR_PAYMENT');
-  const paymsAmt=payms.reduce((s,r)=>{const a=r.advanceAdjustment;return s+((a&&a.netPayable!=null)?Number(a.netPayable):Number(r.amount||0));},0);
+    const payable=r=>{const a=r.advanceAdjustment;return(a&&a.netPayable!=null)?Number(a.netPayable):Number(r.amount||0);};
+  const paidRows=sypPaid.filter(r=>String((r.payment||{}).date||'').slice(0,7)===mk).map(r=>({r,amt:Number((r.payment||{}).amountPaid!=null?(r.payment||{}).amountPaid:payable(r))})).sort((x,y)=>y.amt-x.amt);
+  const paidOut=paidRows.reduce((s,x)=>s+x.amt,0);
+  const unpaidRows=sypPay.filter(r=>r.status==='APPROVED'||r.status==='READY_FOR_PAYMENT');
+  const commitUnpaid=unpaidRows.reduce((s,r)=>s+payable(r),0);
+  const pipeRows=sypPay.filter(r=>r.status.startsWith('PENDING_'));
+  const pipeAmt=pipeRows.reduce((s,r)=>s+payable(r),0);
+  const payms=unpaidRows.filter(r=>r.status==='READY_FOR_PAYMENT'),paymsAmt=payms.reduce((s,r)=>s+payable(r),0);
   const vendors=sypVendors.filter(v=>v.inLatestFile!==false);
   const planned=vendors.reduce((s,v)=>s+(v.plans||[]).filter(p=>!p.done&&String(p.date||'').slice(0,7)===nk).reduce((t,p)=>t+Number(p.amount||0),0),0);
-  const needed=SYP_EMI+SYP_SALARY+paymsAmt+planned;
+  const needed=SYP_EMI+SYP_SALARY+planned;
+  const net=collectedMonth-paidOut,cashAvail=net-commitUnpaid,withCommit=cashAvail+later.reduce((s,o)=>s+o.rem,0);
+  const cashCover=Math.max(0,sypPct(cashAvail,needed)),cover=Math.max(0,sypPct(withCommit,needed));
+  const biggest=paidRows[0]?{name:paidRows[0].r.vendor||paidRows[0].r.title||paidRows[0].r.requestNo||'-',amt:paidRows[0].amt}:null;
   const weOwe=vendors.reduce((s,v)=>s+Number(v.weOwe||0),0),adv=vendors.reduce((s,v)=>s+Number(v.advance||0),0);
   const toPlan=vendors.filter(v=>Number(v.weOwe||0)>0&&!(v.plans||[]).some(p=>!p.done)).length;
   const fy=(now.getMonth()>=3?now.getFullYear():now.getFullYear()-1),fyS=fy+'-'+String(fy+1).slice(2);
@@ -5385,8 +5396,8 @@ function sypCalc(){
   const pmoOver=(pmoBetaData||[]).reduce((s,p)=>s+(typeof pmobOverdueCount==='function'?pmobOverdueCount(p):0),0);
   const cssOpen=(cssTicketsData||[]).filter(t=>typeof cssStatusKey==='function'&&cssStatusKey(t.status)!=='closed').length;
   const upTasks=(taskData||[]).filter(t=>String(t.taskType||'').startsWith('syproc_')&&t.status!=='Completed').length;
-  const pendPratim=(paymsRequestsData||[]).filter(r=>r.status==='PENDING_PRATIM').length;
-  return{mk,nk,outstanding,committedRem,delayed,delayedAmt:delayed.reduce((s,o)=>s+o.rem,0),laterAmt:later.reduce((s,o)=>s+o.rem,0),collectedMonth,committedMonth,inflow,payms:payms.length,paymsAmt,planned,needed,cover:sypPct(inflow,needed),weOwe,adv,toPlan,vendorCount:vendors.filter(v=>Number(v.weOwe||0)>0).length,uploaded:vendors.length,fyS,qi,annualT,qT,ytd,qBasic,pmoOver,cssOpen,upTasks,pendPratim,hasSales:sypSales.length>0};
+  const pendPratim=sypPay.filter(r=>r.status==='PENDING_PRATIM').length;
+  return{mk,nk,outstanding,committedRem,delayed,delayedAmt:delayed.reduce((s,o)=>s+o.rem,0),laterAmt:later.reduce((s,o)=>s+o.rem,0),collectedMonth,committedMonth,paidOut,paidCount:paidRows.length,biggest,net,commitUnpaid,pipeAmt,pipeCount:pipeRows.length,cashAvail,withCommit,cashCover,payms:payms.length,paymsAmt,planned,needed,cover,weOwe,adv,toPlan,vendorCount:vendors.filter(v=>Number(v.weOwe||0)>0).length,uploaded:vendors.length,fyS,qi,annualT,qT,ytd,qBasic,pmoOver,cssOpen,upTasks,pendPratim,hasSales:sypSales.length>0};
 }
 function sypRow(a,b,cls){return'<div class="syp-row"><span>'+a+'</span><span class="'+(cls||'')+'">'+b+'</span></div>';}
 function sypBar(p,line,bad){return'<div class="syp-bar"><i style="width:'+Math.min(100,p)+'%;'+(bad?'background:#b42318':'')+'"></i>'+(line?'<u style="left:'+line+'%"></u>':'')+'</div>';}
@@ -5395,12 +5406,13 @@ function sypRender(){
   if(!sypViewer()){host.style.display='none';host.innerHTML='';return;}
   host.style.display='block';
   const k=sypCalc(),nm=new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toLocaleString('en-IN',{month:'long'});
-  const chips='<span class="syp-chip'+(k.cover<100?' w':'')+'">'+nm+' cover '+k.cover+'%</span><span class="syp-chip">Delayed commitments '+k.delayed.length+'</span><span class="syp-chip">Net payable '+sypRs(k.weOwe-k.adv)+'</span><span class="syp-chip">Invoiced YTD '+sypRs(k.ytd)+'</span><span class="syp-chip">PMO overdue '+k.pmoOver+'</span>';
+  const chips='<span class="syp-chip'+(k.cover<100?' w':'')+'">'+nm+' cover '+k.cover+'% · cash '+k.cashCover+'%</span><span class="syp-chip">Delayed commitments '+k.delayed.length+'</span><span class="syp-chip">Net payable '+sypRs(k.weOwe-k.adv)+'</span><span class="syp-chip">Invoiced YTD '+sypRs(k.ytd)+'</span><span class="syp-chip">PMO overdue '+k.pmoOver+'</span>';
   let h='<div class="syp"><div class="syp-h" onclick="sypToggle()"><b>SyProC</b><span class="syp-pre">Pratim\'s dashboard · preview, visible to you only</span>'+(sypOpen?'':chips)+'<span class="syp-sp"></span><span class="syp-btn">'+(sypOpen?'Collapse':'Expand')+'</span></div>';
   if(sypOpen){
     h+='<div class="syp-g">';
-    h+='<div class="syp-c"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">'+(k.inflow>=k.needed?'Covered':'Shortfall '+sypRs(k.needed-k.inflow))+' against '+nm+' needs</div>'+sypBar(k.cover,100,k.cover<100)+
-      sypRow('Collected this month',sypRs(k.collectedMonth))+sypRow('Commitments dated later this month',sypRs(k.laterAmt))+sypRow('<b>Counted inflow</b>',sypRs(k.inflow))+sypRow('EMI',sypRs(SYP_EMI))+sypRow('Salary',sypRs(SYP_SALARY))+sypRow('Approved unpaid PayMS ('+k.payms+')',sypRs(k.paymsAmt))+sypRow('Vendor payments planned for '+nm,sypRs(k.planned))+sypRow('<b>Needed</b>',sypRs(k.needed))+'</div>';
+    h+='<div class="syp-c"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">with commitments · '+(k.withCommit>=k.needed?'covered':'shortfall '+sypRs(k.needed-k.withCommit))+'</div>'+sypBar(k.cover,100,k.cover<100)+
+      '<div class="syp-s" style="margin:0 0 4px">Cash cover (money received, net of payments): <b>'+k.cashCover+'%</b></div>'+
+      sypRow('Collected this month',sypRs(k.collectedMonth))+sypRow('Paid out via PayMS ('+k.paidCount+')','- '+sypRs(k.paidOut))+(k.biggest?'<div class="syp-s">Largest: '+esc(String(k.biggest.name))+' '+sypRs(k.biggest.amt)+'</div>':'')+sypRow('<b>Net so far</b>',sypRs(k.net))+sypRow('Approved, not yet paid','- '+sypRs(k.commitUnpaid))+sypRow('<b>Cash available</b>',sypRs(k.cashAvail))+sypRow('Commitments still due this month','+ '+sypRs(k.laterAmt))+sypRow('<b>With commitments</b>',sypRs(k.withCommit))+sypRow('Needed in '+nm+': EMI + salary',sypRs(SYP_EMI+SYP_SALARY))+sypRow('Vendor payments planned',sypRs(k.planned))+sypRow('<b>Needed</b>',sypRs(k.needed))+'<div class="syp-s">Waiting for approval: '+k.pipeCount+' · '+sypRs(k.pipeAmt)+' (not counted)</div></div>';
     h+='<div class="syp-c"><h4>Debtors</h4><div class="syp-big">'+sypRs(k.outstanding)+'</div><div class="syp-s">outstanding</div>'+sypBar(sypPct(k.committedRem,k.outstanding))+
       sypRow('Open commitments',sypRs(k.committedRem))+sypRow('Share with a commitment',sypPct(k.committedRem,k.outstanding)+'%')+sypRow('Delayed commitments ('+k.delayed.length+')',sypRs(k.delayedAmt),k.delayed.length?'bad':'')+sypRow('Collected vs committed, this month',sypRs(k.collectedMonth)+' / '+sypRs(k.committedMonth))+'</div>';
     h+='<div class="syp-c"><h4>Creditors</h4><div class="syp-big">'+sypRs(k.weOwe)+'</div><div class="syp-s">we owe, '+k.vendorCount+' vendors</div>'+
