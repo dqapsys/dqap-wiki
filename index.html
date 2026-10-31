@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.70";
+const APP_VERSION="78.71";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261031-3";
+const APP_BUILD="20261031-4";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -474,6 +474,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 #syproc-strip .syp-chip{border:1px solid #e3e8ef;border-radius:20px;padding:2px 9px;background:#f8fafc;color:#44505f;font-size:11.5px}
 #syproc-strip .syp-chip.w{border-color:#f0c4be;background:#fdf1ef;color:#b42318}
 #syproc-strip .syp-btn{border:1px solid #006994;color:#006994;border-radius:6px;padding:3px 10px;font-size:11.5px}
+#v-syproc #syproc-strip .syp-g:first-of-type{padding-top:16px}
 #syproc-strip .syp-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:4px 20px 14px}
 #syproc-strip .syp-g2{grid-template-columns:repeat(2,minmax(0,1fr));padding-top:0}
 #syproc-strip .syp-c{border:1px solid #e3e8ef;border-radius:10px;padding:11px 12px;background:#fff}
@@ -575,7 +576,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
   </div>
   <div class="sb-nav">
     <div class="ni active" onclick="go('home')" id="ni-home"><i class="ti ti-home"></i>Home</div>
-    <div class="ni" onclick="openSyproc()" id="ni-syproc" style="display:none"><i class="ti ti-activity-heartbeat"></i>SyProC <span class="badge" style="background:#E0F2F1;color:#00695C;font-weight:800;margin-left:4px;padding:0 6px">NEW</span></div>
+    <div class="ni" onclick="go('syproc')" id="ni-syproc" style="display:none"><i class="ti ti-activity-heartbeat"></i>SyProC <span class="badge" style="background:#E0F2F1;color:#00695C;font-weight:800;margin-left:4px;padding:0 6px">NEW</span></div>
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="openChatView()"         id="ni-chat"><i class="ti ti-message-circle"></i>Chat<span id="chat-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
@@ -677,7 +678,6 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 
 
 <main class="main">
-<div id="syproc-strip" style="display:none"></div>
 
 <!-- ══ HOME ══ -->
 <div id="v-home" class="view">
@@ -691,6 +691,14 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="hm-syp" id="hm-syp"><div><div class="hm-st"><i class="ti ti-activity-heartbeat" style="margin-right:6px"></i>SyProC</div><div class="hm-sd">System Process Controller: provision cover, debtors, creditors, sales and pendency.</div></div><button type="button" onclick="openSyproc()">Open SyProC</button></div>
     <div id="hm-groups"></div>
   </div>
+</div>
+
+<!-- ══ SYPROC ══ -->
+<div id="v-syproc" class="view" style="display:none">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-activity-heartbeat" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>SyProC</div><div class="pg-s">System Process Controller</div></div>
+  </div>
+  <div id="syproc-strip"></div>
 </div>
 
 <!-- â•â• DASHBOARD â•â• -->
@@ -4820,6 +4828,7 @@ function go(n){
     return;
   }
   if(n==='attendance')modalHideWikiTask();
+  if(n==='syproc'&&!sypViewer()){toast('Unauthorized access','err');return;}
   if(n==='users'&&!isSuperUser()){toast('Unauthorized access','err');return;}
   if(n==='projects'&&!(CU?.isAdmin||canManageProjectsUser(CU?.username))){toast('Unauthorized access','err');return;}
   document.querySelectorAll('.view').forEach(v=>v.style.display='none');
@@ -4830,6 +4839,7 @@ function go(n){
   updateAttendanceNavBadge();
   if(n==='wiki'){applyF();populateProj();}
   if(n==='home')renderHome();
+  if(n==='syproc')sypRender();
   if(n==='dash')renderDash();
   if(n==='add'&&!g('f-eid'))resetForm();
   if(n==='users')loadUsers();
@@ -5391,10 +5401,7 @@ function showHomeDefault(){
   renderHome();
 }
 function homeOpen(id){const n=el('ni-'+id);if(n)n.click();}
-function openSyproc(){
-  closeSidebar();sypOpen=true;try{localStorage.setItem('syp_open','1');}catch(e){}
-  sypRender();const s=el('syproc-strip');if(s)s.scrollIntoView({behavior:'smooth',block:'start'});
-}
+function openSyproc(){go('syproc');}
 function renderHome(){
   if(!CU)return;
   const h=el('hm-groups');if(!h)return;
@@ -5430,7 +5437,7 @@ function homeSync(){
 const SYP_CFG_COL='dqap_syproc_config';
 const SYP_EMI=750000,SYP_SALARY=650000;
 const SYP_PLAN_FY='2026-27',SYP_PLAN_BILLING=120000000,SYP_PLAN_WEIGHTS={q1:.2,q2:.3,q3:.2,q4:.3};
-let sypPay=[],sypPaid=[],sypCfg=null,sypSales=[],sypVendors=[],sypPlanCfg=null,sypUnsubs=[],sypOpen=false,sypStarted=false,sypTimer=null;
+let sypPay=[],sypPaid=[],sypCfg=null,sypSales=[],sypVendors=[],sypPlanCfg=null,sypUnsubs=[],sypOpen=true,sypStarted=false,sypTimer=null;
 const sypRs=n=>(n<0?'-':'')+'₹'+Math.round(Math.abs(Number(n||0))).toLocaleString('en-IN');
 const sypPct=(a,b)=>b>0?Math.round(a/b*100):0;
 function sypViewer(){
@@ -5441,7 +5448,6 @@ function sypViewer(){
 }
 function syprocInit(){
   if(sypStarted||!CU||!db)return;sypStarted=true;
-  try{sypOpen=localStorage.getItem('syp_open')==='1';}catch(e){}
   sypUnsubs.push(db.collection(SYP_CFG_COL).doc('current').onSnapshot(d=>{sypCfg=d.exists?d.data():null;sypSync();},()=>{}));
   sypTimer=setInterval(sypRender,60000);
 }
@@ -5463,7 +5469,6 @@ function syprocStop(){
   sypUnsubs.forEach(u=>{try{u();}catch(e){}});sypUnsubs=[];sypStarted=false;sypDataOn=false;sypCfg=null;sypSales=[];sypVendors=[];sypPlanCfg=null;sypPay=[];sypPaid=[];
   if(sypTimer)clearInterval(sypTimer);sypTimer=null;const h=el('syproc-strip');if(h){h.style.display='none';h.innerHTML='';}
 }
-function sypToggle(){sypOpen=!sypOpen;try{localStorage.setItem('syp_open',sypOpen?'1':'0');}catch(e){}sypRender();}
 function sypCalc(){
   const now=new Date(),todayS=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   const mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
@@ -5517,8 +5522,8 @@ function sypRender(){
   host.style.display='block';
   const k=sypCalc(),nm=new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toLocaleString('en-IN',{month:'long'});
   const chips='<span class="syp-chip'+(k.cover<100?' w':'')+'">'+nm+' cover '+k.cover+'% · cash '+k.cashCover+'%</span><span class="syp-chip">Delayed commitments '+k.delayed.length+'</span><span class="syp-chip">Net payable '+sypRs(k.weOwe-k.adv)+'</span><span class="syp-chip">Invoiced YTD '+sypRs(k.ytd)+'</span><span class="syp-chip">PMO overdue '+k.pmoOver+'</span>';
-  let h='<div class="syp"><div class="syp-h" onclick="sypToggle()"><b>SyProC</b><span class="syp-pre">System Process Controller</span>'+(sypOpen?'':chips)+'<span class="syp-sp"></span><span class="syp-btn">'+(sypOpen?'Collapse':'Expand')+'</span></div>';
-  if(sypOpen){
+  let h='<div class="syp">';
+  {
     h+='<div class="syp-g">';
     h+='<div class="syp-c t-cover"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">with commitments · '+(k.withCommit>=k.needed?'covered':'shortfall '+sypRs(k.needed-k.withCommit))+'</div>'+sypBar(k.cover,100,k.cover<100)+
       '<div class="syp-s" style="margin:0 0 4px">Cash cover (money received, net of payments): <b>'+k.cashCover+'%</b></div>'+
