@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.69";
+const APP_VERSION="78.70";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261031-2";
+const APP_BUILD="20261031-3";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -495,6 +495,24 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 #syproc-strip .syp-c.t-pend{background:#F1F4F8;border-color:#47556955;border-top:3px solid #475569}#syproc-strip .syp-c.t-pend h4{color:#475569}#syproc-strip .syp-c.t-pend .syp-bar i{background:#475569}
 @media(max-width:1100px){#syproc-strip .syp-g,#syproc-strip .syp-g2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){#syproc-strip .syp-g,#syproc-strip .syp-g2{grid-template-columns:1fr}}
+#v-home .hm-hello{font-size:24px;font-weight:700;color:#0F1B3D}
+#v-home .hm-sub{font-size:12.5px;color:#51608A;margin-top:3px}
+#v-home .hm-chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+#v-home .hm-chip{background:#fff;border:1px solid #DCE3F2;border-radius:999px;padding:7px 14px;font-size:12.5px;color:#0F1B3D;cursor:pointer;font-family:inherit}
+#v-home .hm-chip b{color:#B42318;margin-right:3px}
+#v-home .hm-syp{display:none;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:#12306B;color:#fff;border-radius:12px;padding:16px 20px;margin:12px 0}
+#v-home .hm-syp .hm-st{font-size:16px;font-weight:700}
+#v-home .hm-syp .hm-sd{font-size:12px;color:#C9D7F8;margin-top:2px}
+#v-home .hm-syp button{background:#fff;color:#12306B;font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;font-family:inherit}
+#v-home .hm-grp{background:#fff;border:1px solid #DCE3F2;border-radius:12px;overflow:hidden;margin-top:14px}
+#v-home .hm-gh{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;color:#fff;font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+#v-home .hm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:12px}
+#v-home .hm-t{position:relative;display:flex;gap:11px;align-items:flex-start;text-align:left;background:#fff;border:1px solid #E3E8F4;border-radius:10px;padding:12px;cursor:pointer;font-family:inherit;color:#0F1B3D}
+#v-home .hm-t:hover{background:#F7F9FD;border-color:#BCC8E6}
+#v-home .hm-ic{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 38px;font-size:19px}
+#v-home .hm-tl{font-size:13.5px;font-weight:600}
+#v-home .hm-td{font-size:11.5px;color:#51608A;margin-top:2px}
+#v-home .hm-b{position:absolute;top:9px;right:9px;background:#B42318;color:#fff;font-size:10px;font-weight:800;padding:1px 7px;border-radius:9px;display:none}
 </style>
 </head>
 <body>
@@ -556,6 +574,8 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     </div>
   </div>
   <div class="sb-nav">
+    <div class="ni active" onclick="go('home')" id="ni-home"><i class="ti ti-home"></i>Home</div>
+    <div class="ni" onclick="openSyproc()" id="ni-syproc" style="display:none"><i class="ti ti-activity-heartbeat"></i>SyProC <span class="badge" style="background:#E0F2F1;color:#00695C;font-weight:800;margin-left:4px;padding:0 6px">NEW</span></div>
     <div class="sb-sec">Operations</div>
     <div class="ni" onclick="openChatView()"         id="ni-chat"><i class="ti ti-message-circle"></i>Chat<span id="chat-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('tasks')"           id="ni-tasks"><i class="ti ti-checklist"></i>Task Management<span id="task-nav-badge" class="nav-badge" style="display:none"></span></div>
@@ -573,7 +593,7 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
     <div class="ni" onclick="openSalesReview()"     id="ni-review"><i class="ti ti-chart-line"></i>Sales Review<span id="review-nav-badge" class="nav-badge" style="display:none"></span></div>
     <div class="ni" onclick="go('leaderboard')"      id="ni-leaderboard"><i class="ti ti-trophy"></i>Leaderboard</div>
     <div class="sb-sec">Wiki</div>
-    <div class="ni active" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    <div class="ni" onclick="go('dash')"    id="ni-dash"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="go('add')"             id="ni-add"><i class="ti ti-plus"></i>Add Entry</div>
     <div class="ni" onclick="go('wiki')"            id="ni-wiki"><i class="ti ti-books"></i>Wiki Browser</div>
     <div class="ni" onclick="go('search')"          id="ni-search"><i class="ti ti-search"></i>Search</div>
@@ -659,8 +679,22 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 <main class="main">
 <div id="syproc-strip" style="display:none"></div>
 
+<!-- ══ HOME ══ -->
+<div id="v-home" class="view">
+  <div class="topbar">
+    <div><div class="pg-t"><i class="ti ti-home" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Home</div><div class="pg-s">DORBIT — Operations Base</div></div>
+  </div>
+  <div class="content">
+    <div class="hm-hello" id="hm-hello"></div>
+    <div class="hm-sub" id="hm-sub"></div>
+    <div class="hm-chips" id="hm-chips"></div>
+    <div class="hm-syp" id="hm-syp"><div><div class="hm-st"><i class="ti ti-activity-heartbeat" style="margin-right:6px"></i>SyProC</div><div class="hm-sd">System Process Controller: provision cover, debtors, creditors, sales and pendency.</div></div><button type="button" onclick="openSyproc()">Open SyProC</button></div>
+    <div id="hm-groups"></div>
+  </div>
+</div>
+
 <!-- â•â• DASHBOARD â•â• -->
-<div id="v-dash" class="view">
+<div id="v-dash" class="view" style="display:none">
   <div class="topbar">
     <div><div class="pg-t"><i class="ti ti-layout-dashboard" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Dashboard</div><div class="pg-s">DORBIT — Operations Base</div></div>
     <div class="tr"><button class="btn pri" onclick="go('add')"><i class="ti ti-plus"></i>New Entry</button></div>
@@ -1695,7 +1729,7 @@ async function login(){
 function logout(){
   if(!confirm('Sign out of DORBIT?'))return;
   sessionStorage.removeItem('dqap_sess');localStorage.removeItem('dqap_sess_persist');CU=null;
-  if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;syprocStop();
+  if(taskDeadlineTimer)clearInterval(taskDeadlineTimer);taskDeadlineTimer=null;homeStamp();syprocStop();
   [unsub,libUnsub,projUnsub,pmoUnsub,payUnsub,rmaUnsub,budgetUnsub,budgetCfgUnsub,taskUnsub,usersUnsub,amcUnsub,pmoBetaUnsub,crmNotifyUnsub,crmApprovalUnsub,paymsReqUnsub,promsPoUnsub,debtCommitUnsub,debtCollectionUnsub,cssTicketsUnsub,chatDMUnsub,chatBroadcastUnsub,chatMsgUnsub].forEach(u=>{if(u)u();});
   unsub=libUnsub=projUnsub=pmoUnsub=payUnsub=rmaUnsub=budgetUnsub=budgetCfgUnsub=taskUnsub=usersUnsub=amcUnsub=pmoBetaUnsub=crmNotifyUnsub=crmApprovalUnsub=paymsReqUnsub=promsPoUnsub=debtCommitUnsub=debtCollectionUnsub=cssTicketsUnsub=chatDMUnsub=chatBroadcastUnsub=chatMsgUnsub=null;
   DB={entries:[]};libData=[];projectsData=[];pmoData=[];payData=[];rmaData=[];budgetData=[];budgetCfgData=[];taskData=[];usersData=[];amcData=[];pmoBetaData=[];pmobExpandedId=null;crmNotificationsData=[];crmApprovalsData=[];paymsRequestsData=[];promsPosData=[];promsPecsPending=0;debtCommitmentsData=[];debtCollectionsData=[];cssTicketsData=[];activeBudgetProject='';amcExpandedId=null;amcVisitForId=null;projExpandedId=null;attCalYear=null;attCalMonth=null;
@@ -1726,6 +1760,7 @@ function startApp(){
   }
   const app=el('app');app.style.display='flex';app.style.flexDirection='column';
   hideLoad();
+  homeStartup();
   startListen();startTaskListen();startExternalApprovalBadgeListeners();startUsersListen();syprocInit();startAMCListen();populateEngineers();startHolidaysListen();startProjectDocTemplateListen();
   setTimeout(()=>{startLibListen();startProjListen();startPMOListen();startPMOBetaListen();startPayListen();startRMAListen();startBudgetListen();startBudgetCfgListen();},50);
   setTimeout(()=>updateAttendanceNavBadge(),500);
@@ -4794,6 +4829,7 @@ function go(n){
   closeSidebar();
   updateAttendanceNavBadge();
   if(n==='wiki'){applyF();populateProj();}
+  if(n==='home')renderHome();
   if(n==='dash')renderDash();
   if(n==='add'&&!g('f-eid'))resetForm();
   if(n==='users')loadUsers();
@@ -5324,6 +5360,73 @@ let syprocLastRun=0,syprocBusy=false;
 // (viewers: ['updesh'] by default - add 'pratim' there to release it to him; enabled:false hides it for all).
 // Debtors, commitments and collections come from the Debt listeners above; PayMS, PMO and tasks from the
 // existing Wiki listeners; sales and creditors from the new SalesTD / Creditors collections.
+
+// ── HOME (default landing page) ─────────────────────────────────────────────
+const HOME_GROUPS=[
+ {t:'Daily work',c:'#1D4ED8',bg:'#DBEAFE',items:[['chat','Team messages'],['tasks','My tasks and delegation'],['attendance','Check-in, leave, regularise'],['payms','Payment requests and approvals']]},
+ {t:'Projects and service',c:'#047857',bg:'#D1FAE5',items:[['pmo','Projects and milestones'],['pmobeta','Kick-off and SLA tracking'],['amc','Contracts and service visits'],['proms','Purchase orders'],['css','Customer support tickets'],['rma','Returns and replacements']]},
+ {t:'Sales and money',c:'#6D28D9',bg:'#EDE9FE',items:[['crm','Leads, targets, incentives'],['review','Sales performance review'],['leaderboard','Team performance'],['debt','Debtors, commitments, collections'],['budget','Budget against actual']]},
+ {t:'Knowledge',c:'#B45309',bg:'#FEF3C7',items:[['dash','Wiki overview and activity'],['add','Write a new entry'],['wiki','Browse entries'],['search','Search across entries'],['library','Documents and files']]},
+ {t:'Admin',c:'#BE123C',bg:'#FFE4E6',items:[['projects','Manage projects'],['users','Manage users']]}
+];
+let homeTimer=null,homePrev=0;
+function homeGreet(){const h=new Date().getHours();return h>=5&&h<12?'Good morning':h<17?'Good afternoon':'Good evening';}
+function homeNiLabel(ni){for(const n of ni.childNodes){if(n.nodeType===3&&n.textContent.trim())return n.textContent.trim();}return ni.id.replace('ni-','');}
+function homeNiBadge(ni){const b=ni.querySelector('.nav-badge');return(b&&b.style.display!=='none'&&b.textContent.trim())?b.textContent.trim():'';}
+function homeFmt(ts){
+  const d=new Date(ts),n=new Date(),t=d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
+  return d.toDateString()===n.toDateString()?'today, '+t:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+', '+t;
+}
+function homeStamp(){try{if(CU)localStorage.setItem('dq_lastseen_'+userKey(),String(Date.now()));}catch(e){}}
+function homeStartup(){
+  try{homePrev=Number(localStorage.getItem('dq_lastseen_'+userKey()))||0;}catch(e){homePrev=0;}
+  homeStamp();
+  showHomeDefault();
+  if(!homeTimer)homeTimer=setInterval(homeSync,5000);
+}
+function showHomeDefault(){
+  document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  el('v-home').style.display='block';const h=el('ni-home');if(h)h.classList.add('active');
+  renderHome();
+}
+function homeOpen(id){const n=el('ni-'+id);if(n)n.click();}
+function openSyproc(){
+  closeSidebar();sypOpen=true;try{localStorage.setItem('syp_open','1');}catch(e){}
+  sypRender();const s=el('syproc-strip');if(s)s.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderHome(){
+  if(!CU)return;
+  const h=el('hm-groups');if(!h)return;
+  h.innerHTML=HOME_GROUPS.map(g=>{
+    const tiles=g.items.map(it=>{
+      const ni=el('ni-'+it[0]);if(!ni)return'';
+      const ic=ni.querySelector('i');
+      return'<button type="button" class="hm-t" data-ni="'+it[0]+'" onclick="homeOpen(\''+it[0]+'\')"><span class="hm-ic" style="background:'+g.bg+';color:'+g.c+'"><i class="'+(ic?ic.className:'ti ti-apps')+'"></i></span><span><span class="hm-tl" style="display:block">'+esc(homeNiLabel(ni))+'</span><span class="hm-td" style="display:block">'+esc(it[1])+'</span></span><span class="hm-b"></span></button>';
+    }).join('');
+    return'<section class="hm-grp" data-g="'+esc(g.t)+'"><div class="hm-gh" style="background:'+g.c+'"><span>'+esc(g.t)+'</span></div><div class="hm-grid">'+tiles+'</div></section>';
+  }).join('');
+  homeSync();
+}
+function homeSync(){
+  if(!CU)return;
+  const sv=sypViewer(),sn=el('ni-syproc');if(sn)sn.style.display=sv?'flex':'none';
+  const v=el('v-home');if(!v||v.style.display==='none')return;
+  const first=String(CU.fullName||CU.username||'').trim().split(/\s+/)[0]||'';
+  el('hm-hello').textContent=homeGreet()+(first?', '+first:'');
+  el('hm-sub').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+(homePrev?'Welcome back, last here '+homeFmt(homePrev):'Welcome to DORBIT');
+  const sb=el('hm-syp');if(sb)sb.style.display=sv?'flex':'none';
+  v.querySelectorAll('.hm-t').forEach(t=>{
+    const ni=el('ni-'+t.dataset.ni);const vis=!!ni&&ni.style.display!=='none';
+    t.style.display=vis?'flex':'none';
+    const b=t.querySelector('.hm-b'),n=ni?homeNiBadge(ni):'';
+    b.textContent=n;b.style.display=n?'block':'none';
+  });
+  v.querySelectorAll('.hm-grp').forEach(s=>{s.style.display=[...s.querySelectorAll('.hm-t')].some(t=>t.style.display!=='none')?'block':'none';});
+  const chips=[['tasks','Task Management'],['payms','PayMS'],['attendance','Attendance'],['chat','Chat']].map(c=>{const ni=el('ni-'+c[0]);const n=ni?homeNiBadge(ni):'';return n?'<button type="button" class="hm-chip" onclick="homeOpen(\''+c[0]+'\')"><b>'+esc(n)+'</b>'+c[1]+'</button>':'';}).join('');
+  el('hm-chips').innerHTML=chips;
+}
+
 const SYP_CFG_COL='dqap_syproc_config';
 const SYP_EMI=750000,SYP_SALARY=650000;
 const SYP_PLAN_FY='2026-27',SYP_PLAN_BILLING=120000000,SYP_PLAN_WEIGHTS={q1:.2,q2:.3,q3:.2,q4:.3};
@@ -5333,7 +5436,7 @@ const sypPct=(a,b)=>b>0?Math.round(a/b*100):0;
 function sypViewer(){
   if(!CU)return false;
   const u=String(CU.username||'').toLowerCase();
-  const list=(sypCfg&&Array.isArray(sypCfg.viewers))?sypCfg.viewers.map(x=>String(x).toLowerCase()):['updesh'];
+  const list=(sypCfg&&Array.isArray(sypCfg.viewers))?sypCfg.viewers.map(x=>String(x).toLowerCase()):['updesh','pratim'];
   return !(sypCfg&&sypCfg.enabled===false)&&list.includes(u);
 }
 function syprocInit(){
@@ -5344,6 +5447,7 @@ function syprocInit(){
 }
 let sypDataOn=false;
 function sypSync(){
+  setTimeout(homeSync,0);
   if(sypViewer()&&!sypDataOn){
     sypDataOn=true;
     sypUnsubs.push(db.collection('dqap_sales_invoices').onSnapshot(sn=>{sypSales=sn.docs.map(d=>d.data());sypRender();},()=>{}));
@@ -5413,7 +5517,7 @@ function sypRender(){
   host.style.display='block';
   const k=sypCalc(),nm=new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toLocaleString('en-IN',{month:'long'});
   const chips='<span class="syp-chip'+(k.cover<100?' w':'')+'">'+nm+' cover '+k.cover+'% · cash '+k.cashCover+'%</span><span class="syp-chip">Delayed commitments '+k.delayed.length+'</span><span class="syp-chip">Net payable '+sypRs(k.weOwe-k.adv)+'</span><span class="syp-chip">Invoiced YTD '+sypRs(k.ytd)+'</span><span class="syp-chip">PMO overdue '+k.pmoOver+'</span>';
-  let h='<div class="syp"><div class="syp-h" onclick="sypToggle()"><b>SyProC</b><span class="syp-pre">Pratim\'s dashboard · preview, visible to you only</span>'+(sypOpen?'':chips)+'<span class="syp-sp"></span><span class="syp-btn">'+(sypOpen?'Collapse':'Expand')+'</span></div>';
+  let h='<div class="syp"><div class="syp-h" onclick="sypToggle()"><b>SyProC</b><span class="syp-pre">System Process Controller</span>'+(sypOpen?'':chips)+'<span class="syp-sp"></span><span class="syp-btn">'+(sypOpen?'Collapse':'Expand')+'</span></div>';
   if(sypOpen){
     h+='<div class="syp-g">';
     h+='<div class="syp-c t-cover"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">with commitments · '+(k.withCommit>=k.needed?'covered':'shortfall '+sypRs(k.needed-k.withCommit))+'</div>'+sypBar(k.cover,100,k.cover<100)+
