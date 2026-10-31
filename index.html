@@ -25,7 +25,7 @@
 const APP_VERSION="78.69";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261031-1";
+const APP_BUILD="20261031-2";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -487,6 +487,12 @@ select.fsel{padding:5px 9px;border-radius:7px;border:.5px solid var(--bds);font-
 #syproc-strip .syp-row{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #f0f3f7}
 #syproc-strip .syp-row:last-of-type{border:0}
 #syproc-strip .syp-row span:last-child{font-weight:600;text-align:right}
+#syproc-strip .syp-c.t-cover{background:#EAF4F9;border-color:#00699455;border-top:3px solid #006994}#syproc-strip .syp-c.t-cover h4{color:#006994}#syproc-strip .syp-c.t-cover .syp-bar i{background:#006994}
+#syproc-strip .syp-c.t-debt{background:#FFF6E5;border-color:#B4530955;border-top:3px solid #B45309}#syproc-strip .syp-c.t-debt h4{color:#B45309}#syproc-strip .syp-c.t-debt .syp-bar i{background:#B45309}
+#syproc-strip .syp-c.t-cred{background:#F3EEFF;border-color:#6D28D955;border-top:3px solid #6D28D9}#syproc-strip .syp-c.t-cred h4{color:#6D28D9}#syproc-strip .syp-c.t-cred .syp-bar i{background:#6D28D9}
+#syproc-strip .syp-c.t-sales{background:#EAF7EE;border-color:#15803D55;border-top:3px solid #15803D}#syproc-strip .syp-c.t-sales h4{color:#15803D}#syproc-strip .syp-c.t-sales .syp-bar i{background:#15803D}
+#syproc-strip .syp-c.t-kpi{background:#EEF0FB;border-color:#3F51B555;border-top:3px solid #3F51B5}#syproc-strip .syp-c.t-kpi h4{color:#3F51B5}#syproc-strip .syp-c.t-kpi .syp-bar i{background:#3F51B5}
+#syproc-strip .syp-c.t-pend{background:#F1F4F8;border-color:#47556955;border-top:3px solid #475569}#syproc-strip .syp-c.t-pend h4{color:#475569}#syproc-strip .syp-c.t-pend .syp-bar i{background:#475569}
 @media(max-width:1100px){#syproc-strip .syp-g,#syproc-strip .syp-g2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){#syproc-strip .syp-g,#syproc-strip .syp-g2{grid-template-columns:1fr}}
 </style>
@@ -5410,17 +5416,17 @@ function sypRender(){
   let h='<div class="syp"><div class="syp-h" onclick="sypToggle()"><b>SyProC</b><span class="syp-pre">Pratim\'s dashboard · preview, visible to you only</span>'+(sypOpen?'':chips)+'<span class="syp-sp"></span><span class="syp-btn">'+(sypOpen?'Collapse':'Expand')+'</span></div>';
   if(sypOpen){
     h+='<div class="syp-g">';
-    h+='<div class="syp-c"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">with commitments · '+(k.withCommit>=k.needed?'covered':'shortfall '+sypRs(k.needed-k.withCommit))+'</div>'+sypBar(k.cover,100,k.cover<100)+
+    h+='<div class="syp-c t-cover"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">with commitments · '+(k.withCommit>=k.needed?'covered':'shortfall '+sypRs(k.needed-k.withCommit))+'</div>'+sypBar(k.cover,100,k.cover<100)+
       '<div class="syp-s" style="margin:0 0 4px">Cash cover (money received, net of payments): <b>'+k.cashCover+'%</b></div>'+
       sypRow('Collected this month',sypRs(k.collectedMonth))+sypRow('Paid out via PayMS ('+k.paidCount+')','- '+sypRs(k.paidOut))+(k.biggest?'<div class="syp-s">Largest: '+esc(String(k.biggest.name))+' '+sypRs(k.biggest.amt)+'</div>':'')+sypRow('<b>Net so far</b>',sypRs(k.net))+sypRow('Approved, not yet paid','- '+sypRs(k.commitUnpaid))+sypRow('<b>Cash available</b>',sypRs(k.cashAvail))+sypRow('Commitments still due this month','+ '+sypRs(k.laterAmt))+sypRow('<b>With commitments</b>',sypRs(k.withCommit))+sypRow('Needed in '+nm+': EMI + salary',sypRs(SYP_EMI+SYP_SALARY))+sypRow('Vendor payments planned',sypRs(k.planned))+sypRow('<b>Needed</b>',sypRs(k.needed))+'<div class="syp-s">Waiting for approval: '+k.pipeCount+' · '+sypRs(k.pipeAmt)+' (not counted)</div></div>';
-    h+='<div class="syp-c"><h4>Debtors</h4><div class="syp-big">'+sypRs(k.outstanding)+'</div><div class="syp-s">outstanding</div>'+sypBar(sypPct(k.committedRem,k.outstanding))+
+    h+='<div class="syp-c t-debt"><h4>Debtors</h4><div class="syp-big">'+sypRs(k.outstanding)+'</div><div class="syp-s">outstanding</div>'+sypBar(sypPct(k.committedRem,k.outstanding))+
       sypRow('Open commitments',sypRs(k.committedRem))+sypRow('Share with a commitment',sypPct(k.committedRem,k.outstanding)+'%')+sypRow('Delayed commitments ('+k.delayed.length+')',sypRs(k.delayedAmt),k.delayed.length?'bad':'')+sypRow('Collected vs committed, this month',sypRs(k.collectedMonth)+' / '+sypRs(k.committedMonth))+'</div>';
-    h+='<div class="syp-c"><h4>Creditors</h4><div class="syp-big">'+sypRs(k.weOwe)+'</div><div class="syp-s">we owe, '+k.vendorCount+' vendors</div>'+
+    h+='<div class="syp-c t-cred"><h4>Creditors</h4><div class="syp-big">'+sypRs(k.weOwe)+'</div><div class="syp-s">we owe, '+k.vendorCount+' vendors</div>'+
       sypRow('Advance / receivable',sypRs(k.adv))+sypRow('<b>Net payable</b>','<b>'+sypRs(k.weOwe-k.adv)+'</b>')+sypRow('Vendors still to plan',k.toPlan)+sypRow('Payments planned for '+nm,sypRs(k.planned))+(k.uploaded?'':'<div class="syp-s">No creditors file uploaded yet.</div>')+'</div>';
-    h+='<div class="syp-c"><h4>Sales invoiced, FY '+k.fyS+'</h4><div class="syp-big">'+sypRs(k.ytd)+'</div><div class="syp-s">basic value, from the Tally Sales Register</div>'+
+    h+='<div class="syp-c t-sales"><h4>Sales invoiced, FY '+k.fyS+'</h4><div class="syp-big">'+sypRs(k.ytd)+'</div><div class="syp-s">basic value, from the Tally Sales Register</div>'+
       sypRow('Company annual billing target',k.annualT?sypRs(k.annualT):'-')+sypRow('Annual, achieved',k.annualT?sypPct(k.ytd,k.annualT)+'% (line 90%)':'-')+sypRow('Quarter Q'+k.qi+' target',k.qT?sypRs(k.qT):'-')+sypRow('Quarter Q'+k.qi+' invoiced',sypRs(k.qBasic)+(k.qT?' · '+sypPct(k.qBasic,k.qT)+'%':''))+(k.hasSales?'':'<div class="syp-s">No sales register uploaded yet.</div>')+'</div>';
-    h+='</div><div class="syp-g syp-g2"><div class="syp-c"><h4>Open pendency</h4>'+sypRow('PMO stages overdue',k.pmoOver)+sypRow('PayMS waiting for Pratim',k.pendPratim)+sypRow('PayMS cleared for transfer, unpaid',k.payms+' · '+sypRs(k.paymsAmt))+sypRow('Support tickets open',k.cssOpen)+sypRow('Dev upload tasks open',k.upTasks)+sypRow('Creditors to plan',k.toPlan)+'<div class="syp-s">Counts only. No thresholds.</div></div>'+
-      '<div class="syp-c"><h4>KPI scorecard</h4>'+sypRow('Company annual revenue',k.annualT?sypPct(k.ytd,k.annualT)+'%':'-')+(k.annualT?sypBar(sypPct(k.ytd,k.annualT),90):'')+sypRow('Company quarterly billing',k.qT?sypPct(k.qBasic,k.qT)+'%':'-')+(k.qT?sypBar(sypPct(k.qBasic,k.qT),90):'')+sypRow('Company monthly collections',k.committedMonth?sypPct(k.collectedMonth,k.committedMonth)+'%':'-')+(k.committedMonth?sypBar(sypPct(k.collectedMonth,k.committedMonth),90):'')+'<div class="syp-s">Line at 90%. Training and the other KPIs are added later.</div></div></div>';
+    h+='</div><div class="syp-g syp-g2"><div class="syp-c t-pend"><h4>Open pendency</h4>'+sypRow('PMO stages overdue',k.pmoOver)+sypRow('PayMS waiting for Pratim',k.pendPratim)+sypRow('PayMS cleared for transfer, unpaid',k.payms+' · '+sypRs(k.paymsAmt))+sypRow('Support tickets open',k.cssOpen)+sypRow('Dev upload tasks open',k.upTasks)+sypRow('Creditors to plan',k.toPlan)+'<div class="syp-s">Counts only. No thresholds.</div></div>'+
+      '<div class="syp-c t-kpi"><h4>KPI scorecard</h4>'+sypRow('Company annual revenue',k.annualT?sypPct(k.ytd,k.annualT)+'%':'-')+(k.annualT?sypBar(sypPct(k.ytd,k.annualT),90):'')+sypRow('Company quarterly billing',k.qT?sypPct(k.qBasic,k.qT)+'%':'-')+(k.qT?sypBar(sypPct(k.qBasic,k.qT),90):'')+sypRow('Company monthly collections',k.committedMonth?sypPct(k.collectedMonth,k.committedMonth)+'%':'-')+(k.committedMonth?sypBar(sypPct(k.collectedMonth,k.committedMonth),90):'')+'<div class="syp-s">Line at 90%. Training and the other KPIs are added later.</div></div></div>';
   }
   host.innerHTML=h+'</div>';
 }
