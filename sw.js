@@ -1,5 +1,7 @@
 // DQAP Wiki Service Worker
-// Service worker for Wiki 78.71 (build 20261031-4).
+// Service worker for Wiki 78.72 (build 20261123-1).
+// Version 78.72 - SyProC cash collected now includes advance receipts recorded in Debt Management
+// (dqap_debt_advances). Debt Management launch link refreshed (?v=20261123.1).
 // Version 78.71 - SyProC is now its own page (sidebar > SyProC); the collapsible strip on top of every
 // page, used for testing, is removed.
 // Version 78.70 - Home: new default landing page for every user (time-aware greeting, colour-coded module
@@ -155,7 +157,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.71-20261031-4';
+const CACHE_VERSION = 'dqap-wiki-v78.72-20261123-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
