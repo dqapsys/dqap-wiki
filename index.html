@@ -22,10 +22,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
 // DQAP_WIKI_VERSION_78_32_CSS_MODULE_LAUNCHER
-const APP_VERSION="78.72";
+const APP_VERSION="78.73";
 // Build tag mirrors the service worker's CACHE_VERSION suffix (date-buildnum) so
 // the two are trivially cross-checkable when diagnosing a stale-cache report.
-const APP_BUILD="20261123-1";
+const APP_BUILD="20261125-1";
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ATTENDANCE GLOBAL VARIABLES (declared FIRST, before any functions)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -5501,7 +5501,8 @@ function sypCalc(){
   const planned=vendors.reduce((s,v)=>s+(v.plans||[]).filter(p=>!p.done&&String(p.date||'').slice(0,7)===nk).reduce((t,p)=>t+Number(p.amount||0),0),0);
   const needed=SYP_EMI+SYP_SALARY+planned;
   const net=collectedMonth-paidOut,cashAvail=net-commitUnpaid,withCommit=cashAvail+later.reduce((s,o)=>s+o.rem,0);
-  const cashCover=Math.max(0,sypPct(cashAvail,needed)),cover=Math.max(0,sypPct(withCommit,needed));
+  // Provision cover = net cash in hand: (collected from debtors + advance receipts) minus everything paid out through PayMS, against what is needed next month.
+  const cover=Math.max(0,sypPct(net,needed)),cashCover=cover,coverIfAll=Math.max(0,sypPct(withCommit,needed));
   const biggest=paidRows[0]?{name:paidRows[0].r.vendor||paidRows[0].r.title||paidRows[0].r.requestNo||'-',amt:paidRows[0].amt}:null;
   const weOwe=vendors.reduce((s,v)=>s+Number(v.weOwe||0),0),adv=vendors.reduce((s,v)=>s+Number(v.advance||0),0);
   const toPlan=vendors.filter(v=>Number(v.weOwe||0)>0&&!(v.plans||[]).some(p=>!p.done)).length;
@@ -5516,7 +5517,7 @@ function sypCalc(){
   const cssOpen=(cssTicketsData||[]).filter(t=>typeof cssStatusKey==='function'&&cssStatusKey(t.status)!=='closed').length;
   const upTasks=(taskData||[]).filter(t=>String(t.taskType||'').startsWith('syproc_')&&t.status!=='Completed').length;
   const pendPratim=sypPay.filter(r=>r.status==='PENDING_PRATIM').length;
-  return{mk,nk,outstanding,committedRem,delayed,delayedAmt:delayed.reduce((s,o)=>s+o.rem,0),laterAmt:later.reduce((s,o)=>s+o.rem,0),collectedMonth,collectedDebt,advMonth,advCount:advRows.length,committedMonth,paidOut,paidCount:paidRows.length,biggest,net,commitUnpaid,pipeAmt,pipeCount:pipeRows.length,cashAvail,withCommit,cashCover,payms:payms.length,paymsAmt,planned,needed,cover,weOwe,adv,toPlan,vendorCount:vendors.filter(v=>Number(v.weOwe||0)>0).length,uploaded:vendors.length,fyS,qi,annualT,qT,ytd,qBasic,pmoOver,cssOpen,upTasks,pendPratim,hasSales:sypSales.length>0};
+  return{mk,nk,outstanding,committedRem,delayed,delayedAmt:delayed.reduce((s,o)=>s+o.rem,0),laterAmt:later.reduce((s,o)=>s+o.rem,0),collectedMonth,collectedDebt,advMonth,advCount:advRows.length,committedMonth,paidOut,paidCount:paidRows.length,biggest,net,commitUnpaid,pipeAmt,pipeCount:pipeRows.length,cashAvail,withCommit,cashCover,coverIfAll,payms:payms.length,paymsAmt,planned,needed,cover,weOwe,adv,toPlan,vendorCount:vendors.filter(v=>Number(v.weOwe||0)>0).length,uploaded:vendors.length,fyS,qi,annualT,qT,ytd,qBasic,pmoOver,cssOpen,upTasks,pendPratim,hasSales:sypSales.length>0};
 }
 function sypRow(a,b,cls){return'<div class="syp-row"><span>'+a+'</span><span class="'+(cls||'')+'">'+b+'</span></div>';}
 function sypBar(p,line,bad){return'<div class="syp-bar"><i style="width:'+Math.min(100,p)+'%;'+(bad?'background:#b42318':'')+'"></i>'+(line?'<u style="left:'+line+'%"></u>':'')+'</div>';}
@@ -5525,13 +5526,19 @@ function sypRender(){
   if(!sypViewer()){host.style.display='none';host.innerHTML='';return;}
   host.style.display='block';
   const k=sypCalc(),nm=new Date(new Date().getFullYear(),new Date().getMonth()+1,1).toLocaleString('en-IN',{month:'long'});
-  const chips='<span class="syp-chip'+(k.cover<100?' w':'')+'">'+nm+' cover '+k.cover+'% · cash '+k.cashCover+'%</span><span class="syp-chip">Delayed commitments '+k.delayed.length+'</span><span class="syp-chip">Net payable '+sypRs(k.weOwe-k.adv)+'</span><span class="syp-chip">Invoiced YTD '+sypRs(k.ytd)+'</span><span class="syp-chip">PMO overdue '+k.pmoOver+'</span>';
+  const chips='<span class="syp-chip'+(k.cover<100?' w':'')+'">'+nm+' provision cover '+k.cover+'%</span><span class="syp-chip">Delayed commitments '+k.delayed.length+'</span><span class="syp-chip">Net payable '+sypRs(k.weOwe-k.adv)+'</span><span class="syp-chip">Invoiced YTD '+sypRs(k.ytd)+'</span><span class="syp-chip">PMO overdue '+k.pmoOver+'</span>';
   let h='<div class="syp">';
   {
     h+='<div class="syp-g">';
-    h+='<div class="syp-c t-cover"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">with commitments · '+(k.withCommit>=k.needed?'covered':'shortfall '+sypRs(k.needed-k.withCommit))+'</div>'+sypBar(k.cover,100,k.cover<100)+
-      '<div class="syp-s" style="margin:0 0 4px">Cash cover (money received, net of payments): <b>'+k.cashCover+'%</b></div>'+
-      sypRow('Collected this month',sypRs(k.collectedMonth))+(k.advCount?sypRow('of which advance receipts, unbilled ('+k.advCount+')',sypRs(k.advMonth)):'')+sypRow('Paid out via PayMS ('+k.paidCount+')','- '+sypRs(k.paidOut))+(k.biggest?'<div class="syp-s">Largest: '+esc(String(k.biggest.name))+' '+sypRs(k.biggest.amt)+'</div>':'')+sypRow('<b>Net so far</b>',sypRs(k.net))+sypRow('Approved, not yet paid','- '+sypRs(k.commitUnpaid))+sypRow('<b>Cash available</b>',sypRs(k.cashAvail))+sypRow('Commitments still due this month','+ '+sypRs(k.laterAmt))+sypRow('<b>With commitments</b>',sypRs(k.withCommit))+sypRow('Needed in '+nm+': EMI + salary',sypRs(SYP_EMI+SYP_SALARY))+sypRow('Vendor payments planned',sypRs(k.planned))+sypRow('<b>Needed</b>',sypRs(k.needed))+'<div class="syp-s">Waiting for approval: '+k.pipeCount+' · '+sypRs(k.pipeAmt)+' (not counted)</div></div>';
+    const gap=k.net-k.needed;
+    h+='<div class="syp-c t-cover"><h4>'+nm+' provision cover</h4><div class="syp-big'+(k.cover<100?' bad':'')+'">'+k.cover+'%</div><div class="syp-s">net cash '+sypRs(k.net)+' of '+sypRs(k.needed)+' needed · '+(gap>=0?'covered, surplus '+sypRs(gap):'shortfall '+sypRs(-gap))+'</div>'+sypBar(k.cover,100,k.cover<100)+
+      sypRow('Collected this month',sypRs(k.collectedMonth))+sypRow('&nbsp;&nbsp;from debtors',sypRs(k.collectedDebt))+sypRow('&nbsp;&nbsp;advance receipts, unbilled ('+k.advCount+')',sypRs(k.advMonth))+
+      sypRow('Paid out via PayMS ('+k.paidCount+')','- '+sypRs(k.paidOut))+(k.biggest?'<div class="syp-s">Largest: '+esc(String(k.biggest.name))+' '+sypRs(k.biggest.amt)+'</div>':'')+
+      sypRow('<b>Net cash (collected - paid out)</b>','<b>'+sypRs(k.net)+'</b>')+
+      sypRow('Needed in '+nm+': EMI + salary',sypRs(SYP_EMI+SYP_SALARY))+sypRow('Vendor payments planned',sypRs(k.planned))+sypRow('<b>Needed</b>',sypRs(k.needed))+
+      '<div class="syp-s" style="margin-top:8px"><b>Outlook, not part of the cover</b></div>'+
+      sypRow('Approved, not yet paid','- '+sypRs(k.commitUnpaid))+sypRow('Net cash after approved payments',sypRs(k.cashAvail))+sypRow('Commitments still due this month','+ '+sypRs(k.laterAmt))+sypRow('Cover if commitments land and approved payments are made',sypRs(k.withCommit)+' · '+k.coverIfAll+'%')+
+      '<div class="syp-s">Waiting for approval: '+k.pipeCount+' · '+sypRs(k.pipeAmt)+' (not counted)</div></div>';
     h+='<div class="syp-c t-debt"><h4>Debtors</h4><div class="syp-big">'+sypRs(k.outstanding)+'</div><div class="syp-s">outstanding</div>'+sypBar(sypPct(k.committedRem,k.outstanding))+
       sypRow('Open commitments',sypRs(k.committedRem))+sypRow('Share with a commitment',sypPct(k.committedRem,k.outstanding)+'%')+sypRow('Delayed commitments ('+k.delayed.length+')',sypRs(k.delayedAmt),k.delayed.length?'bad':'')+sypRow('Collected vs committed, this month',sypRs(k.collectedDebt)+' / '+sypRs(k.committedMonth))+'</div>';
     h+='<div class="syp-c t-cred"><h4>Creditors</h4><div class="syp-big">'+sypRs(k.weOwe)+'</div><div class="syp-s">we owe, '+k.vendorCount+' vendors</div>'+
