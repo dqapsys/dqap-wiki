@@ -1,5 +1,7 @@
 // DQAP Wiki Service Worker
-// Service worker for Wiki 78.72 (build 20261123-1).
+// Service worker for Wiki 78.73 (build 20261125-1).
+// Version 78.73 - SyProC provision cover = net cash (debtor collections + advance receipts - PayMS paid out) / needed.
+// Approved-unpaid and commitments moved to an Outlook block outside the cover.
 // Version 78.72 - SyProC cash collected now includes advance receipts recorded in Debt Management
 // (dqap_debt_advances). Debt Management launch link refreshed (?v=20261123.1).
 // Version 78.71 - SyProC is now its own page (sidebar > SyProC); the collapsible strip on top of every
@@ -157,7 +159,7 @@
 // Attendance is computed live from Wiki data by department; the other four
 // are manual per-period inputs (admin/Pratim) pending module integration.
 const CACHE_PREFIX = 'dqap-wiki-';
-const CACHE_VERSION = 'dqap-wiki-v78.72-20261123-1';
+const CACHE_VERSION = 'dqap-wiki-v78.73-20261125-1';
 const CACHE_NAME = CACHE_VERSION;
 const APP_SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
